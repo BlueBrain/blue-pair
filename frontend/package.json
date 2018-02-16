@@ -1,6 +1,6 @@
 {
   "name": "blue-pair",
-  "version": "0.1.0",
+  "version": "0.0.1",
   "description": "Pair recording application",
   "license": "BSD-3-Clause",
   "author": "NSE(Neuroscientific Software Engineering) <bbp-ou-nse@groupes.epfl.ch> (http://bluebrain.epfl.ch)",
@@ -14,9 +14,9 @@
     "issuesurl": "NA"
   },
   "scripts": {
-    "serve": "VUE_CLI_CONTEXT=$(pwd)/client vue-cli-service serve --open",
-    "build": "VUE_CLI_CONTEXT=$(pwd)/client vue-cli-service build",
-    "lint": "VUE_CLI_CONTEXT=$(pwd)/client vue-cli-service lint"
+    "serve": "vue-cli-service serve --open",
+    "build": "vue-cli-service build",
+    "lint": "vue-cli-service lint"
   },
   "dependencies": {
     "distinct-colors": "^1.0.4",
