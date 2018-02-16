@@ -48,27 +48,27 @@ run_dev:
 		-v /gpfs:/gpfs:ro \
 		-v $$(pwd)/blue_pair:/usr/local/lib/python2.7/dist-packages/blue_pair \
 		-p 8000:8000 \
-		blue-pair
+		blue-pair-svc
 
 docker_build_version: python_build | $(NEURON_SRC_DIR) $(NEURODAMUS_SRC_DIR)
-	docker build -t blue-pair:$(VERSION) \
+	docker build -t blue-pair-svc:$(VERSION) \
 		--build-arg=http_proxy=http://bbpproxy.epfl.ch:80/ \
 		--build-arg=https_proxy=http://bbpproxy.epfl.ch:80/ \
 		.
 
 docker_build_latest: python_build | $(NEURON_SRC_DIR) $(NEURODAMUS_SRC_DIR)
-	docker build -t blue-pair:latest \
+	docker build -t blue-pair-svc:latest \
 		--build-arg=http_proxy=http://bbpproxy.epfl.ch:80/ \
 		--build-arg=https_proxy=http://bbpproxy.epfl.ch:80/ \
 		.
 
 docker_push_version: docker_build_version
-	docker tag blue-pair:$(VERSION) docker-registry-default.apps.bbp.epfl.ch/bbp-ou-nse/blue-pair:$(VERSION)
-	docker push docker-registry-default.apps.bbp.epfl.ch/bbp-ou-nse/blue-pair:$(VERSION)
+	docker tag blue-pair-svc:$(VERSION) docker-registry-default.apps.bbp.epfl.ch/bbp-ou-nse/blue-pair-svc:$(VERSION)
+	docker push docker-registry-default.apps.bbp.epfl.ch/bbp-ou-nse/blue-pair-svc:$(VERSION)
 	@echo 'backend version($(VERSION)) pushed to OpenShift registy'
 
 docker_push_latest:
-	docker tag blue-pair:latest docker-registry-default.apps.bbp.epfl.ch/bbp-ou-nse/blue-pair:latest
-	docker push docker-registry-default.apps.bbp.epfl.ch/bbp-ou-nse/blue-pair:latest
+	docker tag blue-pair-svc:latest docker-registry-default.apps.bbp.epfl.ch/bbp-ou-nse/blue-pair-svc:latest
+	docker push docker-registry-default.apps.bbp.epfl.ch/bbp-ou-nse/blue-pair-svc:latest
 	@echo 'backend latest version pushed to OpenShift registry.'
 	@echo 'backend release done'
