@@ -23,7 +23,12 @@ indent_size = 4
 indent_style = tab
 
 # Indentation override for all JS under lib directory
-[client/**.js]
+[frontend/**.js]
+indent_style = space
+indent_size = 2
+
+# Indentation override for all VUE under lib directory
+[frontend/**.vue]
 indent_style = space
 indent_size = 2
 
