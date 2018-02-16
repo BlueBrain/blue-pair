@@ -2,7 +2,7 @@
 # Created by https://www.gitignore.io/api/vim,node,macos,python,sublimetext,visualstudiocode
 
 ### TMP ###
-server/tmp
+backend/tmp
 
 ### macOS ###
 *.DS_Store
