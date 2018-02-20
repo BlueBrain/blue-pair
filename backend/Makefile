@@ -47,7 +47,7 @@ run_dev:
 		-it \
 		-v /gpfs:/gpfs:ro \
 		-v $$(pwd)/blue_pair:/usr/local/lib/python2.7/dist-packages/blue_pair \
-		-p 8000:8000 \
+		-p 8888:8000 \
 		blue-pair-svc
 
 docker_build_version: python_build | $(NEURON_SRC_DIR) $(NEURODAMUS_SRC_DIR)
