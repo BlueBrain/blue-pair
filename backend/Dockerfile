@@ -62,12 +62,13 @@ RUN nrnivmodl bbp/lib/modlib
 
 # Install blue-pair
 WORKDIR /opt/blue-pair
-ADD requirements/*.txt requirements/
-RUN pip install --no-cache-dir -i https://bbpteam.epfl.ch/repository/devpi/simple -r requirements/prod.txt
 
 # install latest sdist, this has to be run before: venv/bin/python setup.py sdist
 COPY dist/* dist/
-RUN pip install --no-cache-dir $(ls -t $PWD/dist/*.* | head -n 1)
+RUN pip install \
+  --no-cache-dir \
+  -i https://bbpteam.epfl.ch/repository/devpi/simple \
+  $(ls -t $PWD/dist/*.* | head -n 1)
 
 ADD entrypoint.sh entrypoint.sh
 
