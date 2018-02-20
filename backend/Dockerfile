@@ -3,7 +3,10 @@ FROM debian:stretch
 
 LABEL maintainer="BlueBrain NSE(Neuroscientific Software Engineering)"
 
+ARG circuit_path
+
 ENV DEBIAN_FRONTEND=noninteractive
+ENV CIRCUIT_PATH=$circuit_path
 
 # Install system dependencies
 # TODO: possibly to reduce amount of packages installed

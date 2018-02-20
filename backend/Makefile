@@ -6,6 +6,7 @@ NEURON_VERSION:=7.5
 VENV_DIR:=venv
 NEURON_SRC_DIR:=tmp/neuron
 NEURODAMUS_SRC_DIR:=tmp/bbp
+CIRCUIT_PATH:=/gpfs/bbp.cscs.ch/project/proj64/circuits/O1.v6a/20171212/CircuitConfig
 
 define HELPTEXT
 Makefile usage
@@ -52,12 +53,14 @@ run_dev:
 
 docker_build_version: python_build | $(NEURON_SRC_DIR) $(NEURODAMUS_SRC_DIR)
 	docker build -t blue-pair-svc:$(VERSION) \
+		--build-arg=circuit_path=$(CIRCUIT_PATH) \
 		--build-arg=http_proxy=http://bbpproxy.epfl.ch:80/ \
 		--build-arg=https_proxy=http://bbpproxy.epfl.ch:80/ \
 		.
 
 docker_build_latest: python_build | $(NEURON_SRC_DIR) $(NEURODAMUS_SRC_DIR)
 	docker build -t blue-pair-svc:latest \
+		--build-arg=circuit_path=$(CIRCUIT_PATH) \
 		--build-arg=http_proxy=http://bbpproxy.epfl.ch:80/ \
 		--build-arg=https_proxy=http://bbpproxy.epfl.ch:80/ \
 		.
