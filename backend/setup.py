@@ -20,7 +20,8 @@ setup(
         'pandas',
         'bglibpy',
         'bluepy',
-        'neurom'
+        'neurom',
+        'voxcell'
     ],
     tests_require=['pytest', 'pytest-cov'],
     packages=find_packages(exclude=[]),
