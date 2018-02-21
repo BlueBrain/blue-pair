@@ -1,12 +1,14 @@
+
 import socket from '@/services/websocket';
 import storage from '@/services/storage';
+import cloneDeep from 'lodash/cloneDeep';
 
 
 const actions = {
   async loadCircuit(store) {
     let neuronDataSet = await storage.getItem('neuronData');
     if (!neuronDataSet) {
-      neuronDataSet = await socket.request('neuronDataSet');
+      neuronDataSet = await socket.request('get_neurons');
       storage.setItem('neuronData', neuronData);
     }
 
@@ -29,15 +31,55 @@ const actions = {
     store.$emit('circuitLoaded');
   },
 
+  circuitColorUpdated(store) {
+    store.$emit('redrawCircuit');
+    store.$emit('updateColorPalette');
+  },
+
+  connectionFilterUpdated(store) {
+    store.$emit('redrawCircuit');
+  },
+
+  updateHoveredNeuron(store, neuron) {
+    store.$emit('updateHoveredNeuron', neuron);
+  },
+
+  propFilterUpdated(store) {
+    store.$emit('redrawCircuit');
+  },
+
+  colorUpdated(store) {
+    store.$emit('updateColorPalette');
+  },
+
+  setPointNeuronSize(store, size) {
+    store.$emit('setPointNeuronSize', size);
+  },
+
+  updateSelectedNeuron(store) {
+    store.$emit('updateSelectedNeuron');
+  },
+
+  neuronAddedToSim(store, neuron) {
+    store.$emit('neuronAddedToSim', neuron);
+  },
+
+  morphSegmentClicked(store, segment) {
+    store.$emit('morphSegmentSelected', segment);
+  },
+
   async loadMorphology(store) {
+    store.$emit('updateSimCellConfig', store.state.circuit.simAddedNeurons);
     const gids = store.state.circuit.simAddedNeurons.map(n => n.gid);
     const cachedGids = Object.keys(store.state.simulation.morphology);
     const gidsToLoad = gids.filter(gid => !cachedGids.includes(gid));
-    const morphObj = await socket.request('get_sec_info', gidsToLoad);
+    const morphObj = await socket.request('get_morphology', gidsToLoad);
     // TODO: add cache with TTL to clear memory in long run
     Object.assign(store.state.simulation.morphology, morphObj.cells);
-    store.$emit('setSimulationTabActive');
+    const simNeurons = cloneDeep(store.state.circuit.simAddedNeurons);
+    store.$emit('updateSimCellConfig', simNeurons);
     store.$emit('showCellMorphology');
+    store.$emit('setSimulationConfigTabActive');
   },
 };
 
