@@ -24,7 +24,8 @@
     "iview": "^2.9.2",
     "localforage": "^1.5.6",
     "lodash": "^4.17.5",
-    "three": "^0.89.0",
+    "three": "^0.90.0",
+    "three-orbit-controls": "^82.1.0",
     "vue": "^2.5.13",
     "vuex": "^3.0.1"
   },
