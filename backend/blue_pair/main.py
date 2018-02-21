@@ -51,7 +51,7 @@ class WSHandler(tornado.websocket.WebSocketHandler):
         elif cmd == 'get_morphology':
             # TODO: add redis caching
             gids = msg['data']
-            ssim = bglibpy.SSim(circuit_path)
+            ssim = bglibpy.SSim(CIRCUIT_PATH)
             ssim.instantiate_gids(gids)
             cells = {}
             for gid in gids:
