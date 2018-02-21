@@ -1,0 +1,51 @@
+
+<template>
+  <div class="side-panel">
+    <Tabs
+      type="card"
+      :value="currentTab"
+    >
+      <TabPane label="Circuit" name="circuit">
+        <circuit-tab/>
+      </TabPane>
+      <TabPane label="Simulation config" disabled name="simConfig">
+        <sim-config-tab/>
+      </TabPane>
+    </Tabs>
+  </div>
+</template>
+
+<script>
+  import CircuitTab from './side-panel/circuit-tab';
+  import SimConfigTab from './side-panel/sim-config-tab';
+  import store from '@/store';
+
+  export default {
+    name: 'side-panel',
+    data() {
+      return {
+        currentTab: 'circuit',
+      };
+    },
+    mounted() {
+      store.$on('setSimulationConfigTabActive', () => this.currentTab = 'simConfig');
+    },
+    components: {
+      'circuit-tab': CircuitTab,
+      'sim-config-tab': SimConfigTab,
+    },
+  };
+</script>
+
+<style scoped lang="scss">
+  .side-panel {
+    position: absolute;
+    top: 28px;
+    bottom: 0;
+    right: 0px;
+    width: 620px;
+    padding: 16px;
+    border: 1px solid #bdc2c8;
+    background-color: #fefdfb;
+  }
+</style>
