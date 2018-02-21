@@ -3,6 +3,8 @@
 VERSION?=$(shell cat ../VERSION)
 
 NODE_MODULES:=node_modules
+SERVER_HOST:=blue-pair.apps.bbp.epfl.ch
+SERVER_PORT:=80
 
 define HELPTEXT
 Makefile usage
@@ -27,7 +29,7 @@ run_dev: | $(NODE_MODULES)
 	npm run serve
 
 build: | $(NODE_MODULES)
-	npm run build
+	SERVER_HOST=$(SERVER_HOST) SERVER_PORT=$(SERVER_PORT) npm run build
 
 docker_build_version: build
 	docker build -t blue-pair:$(VERSION) \

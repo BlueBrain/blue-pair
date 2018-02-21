@@ -52,7 +52,7 @@ class Ws {
   }
 
   _initWebSocket() {
-    this.socket = new WebSocket(`ws://${config.server}/ws`);
+    this.socket = new WebSocket(`ws://${config.server.host}:${config.server.port}/ws`);
 
     this.socket.addEventListener('open', () => this._processQueue());
     this.socket.addEventListener('error', e => console.error(e));
