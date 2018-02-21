@@ -9,6 +9,7 @@ import actions from './actions';
 class Store {
   constructor() {
     this.state = state;
+    this.eventBus = eventBus;
   }
 
   $get(property, args) {
@@ -16,7 +17,7 @@ class Store {
   }
 
   $dispatchSync(action, payload) {
-    actions[action](this, payload)
+    actions[action](this, payload);
   }
 
   $dispatch(action, payload) {
@@ -24,15 +25,15 @@ class Store {
   }
 
   $emitSync(action, payload) {
-    eventBus.$emit(action, payload);
+    this.eventBus.$emit(action, payload);
   }
 
   $emit(action, payload) {
-    setTimeout(() => eventBus.$emit(action, payload), 0);
+    setTimeout(() => this.eventBus.$emit(action, payload), 0);
   }
 
   $on(action, handler) {
-    eventBus.$on(action, handler);
+    this.eventBus.$on(action, handler);
   }
 }
 
