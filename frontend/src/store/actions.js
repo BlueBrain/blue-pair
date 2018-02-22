@@ -8,7 +8,7 @@ const actions = {
   async loadCircuit(store) {
     let neuronDataSet = await storage.getItem('neuronData');
     if (!neuronDataSet) {
-      neuronDataSet = await socket.request('get_neurons');
+      neuronDataSet = await socket.request('get_circuit_cells');
       storage.setItem('neuronData', neuronData);
     }
 
@@ -73,7 +73,7 @@ const actions = {
     const gids = store.state.circuit.simAddedNeurons.map(n => n.gid);
     const cachedGids = Object.keys(store.state.simulation.morphology);
     const gidsToLoad = gids.filter(gid => !cachedGids.includes(gid));
-    const morphObj = await socket.request('get_morphology', gidsToLoad);
+    const morphObj = await socket.request('get_cell_morphology', gidsToLoad);
     // TODO: add cache with TTL to clear memory in long run
     Object.assign(store.state.simulation.morphology, morphObj.cells);
     const simNeurons = cloneDeep(store.state.circuit.simAddedNeurons);

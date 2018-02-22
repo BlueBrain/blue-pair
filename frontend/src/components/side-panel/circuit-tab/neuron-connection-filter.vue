@@ -241,7 +241,7 @@
 
           const connections = {};
           for (const gid of currentGids) {
-            connections[gid] = await socket.request('get_connected_neurons', gid);
+            connections[gid] = await socket.request('get_cell_connectome', gid);
           }
 
           let allowedGids = [];

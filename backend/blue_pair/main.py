@@ -1,22 +1,15 @@
 
+import os
+import json
+
 import tornado.ioloop
 import tornado.web
 import tornado.websocket
-import json
-import bluepy
-import os
-import pandas as pd
-import neurom as nm
-import numpy as np
-import bglibpy
 
-from blue_pair.cell import Cell
+from blue_pair.storage import Storage
 from blue_pair.utils import NumpyAwareJSONEncoder
-from voxcell.quaternion import matrices_to_quaternions
 
-
-CIRCUIT_PATH = os.environ['CIRCUIT_PATH']
-circuit = bluepy.Circuit(CIRCUIT_PATH)
+storage = Storage()
 
 
 class WSHandler(tornado.websocket.WebSocketHandler):
@@ -28,42 +21,22 @@ class WSHandler(tornado.websocket.WebSocketHandler):
         cmd = msg['cmd']
         cmdid = msg['cmdid']
 
-        if cmd == 'get_neurons':
-            # TODO add logic to remove complex properties
-            cells = circuit.v2.cells.get().to_dict(orient="split")
+        if cmd == 'get_circuit_cells':
+            cells = storage.get_circuit_cells()
+            cells['cmdid'] = cmdid
+            self.send_message('circuit_cells', cells)
 
-            self.send_message('neurons', {
-                'columns': cells['columns'],
-                'data': cells['data'],
-                'cmdid': cmdid
-            })
-
-        elif cmd == 'get_connectome':
+        elif cmd == 'get_cell_connectome':
             gid = msg['data']
-            afferent = circuit.v2.connectome.afferent_gids(gid)
-            efferent = circuit.v2.connectome.efferent_gids(gid)
-            self.send_message('connectome', {
-                'afferent': afferent,
-                'efferent': efferent,
-                'cmdid': cmdid
-            })
+            connectome = storage.get_connectome(gid)
+            connectome['cmdid'] = cmdid
+            self.send_message('cell_connectome', connectome)
 
-        elif cmd == 'get_morphology':
-            # TODO: add redis caching
+        elif cmd == 'get_cell_morphology':
             gids = msg['data']
-            ssim = bglibpy.SSim(CIRCUIT_PATH)
-            ssim.instantiate_gids(gids)
-            cells = {}
-            for gid in gids:
-                cell = Cell(ssim, gid)
-                cells[gid] = {
-                    'morph': cell.get_cell_morph(),
-                    'quaternion': matrices_to_quaternions(circuit.v2.cells.get(gid)['orientation'])
-                }
-            self.send_message('morphology', {
-                'cells': cells,
-                'cmdid': cmdid
-            })
+            cell_morph = storage.get_cell_morphology(gids)
+            cell_morph['cmdid'] = cmdid
+            self.send_message('cell_morphology', cell_morph)
 
     def send_message(self, cmd, data=None):
         payload = json.dumps({'cmd': cmd, 'data': data},
