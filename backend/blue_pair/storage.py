@@ -7,6 +7,8 @@ import neurom as nm
 import numpy as np
 import bglibpy
 
+from bluepy.v2.enums import Synapse
+
 from blue_pair.cell import Cell
 from voxcell.quaternion import matrices_to_quaternions
 from blue_pair.redis import RedisClient
@@ -38,6 +40,24 @@ class Storage():
             }
             cache.set('circuit:connectome:{}'.format(gid), connectome)
         return connectome
+
+    def get_syn_connections(self, gids):
+        props = [
+            Synapse.POST_X_CENTER,
+            Synapse.POST_Y_CENTER,
+            Synapse.POST_Z_CENTER,
+            Synapse.POST_GID,
+            Synapse.POST_SECTION_ID
+        ]
+
+        connections = np.array(pd.concat([
+            circuit.v2.connectome.pair_synapses(gids[0], gids[1], properties=props),
+            circuit.v2.connectome.pair_synapses(gids[1], gids[0], properties=props)
+        ]))
+
+        return {
+            'connections': connections
+        }
 
     def get_cell_morphology(self, gids):
         cells = {}

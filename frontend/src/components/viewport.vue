@@ -31,6 +31,7 @@
       store.$on('setPointNeuronSize', size => this.renderer.setNeuronCloudPointSize(size));
       store.$on('redrawCircuit', this.redrawNeurons.bind(this));
       store.$on('showCellMorphology', morphObj => this.renderer.initMorphology(morphObj));
+      store.$on('showSynConnections', () => this.renderer.showSynConnections());
     },
     methods: {
       onHover(obj) {

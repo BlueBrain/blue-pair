@@ -32,6 +32,12 @@ class WSHandler(tornado.websocket.WebSocketHandler):
             connectome['cmdid'] = cmdid
             self.send_message('cell_connectome', connectome)
 
+        elif cmd == 'get_syn_connections':
+            gids = msg['data']
+            connections = storage.get_syn_connections(gids)
+            connections['cmdid'] = cmdid
+            self.send_message('syn_connections', connections)
+
         elif cmd == 'get_cell_morphology':
             gids = msg['data']
             cell_morph = storage.get_cell_morphology(gids)

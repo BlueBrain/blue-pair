@@ -113,6 +113,19 @@ class NeuronRenderer {
     this.scene.add(this.neuronCloud.points);
   }
 
+  showSynConnections() {
+    const connections = store.state.simulation.synConnections;
+    this.synConnectionsObj = new THREE.Object3D();
+    const material = new THREE.MeshLambertMaterial({ color: 0x1020ff });
+    connections.forEach(([x, y, z]) => {
+      const geometry = new THREE.SphereGeometry(5, 32, 32);
+      const synapse = new THREE.Mesh(geometry, material);
+      synapse.position.set(x, y, z);
+      this.synConnectionsObj.add(synapse);
+    });
+    this.scene.add(this.synConnectionsObj);
+  }
+
   hideNeuronCloud() {
     this.neuronCloud.points.visible = false;
   }
