@@ -11,7 +11,7 @@ from bluepy.v2.enums import Synapse
 
 from blue_pair.cell import Cell
 from voxcell.quaternion import matrices_to_quaternions
-from blue_pair.redis import RedisClient
+from blue_pair.redis_client import RedisClient
 
 
 CIRCUIT_PATH = os.environ['CIRCUIT_PATH']
