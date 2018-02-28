@@ -2,7 +2,7 @@
 <template>
   <Card>
     <i-form :label-width="120" label-position="left">
-      <FormItem label="Point neuron size">
+      <FormItem label="Soma size">
         <Slider
           :min="5"
           :max="30"
