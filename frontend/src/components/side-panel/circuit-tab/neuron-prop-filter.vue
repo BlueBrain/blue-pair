@@ -157,10 +157,19 @@
           excludeUnion: true,
         },
         filterSet: {},
+        tmpFilter: null,
       };
     },
     mounted() {
       store.$on('initNeuronPropFilter', this.initFilters);
+      store.$on('addTmpGlobalFilter', tmpFilter => {
+        this.tmpFilter = tmpFilter;
+        this.updateGlobalFilterIndex();
+      });
+      store.$on('removeTmpGlobalFilter', () => {
+        this.tmpFilter = null;
+        setTimeout(() => this.updateGlobalFilterIndex(), 200);
+      });
     },
     methods: {
       initFilters() {
@@ -236,9 +245,15 @@
           const neurons = store.state.circuit.neurons;
           const neuronPropIndex = store.state.circuit.neuronPropIndex;
           const filters = this.currentFilters;
+          const tmpFilter = this.tmpFilter;
 
           function neuronVisible(neuron) {
             const affectedByFilter = f => neuron[neuronPropIndex[f.prop]] === f.value;
+
+            if (
+              tmpFilter &&
+              neuron[neuronPropIndex[tmpFilter.prop]] != tmpFilter.val
+            ) return false;
 
             if (
               filters.include.length &&

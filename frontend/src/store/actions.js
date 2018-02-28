@@ -68,6 +68,17 @@ const actions = {
     store.$emit('morphSegmentSelected', segment);
   },
 
+  paletteKeyHover(store, paletteKey) {
+    store.$emit('addTmpGlobalFilter', {
+      prop: store.state.circuit.color.neuronProp,
+      val: paletteKey,
+    });
+  },
+
+  paletteKeyUnhover(store) {
+    store.$emit('removeTmpGlobalFilter');
+  },
+
   async loadMorphology(store) {
     store.$emit('updateSimCellConfig', store.state.circuit.simAddedNeurons);
     const gids = store.state.circuit.simAddedNeurons.map(n => n.gid);

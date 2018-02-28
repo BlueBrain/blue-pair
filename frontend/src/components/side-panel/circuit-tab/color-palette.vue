@@ -9,6 +9,8 @@
         class="palette-item"
         v-for="(color, paletteKey) in colorPalette"
         :key="paletteKey"
+        @mouseover="onMouseOver(paletteKey)"
+        @mouseleave="onMouseLeave"
       >
         <small>{{ paletteKey }}</small>
         <div
@@ -42,6 +44,14 @@
           return Object.assign(palette, { [colorKey]: color });
         }, {});
       });
+    },
+    methods: {
+      onMouseOver(paletteKey) {
+        store.$dispatch('paletteKeyHover', paletteKey);
+      },
+      onMouseLeave() {
+        store.$dispatch('paletteKeyUnhover');
+      },
     },
   };
 </script>
