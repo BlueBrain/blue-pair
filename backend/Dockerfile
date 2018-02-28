@@ -4,9 +4,11 @@ FROM debian:stretch
 LABEL maintainer="BlueBrain NSE(Neuroscientific Software Engineering)"
 
 ARG circuit_path
+ARG redis_host
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV CIRCUIT_PATH=$circuit_path
+ENV REDIS_HOST=$redis_host
 
 # Install system dependencies
 # TODO: possibly to reduce amount of packages installed
