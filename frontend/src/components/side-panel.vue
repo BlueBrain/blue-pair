@@ -40,6 +40,7 @@
 <style scoped lang="scss">
   .side-panel {
     position: absolute;
+    overflow: auto;
     top: 28px;
     bottom: 0;
     right: 0px;
