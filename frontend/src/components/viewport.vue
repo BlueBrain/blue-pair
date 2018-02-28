@@ -16,7 +16,6 @@
     data() {
       return {
         canvasId: 'canvas',
-        renderer: null,
       };
     },
     mounted() {
