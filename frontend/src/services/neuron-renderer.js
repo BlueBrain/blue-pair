@@ -63,6 +63,7 @@ class NeuronRenderer {
     this.camera.lookAt(new THREE.Vector3(350, 1000, 1000));
 
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
+    this.controls.enableDamping = true;
 
     this.hoveredNeuron = null;
     this.mousePressed = false;
@@ -99,10 +100,10 @@ class NeuronRenderer {
 
     const material = new THREE.PointsMaterial({
       vertexColors: THREE.VertexColors,
-      size: 10,
+      size: store.state.circuit.pointNeuronSize,
       opacity: 0.85,
       transparent: true,
-      alphaTest: 0.5,
+      alphaTest: 0.4,
       sizeAttenuation: true,
       map: neuronTexture,
     });
@@ -142,7 +143,7 @@ class NeuronRenderer {
     const morphology = store.state.simulation.morphology;
     const cellMorphs = gids.reduce((cells, gid) => {
       return Object.assign(cells, {
-        [gid]: morphology[gid]
+        [gid]: morphology[gid],
       });
     }, {});
 
@@ -320,23 +321,9 @@ class NeuronRenderer {
     return intersections[0];
   }
 
-  getNeuronTexture() {
-    const texCanvas = document.createElement('canvas');
-    texCanvas.width = 256;
-    texCanvas.height = 256;
-    const ctx = texCanvas.getContext('2d');
-    ctx.beginPath();
-    ctx.arc(texCanvas.width >> 1, texCanvas.height >> 1, texCanvas.width >> 1, 2 * Math.PI, false);
-    ctx.fillStyle = '#ffffff';
-    ctx.fill();
-
-    const tex = new THREE.Texture(texCanvas);
-    tex.needsUpdate = true;
-    return tex;
-  }
-
   animate() {
     requestAnimationFrame(this.animate.bind(this));
+    this.controls.update();
     this.renderer.render(this.scene, this.camera);
   }
 }
