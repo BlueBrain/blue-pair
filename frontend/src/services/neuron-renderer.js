@@ -95,7 +95,8 @@ class NeuronRenderer {
     geometry.addAttribute('color', this.neuronCloud.colorBufferAttr);
     geometry.addAttribute('alpha', this.neuronCloud.alphaBufferAttr);
 
-    const neuronTexture = this.getNeuronTexture();
+    const neuronTexture = new THREE.TextureLoader().load('/neuron-texture.png');
+
     const material = new THREE.PointsMaterial({
       vertexColors: THREE.VertexColors,
       size: 10,
