@@ -8,6 +8,7 @@ import tornado.websocket
 
 from blue_pair.storage import Storage
 from blue_pair.utils import NumpyAwareJSONEncoder
+from blue_pair.sim import get_sim_traces
 
 storage = Storage()
 
@@ -43,6 +44,11 @@ class WSHandler(tornado.websocket.WebSocketHandler):
             cell_morph = storage.get_cell_morphology(gids)
             cell_morph['cmdid'] = cmdid
             self.send_message('cell_morphology', cell_morph)
+
+        elif cmd == 'get_sim_traces':
+            sim_config = msg['data']
+            traces = get_sim_traces(sim_config)
+            self.send_message('simulation_result', traces)
 
     def send_message(self, cmd, data=None):
         payload = json.dumps({'cmd': cmd, 'data': data},

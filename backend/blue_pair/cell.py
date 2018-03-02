@@ -169,12 +169,8 @@ class Cell(object):
     def __init__(self, ssim, gid):
         self.gid = gid
         self.ssim = ssim
-        print('runnig define_shape')
         bglibpy.neuron.h.define_shape()
-
-        print('collect_pt3d')
         self._collect_pt3d()
-        print('collect_sections_geometry')
         self._collect_sections_geometry()
 
     def get_cell_morph(self):

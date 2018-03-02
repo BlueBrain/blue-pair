@@ -6,6 +6,7 @@ import pandas as pd
 import neurom as nm
 import numpy as np
 import bglibpy
+from multiprocessing import Process, Queue
 
 from bluepy.v2.enums import Synapse
 
@@ -21,18 +22,18 @@ cache = RedisClient()
 
 class Storage():
     def get_circuit_cells(self):
-        cells = cache.get_json_parsed('circuit:cells')
+        cells = cache.get('circuit:cells')
         if cells is None:
             cellsList = circuit.v2.cells.get().to_dict(orient="split")
             cells = {
-                'properties': cells['columns'],
-                'data': cells['data']
+                'properties': cellsList['columns'],
+                'data': cellsList['data']
             }
             cache.set('circuit:cells', cells)
         return cells
 
     def get_connectome(self, gid):
-        connectome = cache.get_json_parsed('circuit:connectome:{}'.format(gid))
+        connectome = cache.get('circuit:connectome:{}'.format(gid))
         if connectome is None:
             connectome = {
                 'afferent': circuit.v2.connectome.afferent_gids(gid),
@@ -63,17 +64,31 @@ class Storage():
         cells = {}
         not_cached_gids = []
         for gid in gids:
-            cell_morph = cache.get_json_parsed('cell:morph:{}'.format(gid))
+            cell_morph = cache.get('cell:morph:{}'.format(gid))
             if cell_morph is None:
                 not_cached_gids.append(gid)
         if len(not_cached_gids) > 0:
-            ssim = bglibpy.SSim(CIRCUIT_PATH)
-            ssim.instantiate_gids(gids)
-            for gid in not_cached_gids:
-                cell = Cell(ssim, gid)
-                cells[gid] = {
-                    'morph': cell.get_cell_morph(),
-                    'quaternion': matrices_to_quaternions(circuit.v2.cells.get(gid)['orientation'])
-                }
+            q = Queue()
+            p = Process(target=get_cell_morphology_mp, args=(q, not_cached_gids))
+            p.start()
+            not_cached_cells = q.get()
+            p.join()
+            for (gid, morph_dict) in not_cached_cells:
+                cells[gid] = morph_dict
                 cache.set('cell:morph:{}'.format(gid), cells[gid])
         return {'cells': cells}
+
+def get_cell_morphology_mp(q, gids):
+    ssim = bglibpy.SSim(CIRCUIT_PATH)
+    ssim.instantiate_gids(gids)
+    morphologies = []
+    for gid in gids:
+        cell = Cell(ssim, gid)
+        morphologies.append((
+            gid,
+            {
+                'morph': cell.get_cell_morph(),
+                'quaternion': matrices_to_quaternions(circuit.v2.cells.get(gid)['orientation'])
+            }
+        ))
+    q.put(morphologies)

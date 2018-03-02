@@ -1,6 +1,4 @@
 
-print('## Init redis-client component')
-
 import os
 import json
 
@@ -10,7 +8,6 @@ import redis
 REDIS_HOST = os.getenv('REDIS_HOST')
 
 if REDIS_HOST is not None and REDIS_HOST is not '':
-    print('## Initializing redis: {}'.format(REDIS_HOST))
     rc = redis.StrictRedis(host=REDIS_HOST)
 else:
     rc = None
