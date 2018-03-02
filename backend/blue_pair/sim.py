@@ -4,6 +4,7 @@ import bglibpy
 import numpy as np
 from multiprocessing import Queue, Process
 
+
 CIRCUIT_PATH = os.environ['CIRCUIT_PATH']
 
 
@@ -15,12 +16,14 @@ def get_sim_traces(sim_config):
     p.join()
     return traces
 
+
 def get_sim_traces_mp(q, sim_config):
     sim = Sim(sim_config)
     sim.run()
     traces = sim.get_traces()
     # TODO: add progress
     q.put(traces)
+
 
 class Sim(object):
     def __init__(self, sim_config):
