@@ -3,18 +3,20 @@ import socket from '@/services/websocket';
 import storage from '@/services/storage';
 import cloneDeep from 'lodash/cloneDeep';
 
+// TODO: prefix events with target component's names
+
 
 const actions = {
   async loadCircuit(store) {
     let neuronDataSet = await storage.getItem('neuronData');
     if (!neuronDataSet) {
       neuronDataSet = await socket.request('get_circuit_cells');
-      storage.setItem('neuronData', neuronData);
+      storage.setItem('neuronData', neuronDataSet);
     }
 
-    store.state.circuit.neuronProps = neuronDataSet.columns;
+    store.state.circuit.neuronProps = neuronDataSet.properties;
 
-    store.state.circuit.neuronPropIndex = neuronDataSet.columns
+    store.state.circuit.neuronPropIndex = neuronDataSet.properties
       .reduce((propIndexObj, propName, propIndex) => {
         return Object.assign(propIndexObj, {
           [propName]: propIndex
@@ -50,6 +52,7 @@ const actions = {
 
   colorUpdated(store) {
     store.$emit('updateColorPalette');
+    store.$emit('redrawCircuit');
   },
 
   setPointNeuronSize(store, size) {
@@ -64,6 +67,10 @@ const actions = {
     store.$emit('neuronAddedToSim', neuron);
   },
 
+  neuronRemovedFromSim(store, neuron) {
+    store.$emit('neuronRemovedFromSim', neuron);
+  },
+
   morphSegmentClicked(store, segment) {
     store.$emit('morphSegmentSelected', segment);
   },
@@ -73,6 +80,10 @@ const actions = {
       prop: store.state.circuit.color.neuronProp,
       val: paletteKey,
     });
+  },
+
+  runSim(store, cellConfigs) {
+    socket.send('get_sim_traces', { cells: cellConfigs });
   },
 
   paletteKeyUnhover(store) {

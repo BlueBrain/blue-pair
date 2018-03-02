@@ -15,7 +15,7 @@
   import store from '@/store';
 
   export default {
-    name: 'neuron-info',
+    name: 'hover-neuron-info',
     data() {
       return {
         table: {

@@ -32,10 +32,7 @@
 
     <br>
 
-    <Row
-      :gutter="6"
-      v-if="simAddedNeurons.length > 1"
-    >
+    <Row :gutter="6">
       <i-col
         span="4"
         push="20"
@@ -44,6 +41,7 @@
           size="small"
           type="primary"
           long
+          :disabled="simAddedNeurons.length < 2"
           :loading="simInit"
           @click="onConfigureSimulationBtnClick"
         >Sim config</i-button>

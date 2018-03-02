@@ -8,6 +8,7 @@ import throttle from 'lodash/throttle';
 import store from '@/store';
 
 
+// TODO: consider to use trackball ctrl instead
 const OrbitControls = require('three-orbit-controls')(THREE);
 
 
@@ -70,11 +71,6 @@ class NeuronRenderer {
 
     this.onHoverHandler = onHover;
     this.onClickHandler = onClick;
-
-    this.hoverBox = new THREE.BoxHelper(undefined, HOVER_BOX_COLOR);
-    // this.hoverBox.material.linewidth = 3;
-    this.hoverBox.visible = false;
-    this.scene.add(this.hoverBox);
 
     this.initEventHandlers();
     this.animate();
@@ -158,9 +154,9 @@ class NeuronRenderer {
       const neuron = store.$get('neuron', neuronIndex);
       const [x, y, z] = store.$get('neuronPosition', neuronIndex);
       const cellObj3D = new THREE.Object3D();
-      Object.keys(sections).forEach((sectionKey) => {
-        const sec = sections[sectionKey];
-        const sectionType = sectionKey.match(/\.(\w*)/)[1];
+      Object.keys(sections).forEach((sectionName) => {
+        const sec = sections[sectionName];
+        const sectionType = sectionName.match(/\.(\w*)/)[1];
 
         sec.xstart.forEach((val, i) => {
           const v = new THREE.Vector3(sec.xcenter[i], sec.ycenter[i], sec.zcenter[i]);
@@ -183,7 +179,7 @@ class NeuronRenderer {
           const cylinder = new THREE.Mesh(geometry, material);
           cylinder.name = 'morphSegment';
           // TODO: optimize memory consumption?
-          cylinder.userData = { neuron, sectionName: sectionKey };
+          cylinder.userData = { neuron, sectionName, segmentIndex: i };
           cylinder.scale.setY(scaleLength);
           cylinder.setRotationFromQuaternion(rotQuat);
           cylinder.position.copy(v);
@@ -203,8 +199,9 @@ class NeuronRenderer {
   }
 
   disposeCellMorphology() {
-    // TODO: add traversal and dispose of all geometries and materials
     this.scene.remove(this.cellMorphologyObj);
+    this.disposeObject(this.cellMorphologyObj);
+    this.cellMorphologyObj = null;
   }
 
   setNeuronCloudPointSize(size) {
@@ -295,13 +292,41 @@ class NeuronRenderer {
   }
 
   hoverMorphSegment(mesh) {
-    this.hoverBox.setFromObject(mesh.object);
-    this.hoverBox.updateMatrix();
-    this.hoverBox.visible = true;
+    if (this.hoverBox) {
+      if (
+        this.hoverBox.userData.sectionName === mesh.object.userData.sectionName &&
+        this.hoverBox.userData.segmentIndex === mesh.object.userData.segmentIndex
+      ) return;
+
+      this.scene.remove(this.hoverBox);
+      this.disposeObject(this.hoverBox);
+    }
+
+    const geometry = new THREE.EdgesGeometry(mesh.object.geometry);
+    const material = new THREE.LineBasicMaterial({
+      color: HOVER_BOX_COLOR,
+      linewidth: 2,
+    });
+    this.hoverBox = new THREE.LineSegments(geometry, material);
+
+    this.hoverBox.position.copy(mesh.object.getWorldPosition());
+    this.hoverBox.rotation.copy(mesh.object.getWorldRotation());
+    this.hoverBox.name = mesh.object.name;
+    this.hoverBox.userData = mesh.object.userData;
+    this.scene.add(this.hoverBox);
   }
 
   unhoverMorphSegment() {
-    this.hoverBox.visible = false;
+    if (!this.hoverBox) return;
+
+    this.scene.remove(this.hoverBox);
+    this.disposeObject(this.hoverBox);
+    this.hoverBox = null;
+  }
+
+  disposeObject(obj) {
+    obj.geometry.dispose();
+    obj.material.dispose();
   }
 
   onResize() {

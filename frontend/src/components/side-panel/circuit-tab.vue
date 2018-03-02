@@ -5,7 +5,7 @@
     <neuron-color/>
     <neuron-prop-filter/>
     <neuron-selector></neuron-selector>
-    <neuron-info/>
+    <hover-neuron-info/>
   </div>
 </template>
 
@@ -15,7 +15,7 @@
   import NeuronPropFilter from './circuit-tab/neuron-prop-filter';
   import NeuronColor from './circuit-tab/neuron-color';
   import NeuronSelector from './circuit-tab/neuron-selector';
-  import NeuronInfo from './circuit-tab/neuron-info';
+  import HoverNeuronInfo from './circuit-tab/hover-neuron-info';
 
   export default {
     name: 'circuit-tab',
@@ -24,7 +24,7 @@
       'neuron-prop-filter': NeuronPropFilter,
       'neuron-color': NeuronColor,
       'neuron-selector': NeuronSelector,
-      'neuron-info': NeuronInfo,
+      'hover-neuron-info': HoverNeuronInfo,
     },
   };
 </script>

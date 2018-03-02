@@ -1,6 +1,6 @@
 
 <template>
-  <div class="container" ref="graph"></div>
+  <div class="graph-container" ref="graph"></div>
 </template>
 
 
@@ -9,13 +9,13 @@
 
   export default {
     name: 'dygraph',
-    props: ['config', 'data'],
+    props: ['data', 'labels'],
     mounted() {
-      this.graph = new Dygraph(this.$refs.graph, this.data, this.config);
+      this.graph = new Dygraph(this.$refs.graph, this.data, {labels: this.labels});
     },
     watch: {
       data() {
-        this.graph.updateOptions({file: this.data});
+        this.graph.updateOptions({file: this.data, labels: this.labels});
       },
     },
     beforeDestroy() {
@@ -26,7 +26,7 @@
 
 
 <style lang="scss" scoped>
-  .container {
+  .graph-container {
     height: 100%;
   }
 </style>
