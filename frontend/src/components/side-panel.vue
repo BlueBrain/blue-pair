@@ -3,7 +3,8 @@
   <div class="side-panel">
     <Tabs
       type="card"
-      :value="currentTab"
+      :value="currentTabName"
+      @on-click="onTabClick"
     >
       <TabPane label="Circuit" name="circuit">
         <circuit-tab/>
@@ -24,11 +25,19 @@
     name: 'side-panel',
     data() {
       return {
-        currentTab: 'circuit',
+        currentTabName: 'circuit',
       };
     },
     mounted() {
       store.$on('setSimulationConfigTabActive', () => this.currentTab = 'simConfig');
+    },
+    methods: {
+      onTabClick(tabName) {
+        if (tabName === this.currentTabName) return;
+
+        this.currentTabName = tabName;
+        store.dispatch(`${tabName}TabSelected`);
+      },
     },
     components: {
       'circuit-tab': CircuitTab,

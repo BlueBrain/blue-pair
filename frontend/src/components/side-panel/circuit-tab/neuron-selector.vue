@@ -71,6 +71,7 @@
       store.$on('updateSelectedNeuron', () => {
         this.selectedNeuron = store.state.circuit.selectedNeuron;
       });
+      store.$on('resetSimConfigBtn', () => this.simInit = false);
     },
     methods: {
       onNeuronAdd(neuron) {

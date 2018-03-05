@@ -105,7 +105,6 @@ class NeuronRenderer {
     });
 
     this.neuronCloud.points = new THREE.Points(geometry, material);
-    window.cloud = this.neuronCloud.points;
     this.neuronCloud.points.name = 'neuronCloud';
     this.neuronCloud.points.frustumCulled = false;
     this.scene.add(this.neuronCloud.points);
@@ -195,7 +194,6 @@ class NeuronRenderer {
     });
 
     this.scene.add(this.cellMorphologyObj);
-    this.hideNeuronCloud();
   }
 
   disposeCellMorphology() {

@@ -10,8 +10,10 @@ const actions = {
   async loadCircuit(store) {
     let neuronDataSet = await storage.getItem('neuronData');
     if (!neuronDataSet) {
+      store.$emit('showSpinner', 'Loading circuit');
       neuronDataSet = await socket.request('get_circuit_cells');
       storage.setItem('neuronData', neuronDataSet);
+      store.$emit('hideSpinner');
     }
 
     store.state.circuit.neuronProps = neuronDataSet.properties;
@@ -19,15 +21,16 @@ const actions = {
     store.state.circuit.neuronPropIndex = neuronDataSet.properties
       .reduce((propIndexObj, propName, propIndex) => {
         return Object.assign(propIndexObj, {
-          [propName]: propIndex
+          [propName]: propIndex,
         });
       }, {});
 
-    store.state.circuit.neurons = neuronDataSet.data
+    store.state.circuit.neurons = neuronDataSet.data;
 
     const neuronsCount = store.state.circuit.neurons.length;
     store.state.circuit.globalFilterIndex = new Array(neuronsCount).fill(true);
     store.state.circuit.connectionFilterIndex = new Array(neuronsCount).fill(true);
+
     store.$emit('initNeuronColor');
     store.$emit('initNeuronPropFilter');
     store.$emit('circuitLoaded');
@@ -90,6 +93,12 @@ const actions = {
     store.$emit('removeTmpGlobalFilter');
   },
 
+  circuitTabSelected(store) {
+    store.$emit('resetSimConfigBtn');
+    store.$emit('showCircuit');
+    store.$emit('removeCellMorphology');
+  },
+
   async loadMorphology(store) {
     store.$emit('updateSimCellConfig', store.state.circuit.simAddedNeurons);
     const gids = store.state.circuit.simAddedNeurons.map(n => n.gid);
@@ -106,6 +115,7 @@ const actions = {
     const simNeurons = cloneDeep(store.state.circuit.simAddedNeurons);
     store.$emit('updateSimCellConfig', simNeurons);
     store.$emit('showCellMorphology');
+    store.$emit('hideCircuit');
     store.$emit('showSynConnections');
     store.$emit('setSimulationConfigTabActive');
   },
