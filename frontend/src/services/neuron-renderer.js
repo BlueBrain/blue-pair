@@ -307,8 +307,8 @@ class NeuronRenderer {
     });
     this.hoverBox = new THREE.LineSegments(geometry, material);
 
-    this.hoverBox.position.copy(mesh.object.getWorldPosition());
-    this.hoverBox.rotation.copy(mesh.object.getWorldRotation());
+    mesh.object.getWorldPosition(this.hoverBox.position);
+    mesh.object.getWorldQuaternion(this.hoverBox.rotation);
     this.hoverBox.name = mesh.object.name;
     this.hoverBox.userData = mesh.object.userData;
     this.scene.add(this.hoverBox);
