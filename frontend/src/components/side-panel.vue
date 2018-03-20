@@ -29,7 +29,7 @@
       };
     },
     mounted() {
-      store.$on('setSimulationConfigTabActive', () => this.currentTab = 'simConfig');
+      store.$on('setSimulationConfigTabActive', () => this.currentTabName = 'simConfig');
     },
     methods: {
       onTabClick(tabName) {
