@@ -69,12 +69,12 @@ docker_build_latest: python_build | $(NEURON_SRC_DIR) $(NEURODAMUS_SRC_DIR)
 		.
 
 docker_push_version: docker_build_version
-	docker tag blue-pair-svc:$(VERSION) docker-registry-default.apps.bbp.epfl.ch/bbp-ou-nse/blue-pair-svc:$(VERSION)
-	docker push docker-registry-default.apps.bbp.epfl.ch/bbp-ou-nse/blue-pair-svc:$(VERSION)
+	docker tag blue-pair-svc:$(VERSION) docker-registry-default.ocp.bbp.epfl.ch/bbp-ou-nse/blue-pair-svc:$(VERSION)
+	docker push docker-registry-default.ocp.bbp.epfl.ch/bbp-ou-nse/blue-pair-svc:$(VERSION)
 	@echo 'backend version($(VERSION)) pushed to OpenShift registy'
 
 docker_push_latest:
-	docker tag blue-pair-svc:latest docker-registry-default.apps.bbp.epfl.ch/bbp-ou-nse/blue-pair-svc:latest
-	docker push docker-registry-default.apps.bbp.epfl.ch/bbp-ou-nse/blue-pair-svc:latest
+	docker tag blue-pair-svc:latest docker-registry-default.ocp.bbp.epfl.ch/bbp-ou-nse/blue-pair-svc:latest
+	docker push docker-registry-default.ocp.bbp.epfl.ch/bbp-ou-nse/blue-pair-svc:latest
 	@echo 'backend latest version pushed to OpenShift registry.'
 	@echo 'backend release done'

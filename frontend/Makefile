@@ -3,7 +3,7 @@
 VERSION?=$(shell cat ../VERSION)
 
 NODE_MODULES:=node_modules
-SERVER_HOST:=blue-pair.apps.bbp.epfl.ch
+SERVER_HOST:=blue-pair.ocp.bbp.epfl.ch
 SERVER_PORT:=80
 
 define HELPTEXT
@@ -44,12 +44,12 @@ docker_build_latest: build
 		.
 
 docker_push_version: docker_build_version
-	docker tag blue-pair:$(VERSION) docker-registry-default.apps.bbp.epfl.ch/bbp-ou-nse/blue-pair:$(VERSION)
-	docker push docker-registry-default.apps.bbp.epfl.ch/bbp-ou-nse/blue-pair:$(VERSION)
+	docker tag blue-pair:$(VERSION) docker-registry-default.ocp.bbp.epfl.ch/bbp-ou-nse/blue-pair:$(VERSION)
+	docker push docker-registry-default.ocp.bbp.epfl.ch/bbp-ou-nse/blue-pair:$(VERSION)
 	@echo 'frontend version($(VERSION)) pushed to OpenShift registy'
 
 docker_push_latest: docker_build_latest
-	docker tag blue-pair:latest docker-registry-default.apps.bbp.epfl.ch/bbp-ou-nse/blue-pair:latest
-	docker push docker-registry-default.apps.bbp.epfl.ch/bbp-ou-nse/blue-pair:latest
+	docker tag blue-pair:latest docker-registry-default.ocp.bbp.epfl.ch/bbp-ou-nse/blue-pair:latest
+	docker push docker-registry-default.ocp.bbp.epfl.ch/bbp-ou-nse/blue-pair:latest
 	@echo 'frontend latest version pushed to OpenShift registry.'
 	@echo 'frontend release done'
