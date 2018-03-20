@@ -57,12 +57,6 @@ class NeuronRenderer {
 
     this.camera = new THREE.PerspectiveCamera(45, clientWidth / clientHeight, 1, 100000);
 
-    // TODO: remove hardcoded stuff here
-    this.camera.position.x = 200;
-    this.camera.position.y = 1000;
-    this.camera.position.z = 3800;
-    this.camera.lookAt(new THREE.Vector3(350, 1000, 1000));
-
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
     this.controls.enableDamping = true;
 
@@ -108,6 +102,18 @@ class NeuronRenderer {
     this.neuronCloud.points.name = 'neuronCloud';
     this.neuronCloud.points.frustumCulled = false;
     this.scene.add(this.neuronCloud.points);
+  }
+
+  alignCamera() {
+    this.neuronCloud.points.geometry.computeBoundingSphere();
+    const { center, radius } = this.neuronCloud.points.geometry.boundingSphere;
+    this.camera.position.x = center.x;
+    this.camera.position.y = center.y;
+
+    const distance = radius / Math.tan(Math.PI * this.camera.fov / 360) * 1.15;
+
+    this.camera.position.z = distance + center.z;
+    this.controls.target = center;
   }
 
   showSynConnections() {

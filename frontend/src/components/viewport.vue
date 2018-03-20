@@ -58,6 +58,7 @@
         const neuronSetSize = store.state.circuit.neurons.length;
         this.renderer.initNeuronCloud(neuronSetSize);
         this.redrawNeurons();
+        this.renderer.alignCamera();
       },
       redrawNeurons() {
         const {
