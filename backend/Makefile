@@ -48,6 +48,7 @@ run_dev:
 		--rm \
 		-it \
 		-v /gpfs:/gpfs:ro \
+		-e DEBUG=True \
 		-v $$(pwd)/blue_pair:/usr/local/lib/python2.7/dist-packages/blue_pair \
 		-p 8888:8000 \
 		blue-pair-svc

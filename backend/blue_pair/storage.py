@@ -1,5 +1,6 @@
 
 import os
+import logging
 
 import bluepy
 import pandas as pd
@@ -14,14 +15,23 @@ from blue_pair.cell import Cell
 from voxcell.quaternion import matrices_to_quaternions
 from blue_pair.redis_client import RedisClient
 
+l = logging.getLogger(__name__)
+l.setLevel(logging.DEBUG if os.getenv('DEBUG', False) else logging.INFO)
+
 
 CIRCUIT_PATH = os.environ['CIRCUIT_PATH']
+l.debug('creating bluepy circuit from {}'.format(CIRCUIT_PATH))
 circuit = bluepy.Circuit(CIRCUIT_PATH)
+l.debug('bluepy circuit has been created')
+
+l.debug('creating cache client')
 cache = RedisClient()
+l.debug('cache client has been created')
 
 
 class Storage():
     def get_circuit_cells(self):
+        l.debug('getting cells')
         cells = cache.get('circuit:cells')
         if cells is None:
             cellsList = circuit.v2.cells.get().to_dict(orient="split")
@@ -30,9 +40,11 @@ class Storage():
                 'data': cellsList['data']
             }
             cache.set('circuit:cells', cells)
+        l.debug('getting cells done')
         return cells
 
     def get_connectome(self, gid):
+        l.debug('getting connectome for {}'.format(gid))
         connectome = cache.get('circuit:connectome:{}'.format(gid))
         if connectome is None:
             connectome = {
@@ -40,9 +52,11 @@ class Storage():
                 'efferent': circuit.v2.connectome.efferent_gids(gid)
             }
             cache.set('circuit:connectome:{}'.format(gid), connectome)
+        l.debug('getting connectome for {} done'.format(gid))
         return connectome
 
     def get_syn_connections(self, gids):
+        l.debug('getting syn connections for {}'.format(gids))
         props = [
             Synapse.POST_X_CENTER,
             Synapse.POST_Y_CENTER,
@@ -56,11 +70,13 @@ class Storage():
             circuit.v2.connectome.pair_synapses(gids[1], gids[0], properties=props)
         ]))
 
+        l.debug('getting syn connections for {} done'.format(gids))
         return {
             'connections': connections
         }
 
     def get_cell_morphology(self, gids):
+        l.debug('getting cell morph for {}'.format(gids))
         cells = {}
         not_cached_gids = []
         for gid in gids:
@@ -76,6 +92,7 @@ class Storage():
             for (gid, morph_dict) in not_cached_cells:
                 cells[gid] = morph_dict
                 cache.set('cell:morph:{}'.format(gid), cells[gid])
+        l.debug('getting cell morph for {} done'.format(gids))
         return {'cells': cells}
 
 def get_cell_morphology_mp(q, gids):

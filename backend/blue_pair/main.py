@@ -1,24 +1,36 @@
 
 import os
 import json
+import logging
 
 import tornado.ioloop
 import tornado.web
 import tornado.websocket
 
+from tornado.log import enable_pretty_logging
+
 from blue_pair.storage import Storage
 from blue_pair.utils import NumpyAwareJSONEncoder
 from blue_pair.sim import get_sim_traces
 
+
+enable_pretty_logging()
+l = logging.getLogger(__name__)
+l.setLevel(logging.DEBUG if os.getenv('DEBUG', False) else logging.INFO)
+
+l.debug('creating storage instance')
 storage = Storage()
+l.debug('storage instance has been created')
 
 
 class WSHandler(tornado.websocket.WebSocketHandler):
     def check_origin(self, origin):
+        l.debug('websocket has been connected')
         return True
 
     def on_message(self, msg):
         msg = json.loads(msg)
+        l.debug('got ws message: {}'.format(msg))
         cmd = msg['cmd']
         cmdid = msg['cmdid']
 
@@ -60,5 +72,6 @@ if __name__ == '__main__':
     app = tornado.web.Application([
         (r'/ws', WSHandler),
     ])
+    l.debug('starting tornado io loop')
     app.listen(8000)
     tornado.ioloop.IOLoop.current().start()
