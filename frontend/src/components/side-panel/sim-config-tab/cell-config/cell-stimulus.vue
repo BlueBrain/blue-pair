@@ -13,7 +13,7 @@
       <i-col span="12">
         <i-select
           size="small"
-          placeholder="Type"
+          placeholder="Current injection type"
           v-model="stimulus.type"
           @on-change="onChange"
         >
@@ -175,7 +175,7 @@
         this.$emit('on-close');
       },
     },
-  }
+  };
 </script>
 
 

@@ -115,7 +115,7 @@
 
 <script>
   import remove from 'lodash/remove';
-  import pick from 'lodash/pick';
+  import omit from 'lodash/omit';
 
   import Dygraph from '@/components/shared/dygraph';
   import store from '@/store';
@@ -126,7 +126,7 @@
     name: 'cell-config',
     components: {
       'cell-stimulus': CellStimulus,
-      'dygraph': Dygraph,
+      dygraph: Dygraph,
       'neuron-info': NeuronInfo,
     },
     data() {
@@ -139,10 +139,10 @@
       };
     },
     mounted() {
-      store.$on('ws:simulation_result', data => {
+      store.$on('ws:simulation_result', (data) => {
         // TODO: this handler should be on sim-config-tab component level
         // TODO: refactor
-        this.cellConfigs.forEach(cellConfig => {
+        this.cellConfigs.forEach((cellConfig) => {
           cellConfig.trace = {};
           const gid = cellConfig.neuron.gid;
           if (!data[gid]) return;
@@ -154,7 +154,7 @@
           });
         });
       });
-      store.$on('updateSimCellConfig', neurons => {
+      store.$on('updateSimCellConfig', (neurons) => {
         this.cellConfigs = neurons.map(neuron => ({
           neuron,
           stimuli: [],
@@ -196,7 +196,7 @@
       onConfigChange() {
         store.$dispatch(
           'updateSimCellConfigs',
-          this.cellConfigs.map(cellConfig => pick(cellConfig, ['neuron', 'stimuli', 'recordings'])),
+          this.cellConfigs.map(cellConfig => omit(cellConfig, ['trace'])),
         );
         this.updateAddBtnStatus();
       },
@@ -219,7 +219,7 @@
       },
       onCollapseChange() {},
     },
-  }
+  };
 </script>
 
 

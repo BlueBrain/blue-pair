@@ -8,7 +8,7 @@ const getters = {
       .reduce((nrn, prop) => {
         const propValue = neurons[index][neuronPropIndex[prop]];
         return Object.assign(nrn, {
-          [prop]: propValue
+          [prop]: propValue,
         });
       }, { gid: index + 1 });
   },
@@ -20,9 +20,9 @@ const getters = {
     return [
       neurons[index][propIndex.x],
       neurons[index][propIndex.y],
-      neurons[index][propIndex.z]
+      neurons[index][propIndex.z],
     ];
-  }
+  },
 };
 
 export default getters;

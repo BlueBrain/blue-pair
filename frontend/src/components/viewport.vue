@@ -41,7 +41,7 @@
         store.$dispatch('updateHoveredNeuron', neuron);
       },
       onClick(obj) {
-        switch(obj.type) {
+        switch (obj.type) {
           case 'neuronCloud':
             const neuron = store.$get('neuron', obj.index);
             store.state.circuit.selectedNeuron = neuron;
@@ -69,13 +69,13 @@
           color: {
             palette,
             neuronProp,
-          }
+          },
         } = store.state.circuit;
 
-        const {positionBufferAttr, colorBufferAttr} = this.renderer.neuronCloud;
+        const { positionBufferAttr, colorBufferAttr } = this.renderer.neuronCloud;
 
         neurons.forEach((neuron, neuronIndex) => {
-          if (!globalFilterIndex[neuronIndex] || !connectionFilterIndex[neuronIndex])  {
+          if (!globalFilterIndex[neuronIndex] || !connectionFilterIndex[neuronIndex]) {
             // TODO: find a better way to hide part of the cloud
             return positionBufferAttr.setXYZ(neuronIndex, 10000, 10000, 10000);
           }
@@ -92,9 +92,9 @@
         });
 
         this.renderer.updateNeuronCloud();
-      }
+      },
     },
-};
+  };
 </script>
 
 

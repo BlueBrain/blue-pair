@@ -19,11 +19,9 @@ const actions = {
     store.state.circuit.neuronProps = neuronDataSet.properties;
 
     store.state.circuit.neuronPropIndex = neuronDataSet.properties
-      .reduce((propIndexObj, propName, propIndex) => {
-        return Object.assign(propIndexObj, {
-          [propName]: propIndex,
-        });
-      }, {});
+      .reduce((propIndexObj, propName, propIndex) => Object.assign(propIndexObj, {
+        [propName]: propIndex,
+      }), {});
 
     store.state.circuit.neurons = neuronDataSet.data;
 
