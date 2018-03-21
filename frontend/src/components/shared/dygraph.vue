@@ -7,21 +7,33 @@
 <script>
   import Dygraph from 'dygraphs';
 
+  import store from '@/store';
+
   export default {
     name: 'dygraph',
     props: ['data', 'labels'],
     mounted() {
-      this.graph = new Dygraph(this.$refs.graph, this.data, {labels: this.labels});
+      // dygraph in hidden block is being rendered with zero size
+      // TODO: refactor this
+      const width = this.$refs.graph.parentElement.parentElement.parentElement.parentElement.clientWidth - 32;
+
+      this.graph = new Dygraph(this.$refs.graph, this.data, {
+        width,
+        height: 320,
+        labels: this.labels,
+      });
+
+      store.$on('redrawGraphs', () => this.graph.resize());
     },
     watch: {
       data() {
-        this.graph.updateOptions({file: this.data, labels: this.labels});
+        this.graph.updateOptions({ file: this.data, labels: this.labels });
       },
     },
     beforeDestroy() {
       this.graph.destroy();
-    }
-  }
+    },
+  };
 </script>
 
 
