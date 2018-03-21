@@ -7,7 +7,12 @@
           <FormItem label="t_stop [ms]">
             <InputNumber
               size="small"
-              placeholder="Enter something..."
+              v-model="config.tStop"
+              :min="100"
+              :max="3000"
+              :step="100"
+              placeholder="Duration"
+              @on-change="onConfigChange"
             ></InputNumber>
           </FormItem>
         </Form>
@@ -17,7 +22,12 @@
           <FormItem label="time step [ms]">
             <InputNumber
               size="small"
-              placeholder="Enter something..."
+              :min="0.001"
+              :max="0.1"
+              :step="0.005"
+              v-model="config.timeStep"
+              placeholder="Resolution"
+              @on-change="onConfigChange"
             ></InputNumber>
           </FormItem>
         </Form>
@@ -28,12 +38,21 @@
 
 
 <script>
+  import store from '@/store';
+
   export default {
     name: 'global-config',
     data() {
-      return {};
+      return {
+        config: store.state.simulation.globalConfig,
+      };
     },
-  }
+    methods: {
+      onConfigChange() {
+        store.$dispatch('updateGlobalSimConfig', this.config);
+      },
+    },
+  };
 </script>
 
 

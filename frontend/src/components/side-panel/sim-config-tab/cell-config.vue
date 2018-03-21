@@ -57,6 +57,7 @@
         class="sim-cell"
         v-for="(cellConfig, cellConfigIndex) of cellConfigs"
         :key="cellConfig.neuron.gid"
+        @on-change="onCollapseChange"
       >
         <Panel>
           <strong>GID: {{ cellConfig.neuron.gid }}</strong>
@@ -113,9 +114,8 @@
 
 
 <script>
-  import without from 'lodash/without';
-  import get from 'lodash/get';
   import remove from 'lodash/remove';
+  import pick from 'lodash/pick';
 
   import Dygraph from '@/components/shared/dygraph';
   import store from '@/store';
@@ -127,7 +127,7 @@
     components: {
       'cell-stimulus': CellStimulus,
       'dygraph': Dygraph,
-      'neuron-info': NeuronInfo
+      'neuron-info': NeuronInfo,
     },
     data() {
       return {
@@ -162,7 +162,7 @@
           trace: null,
         }));
       });
-      store.$on('morphSegmentSelected', segment => {
+      store.$on('morphSegmentSelected', (segment) => {
         this.selectedSegment = segment;
         this.updateAddBtnStatus();
       });
@@ -170,12 +170,12 @@
     methods: {
       addRecording() {
         const cellConfig = this.getCellConfigByGid(this.selectedSegment.neuron.gid);
-        cellConfig.recordings.push({sectionName: this.selectedSegment.sectionName});
-        this.updateAddBtnStatus();
+        cellConfig.recordings.push({ sectionName: this.selectedSegment.sectionName });
+        this.onConfigChange();
       },
       removeRecording(cellConfigIndex, sectionName) {
         remove(this.cellConfigs[cellConfigIndex].recordings, r => r.sectionName === sectionName);
-        this.updateAddBtnStatus();
+        this.onConfigChange();
       },
       addStimuli() {
         const cellConfig = this.getCellConfigByGid(this.selectedSegment.neuron.gid);
@@ -185,11 +185,19 @@
           delay: 100,
           duration: 800,
           current: 0.7,
+          stopCurrent: 0.2,
         });
-        this.updateAddBtnStatus();
+        this.onConfigChange();
       },
       removeStimulus(configIndex, sectionName) {
         remove(this.cellConfigs[configIndex].stimuli, s => s.sectionName === sectionName);
+        this.onConfigChange();
+      },
+      onConfigChange() {
+        store.$dispatch(
+          'updateSimCellConfigs',
+          this.cellConfigs.map(cellConfig => pick(cellConfig, ['neuron', 'stimuli', 'recordings'])),
+        );
         this.updateAddBtnStatus();
       },
       getCellConfigByGid(gid) {
@@ -207,8 +215,9 @@
       },
       onRunSimBtnClick() {
         // this.runSimBtnLoading = true;
-        store.$dispatch('runSim', this.cellConfigs);
+        store.$dispatch('runSim');
       },
+      onCollapseChange() {},
     },
   }
 </script>

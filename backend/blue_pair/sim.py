@@ -89,8 +89,11 @@ class Sim(object):
             )
 
     def run(self):
-        # TODO: use real values sent by client
-        self.ssim.run(t_stop=200, dt=0.025)
+        global_sim_config = self.sim_config['globalConfig']
+        t_stop = global_sim_config['tStop']
+        time_step = global_sim_config['timeStep']
+        L.debug('starting simulation with t_stop=%s, dt=%s', t_stop, time_step)
+        self.ssim.run(t_stop=t_stop, dt=time_step)
 
     def get_traces(self):
         traces = {}

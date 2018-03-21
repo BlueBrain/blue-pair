@@ -16,6 +16,11 @@ const state = {
   },
   simulation: {
     morphology: {},
+    globalConfig: {
+      tStop: 400,
+      timeStep: 0.025,
+    },
+    cellConfigs: [],
   },
 };
 

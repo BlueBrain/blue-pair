@@ -85,8 +85,19 @@ const actions = {
     });
   },
 
-  runSim(store, cellConfigs) {
-    socket.send('get_sim_traces', { cells: cellConfigs });
+  runSim(store) {
+    socket.send('get_sim_traces', {
+      cells: store.state.simulation.cellConfigs,
+      globalConfig: store.state.simulation.globalConfig,
+    });
+  },
+
+  updateGlobalSimConfig(store, config) {
+    Object.assign(store.state.simulation.globalConfig, config);
+  },
+
+  updateSimCellConfigs(store, cellConfigs) {
+    store.state.simulation.cellConfigs = cellConfigs;
   },
 
   paletteKeyUnhover(store) {
