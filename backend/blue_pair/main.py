@@ -25,7 +25,7 @@ L.debug('storage instance has been created')
 
 class WSHandler(tornado.websocket.WebSocketHandler):
     def check_origin(self, origin):
-        L.debug('websocket has been connected')
+        L.debug('websocket client has been connected')
         return True
 
     def on_message(self, msg):
@@ -37,29 +37,39 @@ class WSHandler(tornado.websocket.WebSocketHandler):
         if cmd == 'get_circuit_cells':
             cells = STORAGE.get_circuit_cells()
             cells['cmdid'] = cmdid
+
+            L.debug('sending circuit cells to the client')
             self.send_message('circuit_cells', cells)
 
         elif cmd == 'get_cell_connectome':
             gid = msg['data']
             connectome = STORAGE.get_connectome(gid)
             connectome['cmdid'] = cmdid
+
+            L.debug('sending cell connectome to the client')
             self.send_message('cell_connectome', connectome)
 
         elif cmd == 'get_syn_connections':
             gids = msg['data']
             connections = STORAGE.get_syn_connections(gids)
             connections['cmdid'] = cmdid
+
+            L.debug('sending syn connections to the client')
             self.send_message('syn_connections', connections)
 
         elif cmd == 'get_cell_morphology':
             gids = msg['data']
             cell_morph = STORAGE.get_cell_morphology(gids)
             cell_morph['cmdid'] = cmdid
+
+            L.debug('sending cell morphology to the client')
             self.send_message('cell_morphology', cell_morph)
 
         elif cmd == 'get_sim_traces':
             sim_config = msg['data']
             traces = get_sim_traces(sim_config)
+
+            L.debug('sending simulation traces to the client')
             self.send_message('simulation_result', traces)
 
     def send_message(self, cmd, data=None):

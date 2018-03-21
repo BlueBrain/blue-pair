@@ -94,8 +94,10 @@ class Sim(object):
         time_step = global_sim_config['timeStep']
         L.debug('starting simulation with t_stop=%s, dt=%s', t_stop, time_step)
         self.ssim.run(t_stop=t_stop, dt=time_step)
+        L.debug('simulation has been finished')
 
     def get_traces(self):
+        L.debug('getting traces from simulation result')
         traces = {}
         for gid, sec in self.recording_list:
             if gid not in traces:
