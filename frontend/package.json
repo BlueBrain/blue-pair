@@ -48,7 +48,17 @@
     "extends": [
       "plugin:vue/essential",
       "@vue/airbnb"
-    ]
+    ],
+    "rules": {
+      "indent": "off",
+      "vue/script-indent": [
+        "error",
+        2,
+        {
+          "baseIndent": 1
+        }
+      ]
+    }
   },
   "postcss": {
     "plugins": {
