@@ -138,22 +138,15 @@ class NeuronRenderer {
   }
 
   initMorphology() {
-    // const {circuit: {neuronPropIndex}, simulation: {morphology}} = store.state;
-    const neuronPropIndex = store.state.circuit.neuronPropIndex;
     const gids = store.state.circuit.simAddedNeurons.map(n => n.gid);
-    const morphology = store.state.simulation.morphology;
-    const cellMorphs = gids.reduce((cells, gid) => {
-      return Object.assign(cells, {
-        [gid]: morphology[gid],
-      });
-    }, {});
+    const { morphology } = store.state.simulation;
 
     this.cellMorphologyObj = new THREE.Object3D();
     // TODO: improve naming here
 
-    Object.keys(cellMorphs).forEach((gid, cellIndex) => {
-      const sections = cellMorphs[gid].morph;
-      const quaternion = cellMorphs[gid].quaternion;
+    gids.forEach((gid, cellIndex) => {
+      const sections = morphology[gid].morph;
+      const { quaternion } = morphology[gid];
 
       const neuronIndex = gid - 1;
       const neuron = store.$get('neuron', neuronIndex);
