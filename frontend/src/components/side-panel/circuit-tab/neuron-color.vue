@@ -65,8 +65,7 @@
     },
     methods: {
       init() {
-        const neuronProps = store.state.circuit.neuronProps;
-        const neurons = store.state.circuit.neurons;
+        const { neurons, neuronProps } = store.state.circuit;
         const neuronSample = neurons[0];
 
         this.uniqueValuesByProp = neuronProps.reduce((uniqueValuesByProp, propName, propIndex) => {
@@ -101,7 +100,7 @@
         });
 
         const colorPalette = currentPropValues.reduce((palette, propVal, i) => {
-          return Object.assign(palette, {[propVal.toString()]: colors[i].gl()});
+          return Object.assign(palette, { [propVal.toString()]: colors[i].gl() });
         }, {});
 
         store.state.circuit.color = {

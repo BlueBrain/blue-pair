@@ -208,7 +208,7 @@
         this.updateConnectionFilterIndex();
       },
       removeFilter(type, filter) {
-        this.currentFilters[type] = this.currentFilters[type].filter(f => {
+        this.currentFilters[type] = this.currentFilters[type].filter((f) => {
           return f.connectionType !== filter.connectionType ||
             f.gid !== filter.gid;
         });

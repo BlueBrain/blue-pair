@@ -4,7 +4,7 @@
 </template>
 
 <script>
-  import ColorPalette from './side-panel/circuit-tab/color-palette';
+  import ColorPalette from './side-panel/circuit-tab/color-palette.vue';
 
   export default {
     name: 'legenda-bar',

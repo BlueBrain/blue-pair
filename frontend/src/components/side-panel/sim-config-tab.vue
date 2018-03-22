@@ -7,8 +7,8 @@
 </template>
 
 <script>
-  import GlobalConfig from './sim-config-tab/global-config';
-  import CellConfig from './sim-config-tab/cell-config';
+  import GlobalConfig from './sim-config-tab/global-config.vue';
+  import CellConfig from './sim-config-tab/cell-config.vue';
 
   export default {
     name: 'sim-config-tab',

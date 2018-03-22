@@ -11,11 +11,11 @@
 
 
 <script>
-  import NeuronSize from './circuit-tab/neuron-size';
-  import NeuronPropFilter from './circuit-tab/neuron-prop-filter';
-  import NeuronColor from './circuit-tab/neuron-color';
-  import NeuronSelector from './circuit-tab/neuron-selector';
-  import HoverNeuronInfo from './circuit-tab/hover-neuron-info';
+  import NeuronSize from './circuit-tab/neuron-size.vue';
+  import NeuronPropFilter from './circuit-tab/neuron-prop-filter.vue';
+  import NeuronColor from './circuit-tab/neuron-color.vue';
+  import NeuronSelector from './circuit-tab/neuron-selector.vue';
+  import HoverNeuronInfo from './circuit-tab/hover-neuron-info.vue';
 
   export default {
     name: 'circuit-tab',

@@ -7,7 +7,6 @@
 
 
 <script>
-  import storage from '@/services/storage';
   import store from '@/store';
   import NeuronRenderer from '@/services/neuron-renderer';
 

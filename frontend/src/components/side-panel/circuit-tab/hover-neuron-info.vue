@@ -31,7 +31,7 @@
       };
     },
     mounted() {
-      store.$on('updateHoveredNeuron', hoveredNeuron => {
+      store.$on('updateHoveredNeuron', (hoveredNeuron) => {
         this.table.data.forEach(propObj => propObj.value = hoveredNeuron ? hoveredNeuron[propObj.property] : '');
       });
 

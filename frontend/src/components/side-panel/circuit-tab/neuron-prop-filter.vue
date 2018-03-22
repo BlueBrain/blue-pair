@@ -162,7 +162,7 @@
     },
     mounted() {
       store.$on('initNeuronPropFilter', this.initFilters);
-      store.$on('addTmpGlobalFilter', tmpFilter => {
+      store.$on('addTmpGlobalFilter', (tmpFilter) => {
         this.tmpFilter = tmpFilter;
         this.updateGlobalFilterIndex();
       });
@@ -173,9 +173,8 @@
     },
     methods: {
       initFilters() {
-        const neurons = store.state.circuit.neurons;
+        const { neurons, neuronProps } = store.state.circuit.neurons;
         const neuronSample = neurons[0];
-        const neuronProps = store.state.circuit.neuronProps;
 
         this.filterSet = neuronProps.reduce((filterSet, propName, propIndex) => {
           const filterPropsToSkip = ['x', 'y', 'z'];
@@ -242,10 +241,9 @@
         // TODO: move to webworker or async separate module
         // to not block UI
         setTimeout(() => {
-          const neurons = store.state.circuit.neurons;
-          const neuronPropIndex = store.state.circuit.neuronPropIndex;
+          const { neurons, neuronPropIndex } = store.state.circuit;
+          const { tmpFilter } = this;
           const filters = this.currentFilters;
-          const tmpFilter = this.tmpFilter;
 
           function neuronVisible(neuron) {
             const affectedByFilter = f => neuron[neuronPropIndex[f.prop]] === f.value;
@@ -268,7 +266,7 @@
             return true;
           }
 
-          const globalFilterIndex = store.state.circuit.globalFilterIndex;
+          const { globalFilterIndex } = store.state.circuit;
           neurons.forEach((neuron, index) => {
             globalFilterIndex[index] = neuronVisible(neuron);
           });

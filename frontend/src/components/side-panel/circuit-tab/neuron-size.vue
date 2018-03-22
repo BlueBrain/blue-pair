@@ -23,12 +23,12 @@
   export default {
     name: 'neuron-size',
     data() {
-      return {size: store.state.circuit.pointNeuronSize};
+      return { size: store.state.circuit.pointNeuronSize };
     },
     methods: {
       setPointNeuronSize(size) {
         store.$dispatch('setPointNeuronSize', size);
-      }
+      },
     },
   };
 </script>

@@ -86,7 +86,6 @@
         store.state.circuit.simAddedNeurons = this.simAddedNeurons;
         store.$dispatch('neuronRemovedFromSim', neuron.gid);
       },
-      onNeuronClick(neuron) {},
       onConfigureSimulationBtnClick() {
         this.simInit = true;
         store.$dispatch('loadMorphology');

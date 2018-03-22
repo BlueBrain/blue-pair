@@ -8,26 +8,24 @@
   export default {
     name: 'spinner',
     mounted() {
-      store.$on('showSpinner', msg => {
+      store.$on('showSpinner', (msg) => {
         const config = {};
 
         if (msg) {
-          config.render = h => {
-            return h('div', [
-              h('Icon', {
-                'class': 'spin-icon-load',
-                props: {type: 'load-c', size: 18},
-              }),
-              h('div', 'Loading')
-            ]);
-          }
+          config.render = h => h('div', [
+            h('Icon', {
+              class: 'spin-icon-load',
+              props: { type: 'load-c', size: 18 },
+            }),
+            h('div', 'Loading'),
+          ]);
         }
 
         this.$Spin.show(config);
       });
       store.$on('hideSpinner', () => this.$Spin.hide());
-    }
-  }
+    },
+  };
 </script>
 
 
