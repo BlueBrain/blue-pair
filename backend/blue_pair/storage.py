@@ -100,7 +100,7 @@ class Storage():
 
 def get_cell_morphology_mp(mp_queue, gids):
     ssim = bglibpy.SSim(CIRCUIT_PATH)
-    ssim.instantiate_gids(gids)
+    ssim.instantiate_gids(sorted(gids))
     morphologies = []
     for gid in gids:
         cell = Cell(ssim, gid)

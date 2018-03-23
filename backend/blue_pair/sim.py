@@ -38,7 +38,7 @@ class Sim(object):
         self.sim_config = sim_config
         self.recording_list = []
         cell_config_list = sim_config['cells']
-        self.gids = [cell_config['neuron']['gid'] for cell_config in cell_config_list]
+        self.gids = sorted([cell_config['neuron']['gid'] for cell_config in cell_config_list])
 
         L.debug('creating bglibpy SSim instance')
         self.ssim = bglibpy.SSim(CIRCUIT_PATH)
