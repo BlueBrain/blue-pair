@@ -57,7 +57,6 @@
         class="sim-cell"
         v-for="(cellConfig, cellConfigIndex) of cellConfigs"
         :key="cellConfig.neuron.gid"
-        @on-change="onCollapseChange"
       >
         <Panel>
           <strong>GID: {{ cellConfig.neuron.gid }}</strong>
@@ -172,12 +171,27 @@
         const cellConfig = this.getCellConfigByGid(this.selectedSegment.neuron.gid);
         cellConfig.recordings.push({ sectionName: this.selectedSegment.sectionName });
         this.onConfigChange();
+
+        store.$dispatch('secRecordingAdded', {
+          gid: this.selectedSegment.neuron.gid,
+          sectionName: this.selectedSegment.sectionName,
+        });
       },
-      removeRecording(cellConfigIndex, sectionName) {
-        remove(this.cellConfigs[cellConfigIndex].recordings, r => r.sectionName === sectionName);
+      removeRecording(configIndex, sectionName) {
+        store.$dispatch('secRecordingRemoved', {
+          sectionName,
+          gid: this.cellConfigs[configIndex].neuron.gid,
+        });
+
+        remove(this.cellConfigs[configIndex].recordings, r => r.sectionName === sectionName);
         this.onConfigChange();
       },
       addStimuli() {
+        store.$dispatch('secInjectionAdded', {
+          gid: this.selectedSegment.neuron.gid,
+          sectionName: this.selectedSegment.sectionName,
+        });
+
         const cellConfig = this.getCellConfigByGid(this.selectedSegment.neuron.gid);
         cellConfig.stimuli.push({
           sectionName: this.selectedSegment.sectionName,
@@ -190,6 +204,11 @@
         this.onConfigChange();
       },
       removeStimulus(configIndex, sectionName) {
+        store.$dispatch('secInjectionRemoved', {
+          sectionName,
+          gid: this.cellConfigs[configIndex].neuron.gid,
+        });
+
         remove(this.cellConfigs[configIndex].stimuli, s => s.sectionName === sectionName);
         this.onConfigChange();
       },
@@ -217,7 +236,6 @@
         // this.runSimBtnLoading = true;
         store.$dispatch('runSim');
       },
-      onCollapseChange() {},
     },
   };
 </script>

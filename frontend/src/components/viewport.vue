@@ -33,6 +33,9 @@
       store.$on('showSynConnections', () => this.renderer.showSynConnections());
       store.$on('hideCircuit', () => this.renderer.hideNeuronCloud());
       store.$on('showCircuit', () => this.renderer.showNeuronCloud());
+
+      store.$on('addSecMarker', config => this.renderer.addSecMarker(config));
+      store.$on('removeSecMarker', config => this.renderer.removeSecMarker(config));
     },
     methods: {
       onHover(obj) {

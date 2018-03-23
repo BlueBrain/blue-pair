@@ -2,6 +2,7 @@
 import * as THREE from 'three';
 import * as chroma from 'chroma-js';
 import throttle from 'lodash/throttle';
+import isEqual from 'lodash/isEqual';
 
 // TODO: refactor to remove store operations
 // and move them to vue viewport component
@@ -12,11 +13,11 @@ import store from '@/store';
 const OrbitControls = require('three-orbit-controls')(THREE);
 
 
-const FOG_COLOR = 0x000000;
-const NEAR = 0.1;
+const FOG_COLOR = 0xffffff;
+const NEAR = 1;
 const FAR = 50000;
-const AMBIENT_LIGHT_COLOR = 0x888888;
-const DIRECTIONAL_LIGHT_COLOR = 0xffffff;
+const AMBIENT_LIGHT_COLOR = 0x555555;
+const CAMERA_LIGHT_COLOR = 0xffffff;
 const BACKGROUND_COLOR = 0xfefdfb;
 const HOVER_BOX_COLOR = 0xffdf00;
 const hoverNeuronColor = new THREE.Color(0xf26d21).toArray();
@@ -45,10 +46,9 @@ class NeuronRenderer {
     this.renderer.setSize(clientWidth, clientHeight);
 
     this.scene = new THREE.Scene();
-    this.scene.fog = new THREE.Fog(FOG_COLOR, NEAR, FAR);
     this.scene.background = new THREE.Color(BACKGROUND_COLOR);
+    this.scene.fog = new THREE.Fog(FOG_COLOR, NEAR, FAR);
     this.scene.add(new THREE.AmbientLight(AMBIENT_LIGHT_COLOR));
-    this.scene.add(new THREE.DirectionalLight(DIRECTIONAL_LIGHT_COLOR, 0.5));
 
     this.mouseGl = new THREE.Vector2();
     this.mouseNative = new THREE.Vector2();
@@ -56,12 +56,39 @@ class NeuronRenderer {
     this.raycaster = new THREE.Raycaster();
 
     this.camera = new THREE.PerspectiveCamera(45, clientWidth / clientHeight, 1, 100000);
+    this.scene.add(this.camera);
+    this.camera.add(new THREE.PointLight(CAMERA_LIGHT_COLOR, 0.9));
 
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
     this.controls.enableDamping = true;
 
     this.hoveredNeuron = null;
     this.mousePressed = false;
+
+    this.secMarkerObj = new THREE.Object3D();
+    this.scene.add(this.secMarkerObj);
+
+    const segInjTexture = new THREE.TextureLoader().load('/seg-inj-texture.png');
+    segInjTexture.wrapS = THREE.RepeatWrapping;
+    segInjTexture.wrapT = THREE.RepeatWrapping;
+
+    const segRecTexture = new THREE.TextureLoader().load('/seg-rec-texture.png');
+    segRecTexture.wrapS = THREE.RepeatWrapping;
+    segRecTexture.wrapT = THREE.RepeatWrapping;
+
+    this.recMarkerMaterial = new THREE.MeshBasicMaterial({
+      color: 0x00bfff,
+      opacity: 0.7,
+      map: segRecTexture,
+      transparent: true,
+    });
+
+    this.injMarkerMaterial = new THREE.MeshBasicMaterial({
+      color: 0xffa500,
+      opacity: 0.7,
+      map: segInjTexture,
+      transparent: true,
+    });
 
     this.onHoverHandler = onHover;
     this.onClickHandler = onClick;
@@ -178,6 +205,7 @@ class NeuronRenderer {
           cylinder.name = 'morphSegment';
           // TODO: optimize memory consumption?
           cylinder.userData = { neuron, sectionName, segmentIndex: i };
+
           cylinder.scale.setY(scaleLength);
           cylinder.setRotationFromQuaternion(rotQuat);
           cylinder.position.copy(v);
@@ -193,6 +221,58 @@ class NeuronRenderer {
     });
 
     this.scene.add(this.cellMorphologyObj);
+  }
+
+  addSecMarker(config) {
+    const [x, y, z] = store.$get('neuronPosition', config.gid - 1);
+    const { morphology } = store.state.simulation;
+
+    const sec = morphology[config.gid].morph[config.sectionName];
+    const { quaternion } = morphology[config.gid];
+
+    sec.xstart.forEach((val, i) => {
+      const v = new THREE.Vector3(sec.xcenter[i], sec.ycenter[i], sec.zcenter[i]);
+      const axis = new THREE.Vector3(sec.xdirection[i], sec.ydirection[i], sec.zdirection[i]);
+      axis.normalize();
+      const rotQuat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), axis);
+      const length = sec.length[i];
+      const distance = sec.distance[i];
+      const scaleLength = distance / length;
+      const diamDelta = 2 / Math.ceil(Math.sqrt(sec.diam[i]));
+      const diam = sec.diam[i] + diamDelta;
+      const markerGeometry = new THREE.CylinderGeometry(diam, diam, length, 20, 1, true);
+      const material = config.type === 'recording' ? this.recMarkerMaterial : this.injMarkerMaterial;
+      const marker = new THREE.Mesh(markerGeometry, material);
+      marker.name = 'sectionMarker';
+      marker.userData = config;
+      marker.scale.setY(scaleLength);
+      marker.setRotationFromQuaternion(rotQuat);
+      marker.position.copy(v);
+
+      // global position
+      const markerContainer = new THREE.Object3D();
+      markerContainer.add(marker);
+      const orientation = new THREE.Quaternion();
+      orientation.fromArray(quaternion);
+      markerContainer.applyQuaternion(orientation);
+      markerContainer.position.copy(new THREE.Vector3(x, y, z));
+
+      this.secMarkerObj.add(markerContainer);
+    });
+  }
+
+  removeSecMarker(config) {
+    const markersToRemove = [];
+    this.secMarkerObj.traverse((child) => {
+      if (child instanceof THREE.Mesh && isEqual(config, child.userData)) {
+        markersToRemove.push(child);
+      }
+    });
+
+    markersToRemove.forEach((mesh) => {
+      this.secMarkerObj.remove(mesh.parent);
+      this.disposeObject(mesh);
+    });
   }
 
   disposeCellMorphology() {
@@ -340,7 +420,7 @@ class NeuronRenderer {
 
     this.raycaster.setFromCamera(this.mouseGl, this.camera);
     const intersections = this.raycaster.intersectObjects(this.scene.children, true);
-    return intersections[0];
+    return intersections.find(mesh => mesh.object.name !== 'sectionMarker');
   }
 
   animate() {

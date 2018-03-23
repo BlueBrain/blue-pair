@@ -76,6 +76,22 @@ const actions = {
     store.$emit('morphSegmentSelected', segment);
   },
 
+  secRecordingAdded(store, config) {
+    store.$emit('addSecMarker', Object.assign({}, config, { type: 'recording' }));
+  },
+
+  secRecordingRemoved(store, config) {
+    store.$emit('removeSecMarker', Object.assign({}, config, { type: 'recording' }));
+  },
+
+  secInjectionAdded(store, config) {
+    store.$emit('addSecMarker', Object.assign({}, config, { type: 'injection' }));
+  },
+
+  secInjectionRemoved(store, config) {
+    store.$emit('removeSecMarker', Object.assign({}, config, { type: 'injection' }));
+  },
+
   paletteKeyHover(store, paletteKey) {
     store.$emit('addTmpGlobalFilter', {
       prop: store.state.circuit.color.neuronProp,
