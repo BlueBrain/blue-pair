@@ -27,12 +27,13 @@
               size="small"
               placeholder="Color theme"
               v-model="currentTheme"
+              @on-change="onColorPropChange"
             >
               <i-option
-                v-for="theme in themes"
-                :value="theme"
-                :key="theme"
-              >{{ theme }}</i-option>
+                v-for="(t, tKey) in theme"
+                :value="tKey"
+                :key="tKey"
+              >{{ t.label }}</i-option>
             </i-select>
           </FormItem>
         </Form>
@@ -47,14 +48,82 @@
   import store from '@/store';
 
 
-  const themes = ['Default', 'Dark', 'Light', 'Saturated', 'Distinct'];
+  const theme = {
+    default: {
+      label: 'Default',
+      config: {
+        hueMin: 0,
+        hueMax: 360,
+        chromaMin: 60,
+        chromaMax: 100,
+        lightMin: 20,
+        lightMax: 90,
+      },
+    },
+    allColors: {
+      label: 'All colors',
+      config: {
+        hueMin: 0,
+        hueMax: 360,
+        chromaMin: 0,
+        chromaMax: 100,
+        lightMin: 0,
+        lightMax: 100,
+      },
+    },
+    pastel: {
+      label: 'Pastel',
+      config: {
+        hueMin: 0,
+        hueMax: 360,
+        chromaMin: 0,
+        chromaMax: 40,
+        lightMin: 60,
+        lightMax: 100,
+      },
+    },
+    pimp: {
+      label: 'Pimp',
+      config: {
+        hueMin: 0,
+        hueMax: 360,
+        chromaMin: 30,
+        chromaMax: 100,
+        lightMin: 25,
+        lightMax: 70,
+      },
+    },
+    intenso: {
+      label: 'Intenso',
+      config: {
+        hueMin: 0,
+        hueMax: 360,
+        chromaMin: 20,
+        chromaMax: 100,
+        lightMin: 15,
+        lightMax: 80,
+      },
+    },
+    fluo: {
+      label: 'Fluo',
+      config: {
+        hueMin: 0,
+        hueMax: 300,
+        chromaMin: 35,
+        chromaMax: 100,
+        lightMin: 75,
+        lightMax: 100,
+      },
+    },
+  };
+
 
   export default {
     name: 'neuron-color',
     data() {
       return {
-        themes,
-        currentTheme: themes[0],
+        theme,
+        currentTheme: 'default',
         props: [],
         currentProp: '',
         uniqueValuesByProp: {},
@@ -78,11 +147,11 @@
           const propUniqueValues = Array.from(new Set(neurons.map(n => n[propIndex])));
           if (propUniqueValues.length > 1000) return uniqueValuesByProp;
 
-          return Object.assign(uniqueValuesByProp, {[propName]: propUniqueValues.sort()});
+          return Object.assign(uniqueValuesByProp, { [propName]: propUniqueValues.sort() });
         }, {});
 
         this.props = Object.keys(this.uniqueValuesByProp);
-        this.currentProp = this.props.includes('layer') ? 'layer': this.props[0];
+        this.currentProp = this.props.includes('layer') ? 'layer' : this.props[0];
 
         this.generatePalette();
       },
@@ -93,11 +162,12 @@
       generatePalette() {
         const currentPropValues = this.uniqueValuesByProp[this.currentProp];
 
-        const colors = DistinctColors({
-          count: currentPropValues.length,
-          chromaMin: 60,
-          // lightMin: 40,
-        });
+        const colorConfig = Object.assign(
+          { count: currentPropValues.length },
+          theme[this.currentTheme].config,
+        );
+
+        const colors = new DistinctColors(colorConfig);
 
         const colorPalette = currentPropValues.reduce((palette, propVal, i) => {
           return Object.assign(palette, { [propVal.toString()]: colors[i].gl() });
