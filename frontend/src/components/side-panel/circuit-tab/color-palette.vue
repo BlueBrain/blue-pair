@@ -1,25 +1,27 @@
 
 <template>
-  <div
-    class="container"
-    v-if="colorPalette"
-  >
-    <div class="palette-container">
-      <div
-        class="palette-item"
-        v-for="(color, paletteKey) in colorPalette"
-        :key="paletteKey"
-        @mouseover="onMouseOver(paletteKey)"
-        @mouseleave="onMouseLeave"
-      >
-        <small>{{ paletteKey }}</small>
+  <transition name="fade">
+    <div
+      class="container"
+      v-if="colorPalette && visible"
+    >
+      <div class="palette-container">
         <div
-          class="color-block"
-          :style="{'background-color': color}"
-        ></div>
+          class="palette-item"
+          v-for="(color, paletteKey) in colorPalette"
+          :key="paletteKey"
+          @mouseover="onMouseOver(paletteKey)"
+          @mouseleave="onMouseLeave"
+        >
+          <small>{{ paletteKey }}</small>
+          <div
+            class="color-block"
+            :style="{'background-color': color}"
+          ></div>
+        </div>
       </div>
     </div>
-  </div>
+  </transition>
 </template>
 
 
@@ -33,6 +35,7 @@
     data() {
       return {
         colorPalette: {},
+        visible: true,
       };
     },
     mounted() {
@@ -44,6 +47,8 @@
           return Object.assign(palette, { [colorKey]: color });
         }, {});
       });
+      store.$on('hideColorPalette', () => this.hide());
+      store.$on('showColorPalette', () => this.show());
     },
     methods: {
       onMouseOver(paletteKey) {
@@ -52,12 +57,25 @@
       onMouseLeave() {
         store.$dispatch('paletteKeyUnhover');
       },
+      hide() {
+        this.visible = false;
+      },
+      show() {
+        this.visible = true;
+      },
     },
   };
 </script>
 
 
 <style scoped lang="scss">
+  .fade-enter-active, .fade-leave-active {
+    transition: opacity .3s;
+  }
+  .fade-enter, .fade-leave-to {
+    opacity: 0;
+  }
+
   .container {
     position: absolute;
     background-color: #fefdfb;

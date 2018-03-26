@@ -122,6 +122,7 @@ const actions = {
     store.$emit('resetSimConfigBtn');
     store.$emit('showCircuit');
     store.$emit('removeCellMorphology');
+    store.$emit('showColorPalette');
   },
 
   async loadMorphology(store) {
@@ -139,6 +140,7 @@ const actions = {
     Object.assign(store.state.simulation.morphology, morphObj.cells);
     const simNeurons = cloneDeep(store.state.circuit.simAddedNeurons);
     store.$emit('updateSimCellConfig', simNeurons);
+    store.$emit('hideColorPalette');
     store.$emit('showCellMorphology');
     store.$emit('hideCircuit');
     store.$emit('showSynConnections');
