@@ -56,32 +56,34 @@
       <Collapse
         class="sim-cell"
         v-for="(cellConfig, cellConfigIndex) of cellConfigs"
+        v-model="cellConfig.collapseOpenPanels"
+        @on-change="onCollapseChange"
         :key="cellConfig.neuron.gid"
       >
-        <Panel>
+        <Panel :name="PANEL.neuronInfo">
           <strong>GID: {{ cellConfig.neuron.gid }}</strong>
           <div slot="content">
             <neuron-info :neuron="cellConfig.neuron"/>
           </div>
         </Panel>
 
-        <Panel>
+        <Panel :name="PANEL.stimuli">
           Stimuli
           <div slot="content">
-            <div
-              v-for="(stimulus, stimulusIndex) of cellConfig.stimuli"
-              :key="stimulus.sectionName"
-            >
+
               <cell-stimulus
+                class="cell-stimulus"
+                v-for="(stimulus, stimulusIndex) of cellConfig.stimuli"
+                :key="stimulus.sectionName"
                 v-model="cellConfig.stimuli[stimulusIndex]"
                 :section-name="stimulus.sectionName"
                 @on-close="removeStimulus(cellConfigIndex, stimulus.sectionName)"
               />
-            </div>
+
           </div>
         </Panel>
 
-        <Panel>
+        <Panel :name="PANEL.recordings">
           Recordings
           <div slot="content">
             <div class="rec-sites">
@@ -95,7 +97,7 @@
           </div>
         </Panel>
 
-        <Panel>
+        <Panel :name="PANEL.traces">
           Traces
           <div slot="content">
             <dygraph
@@ -121,6 +123,13 @@
   import CellStimulus from './cell-config/cell-stimulus';
   import NeuronInfo from '@/components/shared/neuron-info';
 
+  const PANEL = {
+    neuronInfo: 'neuronInfo',
+    stimuli: 'stimuli',
+    recordings: 'recordings',
+    traces: 'traces',
+  };
+
   export default {
     name: 'cell-config',
     components: {
@@ -130,6 +139,7 @@
     },
     data() {
       return {
+        PANEL,
         cellConfigs: [],
         selectedSegment: null,
         addStimuliBtnActive: true,
@@ -151,6 +161,8 @@
           cellConfig.trace.data = data[gid][secNames[0]].map((voltage, i) => {
             return secNames.reduce((trace, secName) => trace.concat(data[gid][secName][i]), [i]);
           });
+
+          cellConfig.collapseOpenPanels = [PANEL.traces];
         });
       });
       store.$on('updateSimCellConfig', (neurons) => {
@@ -159,6 +171,7 @@
           stimuli: [],
           recordings: [],
           trace: null,
+          collapseOpenPanels: [PANEL.neuronInfo],
         }));
       });
       store.$on('morphSegmentSelected', (segment) => {
@@ -170,6 +183,11 @@
       addRecording() {
         const cellConfig = this.getCellConfigByGid(this.selectedSegment.neuron.gid);
         cellConfig.recordings.push({ sectionName: this.selectedSegment.sectionName });
+
+        if (!cellConfig.collapseOpenPanels.includes(PANEL.recordings)) {
+          cellConfig.collapseOpenPanels.push(PANEL.recordings);
+        }
+
         this.onConfigChange();
 
         store.$dispatch('secRecordingAdded', {
@@ -201,6 +219,11 @@
           current: 0.7,
           stopCurrent: 0.2,
         });
+
+        if (!cellConfig.collapseOpenPanels.includes(PANEL.stimuli)) {
+          cellConfig.collapseOpenPanels.push(PANEL.stimuli);
+        }
+
         this.onConfigChange();
       },
       removeStimulus(configIndex, sectionName) {
@@ -215,7 +238,7 @@
       onConfigChange() {
         store.$dispatch(
           'updateSimCellConfigs',
-          this.cellConfigs.map(cellConfig => omit(cellConfig, ['trace'])),
+          this.cellConfigs.map(cellConfig => omit(cellConfig, ['trace', 'collapseOpenPanels'])),
         );
         this.updateAddBtnStatus();
       },
@@ -236,6 +259,7 @@
         // this.runSimBtnLoading = true;
         store.$dispatch('runSim');
       },
+      onCollapseChange() {},
     },
   };
 </script>
@@ -243,7 +267,19 @@
 
 <style lang="scss" scoped>
   .sim-cell {
-    margin-bottom: 24px;
+    margin-top: 24px;
+  }
+
+  .sim-cell:first-child {
+    margin-top: 0;
+  }
+
+  .cell-stimulus {
+    margin-bottom: 12px;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
   }
 
   .cell-config {
@@ -253,10 +289,13 @@
   }
 
   .stimuli, .rec-sites {
-    margin-top: 12px;
-    p {
+    .title {
       margin-bottom: 6px;
     }
+  }
+
+  .ivu-tag {
+    background-color: rgba(#00bfff, .3);
   }
 </style>
 

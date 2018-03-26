@@ -190,9 +190,10 @@
 
   .stimulus-container-inner {
     position: relative;
-    margin-bottom: 12px;
     border: 1px solid #e9eaec;
-    background-color: #f7f7f7;
+    // TODO: remove old color after acceptance
+    // background-color: #f7f7f7;
+    background-color: #ffa50021;
     border-radius: 3px;
     padding: 8px;
   }
