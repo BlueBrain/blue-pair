@@ -277,7 +277,10 @@ class NeuronRenderer {
 
   disposeCellMorphology() {
     this.scene.remove(this.cellMorphologyObj);
-    this.disposeObject(this.cellMorphologyObj);
+    this.cellMorphologyObj.traverse((child) => {
+      if (child instanceof THREE.Mesh) this.disposeObject(child);
+    });
+
     this.cellMorphologyObj = null;
   }
 

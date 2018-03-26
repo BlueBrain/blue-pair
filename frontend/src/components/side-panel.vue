@@ -36,7 +36,7 @@
         if (tabName === this.currentTabName) return;
 
         this.currentTabName = tabName;
-        store.dispatch(`${tabName}TabSelected`);
+        store.$dispatch(`${tabName}TabSelected`);
       },
     },
     components: {

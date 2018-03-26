@@ -173,7 +173,7 @@
     },
     methods: {
       initFilters() {
-        const { neurons, neuronProps } = store.state.circuit.neurons;
+        const { neurons, neuronProps } = store.state.circuit;
         const neuronSample = neurons[0];
 
         this.filterSet = neuronProps.reduce((filterSet, propName, propIndex) => {
