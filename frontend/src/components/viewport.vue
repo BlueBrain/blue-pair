@@ -29,7 +29,10 @@
       store.$on('setPointNeuronSize', size => this.renderer.setNeuronCloudPointSize(size));
       store.$on('redrawCircuit', this.redrawNeurons.bind(this));
       store.$on('showCellMorphology', morphObj => this.renderer.initMorphology(morphObj));
-      store.$on('removeCellMorphology', () => this.renderer.disposeCellMorphology());
+      store.$on('removeCellMorphology', () => {
+        this.renderer.disposeSecMarkers();
+        this.renderer.disposeCellMorphology();
+      });
       store.$on('showSynConnections', () => this.renderer.showSynConnections());
       store.$on('hideCircuit', () => this.renderer.hideNeuronCloud());
       store.$on('showCircuit', () => this.renderer.showNeuronCloud());
@@ -82,14 +85,10 @@
             return positionBufferAttr.setXYZ(neuronIndex, 10000, 10000, 10000);
           }
 
-          // TODO: move to the store getter
-          const x = neuron[neuronPropIndex.x];
-          const y = neuron[neuronPropIndex.y];
-          const z = neuron[neuronPropIndex.z];
-
+          const neuronPosition = store.$get('neuronPosition', neuronIndex);
           const glColor = palette[neuron[neuronPropIndex[neuronProp]]];
 
-          positionBufferAttr.setXYZ(neuronIndex, x, y, z);
+          positionBufferAttr.setXYZ(neuronIndex, ...neuronPosition);
           colorBufferAttr.setXYZ(neuronIndex, ...glColor);
         });
 

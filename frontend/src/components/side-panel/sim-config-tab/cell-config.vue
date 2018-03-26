@@ -42,7 +42,7 @@
               long
               size="small"
               type="primary"
-              :loading="runSimBtnLoading"
+              :loading="loading"
               @click="onRunSimBtnClick"
             >Run Simulation</i-button>
           </i-col>
@@ -144,7 +144,7 @@
         selectedSegment: null,
         addStimuliBtnActive: true,
         addRecordingBtnActive: true,
-        runSimBtnLoading: false,
+        loading: false,
       };
     },
     mounted() {
@@ -164,6 +164,8 @@
 
           cellConfig.collapseOpenPanels = [PANEL.traces];
         });
+
+        this.loading = false;
       });
       store.$on('updateSimCellConfig', (neurons) => {
         this.cellConfigs = neurons.map(neuron => ({
@@ -256,7 +258,7 @@
           .find(c => c.sectionName === this.selectedSegment.sectionName);
       },
       onRunSimBtnClick() {
-        // this.runSimBtnLoading = true;
+        this.loading = true;
         store.$dispatch('runSim');
       },
       onCollapseChange() {},

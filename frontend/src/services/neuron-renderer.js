@@ -262,6 +262,7 @@ class NeuronRenderer {
   }
 
   removeSecMarker(config) {
+    // TODO: refactor
     const markersToRemove = [];
     this.secMarkerObj.traverse((child) => {
       if (child instanceof THREE.Mesh && isEqual(config, child.userData)) {
@@ -282,6 +283,16 @@ class NeuronRenderer {
     });
 
     this.cellMorphologyObj = null;
+  }
+
+  disposeSecMarkers() {
+    this.scene.remove(this.secMarkerObj);
+    this.secMarkerObj.traverse((child) => {
+      if (child instanceof THREE.Mesh) this.disposeObject(child);
+    });
+
+    this.secMarkerObj = new THREE.Object3D();
+    this.scene.add(this.secMarkerObj);
   }
 
   setNeuronCloudPointSize(size) {
