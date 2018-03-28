@@ -101,8 +101,9 @@ class Sim(object):
         traces = {}
         for gid, sec in self.recording_list:
             if gid not in traces:
-                traces[gid] = {}
-            traces[gid][sec.name()] = self.ssim.cells[gid].get_voltage_recording(sec, .5)
+                traces[gid] = {'voltage': {}}
+            traces[gid]['voltage'][sec.name()] = self.ssim.cells[gid].get_voltage_recording(sec, .5)
+            traces[gid]['time'] = self.ssim.cells[gid].get_time()
         return traces
 
     def _get_sec_by_name(self, sec_name):

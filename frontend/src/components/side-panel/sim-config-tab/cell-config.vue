@@ -105,6 +105,15 @@
               :data="cellConfig.trace.data"
               :labels="cellConfig.trace.labels"
             />
+
+            <div class="trace-download">
+              <a
+                :download="cellConfig.traceDownload.filename"
+                :href="cellConfig.traceDownload.hrefData"
+              >
+                <Icon type="android-download" size="24"></Icon>
+              </a>
+            </div>
           </div>
         </Panel>
       </Collapse>
@@ -116,7 +125,7 @@
 
 <script>
   import remove from 'lodash/remove';
-  import omit from 'lodash/omit';
+  import pick from 'lodash/pick';
 
   import Dygraph from '@/components/shared/dygraph';
   import store from '@/store';
@@ -156,11 +165,20 @@
           const gid = cellConfig.neuron.gid;
           if (!data[gid]) return;
 
-          const secNames = Object.keys(data[gid]);
-          cellConfig.trace.labels = ['t'].concat(secNames);
-          cellConfig.trace.data = data[gid][secNames[0]].map((voltage, i) => {
-            return secNames.reduce((trace, secName) => trace.concat(data[gid][secName][i]), [i]);
+          const secNames = Object.keys(data[gid].voltage);
+          const shortSecNames = secNames.map(secName => secName.match(/\.(.*)/)[1]);
+          cellConfig.trace.labels = ['t'].concat(shortSecNames);
+
+          cellConfig.trace.data = data[gid].time.map((timestamp, i) => {
+            return secNames.reduce((trace, secName) => trace.concat(data[gid].voltage[secName][i]), [timestamp]);
           });
+
+          const dataString = [cellConfig.trace.labels.join(',')]
+            .concat(cellConfig.trace.data.map(row => row.join(',')))
+            .join('\n');
+
+          cellConfig.traceDownload.hrefData = `data:text/plain;base64,${btoa(dataString)}`;
+          cellConfig.traceDownload.filename = `${cellConfig.neuron.gid}-sim-trace.csv`;
 
           cellConfig.collapseOpenPanels = [PANEL.traces];
         });
@@ -173,6 +191,10 @@
           stimuli: [],
           recordings: [],
           trace: null,
+          traceDownload: {
+            hrefData: null,
+            filename: null,
+          },
           collapseOpenPanels: [PANEL.neuronInfo],
         }));
       });
@@ -238,9 +260,10 @@
         this.onConfigChange();
       },
       onConfigChange() {
+        const cellConfigPropsToStore = ['neuron', 'stimuli', 'recordings'];
         store.$dispatch(
           'updateSimCellConfigs',
-          this.cellConfigs.map(cellConfig => omit(cellConfig, ['trace', 'collapseOpenPanels'])),
+          this.cellConfigs.map(cellConfig => pick(cellConfig, cellConfigPropsToStore)),
         );
         this.updateAddBtnStatus();
       },
@@ -298,6 +321,11 @@
 
   .ivu-tag {
     background-color: rgba(#00bfff, .3);
+  }
+
+  .trace-download {
+    text-align: right;
+    margin-top: 6px;
   }
 </style>
 
