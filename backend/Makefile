@@ -6,7 +6,8 @@ NEURON_VERSION:=7.5
 VENV_DIR:=venv
 NEURON_SRC_DIR:=tmp/neuron
 NEURODAMUS_SRC_DIR:=tmp/bbp
-CIRCUIT_PATH:=/gpfs/bbp.cscs.ch/project/proj64/circuits/O1.v6a/20171212/CircuitConfig
+NEURODAMUS_BRANCH:=sandbox/king/hippocampus
+CIRCUIT_PATH:=/gpfs/bbp.cscs.ch/project/proj42/circuits/O1/20180219/CircuitConfig
 REDIS_HOST:=
 
 define HELPTEXT
@@ -40,6 +41,11 @@ $(NEURON_SRC_DIR):
 $(NEURODAMUS_SRC_DIR):
 	git clone https://$$(whoami)@bbpcode.epfl.ch/code/a/sim/neurodamus/bbp $@
 
+neurodamus_branch: | $(NEURODAMUS_SRC_DIR)
+	cd $(NEURODAMUS_SRC_DIR) && \
+	git fetch && \
+	git checkout --track -B origin/$(NEURODAMUS_BRANCH)
+
 python_build: | $(VENV_DIR)
 	$(VENV_DIR)/bin/python setup.py sdist
 
@@ -53,7 +59,7 @@ run_dev:
 		-p 8888:8000 \
 		blue-pair-svc
 
-docker_build_version: python_build | $(NEURON_SRC_DIR) $(NEURODAMUS_SRC_DIR)
+docker_build_version: neurodamus_branch python_build | $(NEURON_SRC_DIR)
 	docker build -t blue-pair-svc:$(VERSION) \
 		--build-arg=redis_host=$(REDIS_HOST) \
 		--build-arg=circuit_path=$(CIRCUIT_PATH) \
@@ -61,7 +67,7 @@ docker_build_version: python_build | $(NEURON_SRC_DIR) $(NEURODAMUS_SRC_DIR)
 		--build-arg=https_proxy=http://bbpproxy.epfl.ch:80/ \
 		.
 
-docker_build_latest: python_build | $(NEURON_SRC_DIR) $(NEURODAMUS_SRC_DIR)
+docker_build_latest: neurodamus_branch python_build | $(NEURON_SRC_DIR)
 	docker build -t blue-pair-svc:latest \
 		--build-arg=redis_host=$(REDIS_HOST) \
 		--build-arg=circuit_path=$(CIRCUIT_PATH) \
