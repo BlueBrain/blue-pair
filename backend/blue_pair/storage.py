@@ -99,8 +99,11 @@ class Storage():
         return {'cells': cells}
 
 def get_cell_morphology_mp(mp_queue, gids):
+    L.debug('creating bglibpy SSim object')
     ssim = bglibpy.SSim(CIRCUIT_PATH)
+    L.debug('instantiating ssim gids: %s', gids)
     ssim.instantiate_gids(sorted(gids))
+    L.debug('getting cell morphologies')
     morphologies = []
     for gid in gids:
         cell = Cell(ssim, gid)
