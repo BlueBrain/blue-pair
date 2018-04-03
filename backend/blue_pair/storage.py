@@ -2,11 +2,13 @@
 import os
 import logging
 
+from multiprocessing import Process, Queue
+from itertools import combinations
+
 import bluepy
 import pandas as pd
 import numpy as np
 import bglibpy
-from multiprocessing import Process, Queue
 
 from bluepy.v2.enums import Synapse
 
@@ -26,6 +28,22 @@ L.debug('bluepy circuit has been created')
 L.debug('creating cache client')
 cache = RedisClient()
 L.debug('cache client has been created')
+
+def get_pair_syn_list(gid_1, gid_2):
+    props = [
+        Synapse.POST_X_CENTER,
+        Synapse.POST_Y_CENTER,
+        Synapse.POST_Z_CENTER,
+        Synapse.POST_GID,
+        Synapse.POST_SECTION_ID
+    ]
+
+    syn_list = pd.concat([
+        circuit.v2.connectome.pair_synapses(gid_1, gid_2, properties=props),
+        circuit.v2.connectome.pair_synapses(gid_2, gid_1, properties=props)
+    ])
+
+    return syn_list
 
 
 class Storage():
@@ -56,24 +74,13 @@ class Storage():
 
     def get_syn_connections(self, gids):
         L.debug('getting syn connections for %s', gids)
-        props = [
-            Synapse.POST_X_CENTER,
-            Synapse.POST_Y_CENTER,
-            Synapse.POST_Z_CENTER,
-            Synapse.POST_GID,
-            Synapse.POST_SECTION_ID
+        synapseSetList = [
+            get_pair_syn_list(gid_pair[0], gid_pair[1]) for gid_pair in combinations(gids, 2)
         ]
 
-        # connections = np.array(pd.concat([
-        #     circuit.v2.connectome.afferent_synapses(gid, properties=props) for gid in gids
-        # ]))
-
-        connections = np.array(pd.concat([
-            circuit.v2.connectome.pair_synapses(gids[0], gids[1], properties=props),
-            circuit.v2.connectome.pair_synapses(gids[1], gids[0], properties=props)
-        ]))
-
+        connections = np.array(pd.concat(synapseSetList))
         L.debug('getting syn connections for %s done', gids)
+
         return {
             'connections': connections
         }
