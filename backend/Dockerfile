@@ -22,6 +22,7 @@ RUN apt-get update \
   python2.7 \
   python-pip \
   libreadline-dev \
+  rsync \
   libz-dev \
   libncurses-dev \
   && apt-get clean \
