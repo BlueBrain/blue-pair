@@ -14,9 +14,8 @@ ENV REDIS_HOST=$redis_host
 # TODO: possibly to reduce amount of packages installed
 # to decrease the size of resulting docker image
 RUN apt-get update \
-  && apt-get install -y -q \
+  && apt-get install -y -q --no-install-recommends \
   locales \
-  iptables \
   build-essential \
   python-dev \
   python2.7 \
@@ -24,7 +23,6 @@ RUN apt-get update \
   libreadline-dev \
   rsync \
   libz-dev \
-  libncurses-dev \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* \
   && pip install --upgrade setuptools pip virtualenv
@@ -75,6 +73,12 @@ RUN pip install \
   --no-cache-dir \
   -i https://bbpteam.epfl.ch/repository/devpi/simple \
   $(ls -t $PWD/dist/*.* | head -n 1)
+
+# Remove build dependencies
+RUN apt-get remove --purge -y \
+  build-essential \
+  libreadline-dev \
+  libz-dev
 
 ADD entrypoint.sh entrypoint.sh
 
