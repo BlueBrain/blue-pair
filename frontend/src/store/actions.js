@@ -134,10 +134,18 @@ const actions = {
 
     const cachedGids = Object.keys(store.state.simulation.morphology);
     const gidsToLoad = gids.filter(gid => !cachedGids.includes(gid));
-    const morphObj = await socket.request('get_cell_morphology', gidsToLoad);
 
-    // TODO: add cache with TTL to clear memory in long run
+    const morphKey = `morph:${gidsToLoad.sort().join('-')}`;
+
+    // TODO: add cache with TTL to clear memory and localstorage in a long run
+    let morphObj = await storage.getItem(morphKey);
+    if (!morphObj) {
+      morphObj = await socket.request('get_cell_morphology', gidsToLoad);
+      storage.setItem(morphKey, morphObj);
+    }
+
     Object.assign(store.state.simulation.morphology, morphObj.cells);
+
     const simNeurons = cloneDeep(store.state.circuit.simAddedNeurons);
     store.$emit('updateSimCellConfig', simNeurons);
     store.$emit('hideColorPalette');
