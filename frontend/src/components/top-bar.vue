@@ -24,7 +24,7 @@
       };
     },
     mounted() {
-      store.$on('updateStatus', status => this.status = status);
+      store.$on('setStatus', status => Object.assign(this.status, status));
     },
   };
 </script>

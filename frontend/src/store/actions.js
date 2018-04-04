@@ -100,6 +100,7 @@ const actions = {
   },
 
   runSim(store) {
+    store.$emit('setStatus', { message: 'Runnig simulation' });
     socket.send('get_sim_traces', {
       cells: store.state.simulation.cellConfigs,
       globalConfig: store.state.simulation.globalConfig,
@@ -129,9 +130,6 @@ const actions = {
     store.$emit('updateSimCellConfig', store.state.circuit.simAddedNeurons);
     const gids = store.state.circuit.simAddedNeurons.map(n => n.gid);
 
-    const synConnectionsRaw = await socket.request('get_syn_connections', gids);
-    store.state.simulation.synConnections = synConnectionsRaw.connections;
-
     const cachedGids = Object.keys(store.state.simulation.morphology);
     const gidsToLoad = gids.filter(gid => !cachedGids.includes(gid));
 
@@ -140,6 +138,7 @@ const actions = {
     // TODO: add cache with TTL to clear memory and localstorage in a long run
     let morphObj = await storage.getItem(morphKey);
     if (!morphObj) {
+      store.$emit('setStatus', { message: 'Getting cell morphologies' });
       morphObj = await socket.request('get_cell_morphology', gidsToLoad);
       storage.setItem(morphKey, morphObj);
     }
@@ -151,8 +150,14 @@ const actions = {
     store.$emit('hideColorPalette');
     store.$emit('showCellMorphology');
     store.$emit('hideCircuit');
-    store.$emit('showSynConnections');
     store.$emit('setSimulationConfigTabActive');
+
+    store.$emit('setStatus', { message: 'Getting synapses' });
+    const synConnectionsRaw = await socket.request('get_syn_connections', gids);
+    store.state.simulation.synConnections = synConnectionsRaw.connections;
+
+    store.$emit('setStatus', { message: 'Ready' });
+    store.$emit('showSynConnections');
   },
 };
 
