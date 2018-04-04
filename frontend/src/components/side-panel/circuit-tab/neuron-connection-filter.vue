@@ -175,7 +175,7 @@
         this.updateFilters();
       });
       store.$on('neuronRemovedFromSim', (gid) => {
-        this.gids = this.gids.filter(gid => gid === gid);
+        this.gids = this.gids.filter(tmpGid => tmpGid !== gid);
         this.updateFilters();
         this.updateConnectionFilterIndex();
       });
