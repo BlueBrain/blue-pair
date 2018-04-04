@@ -285,6 +285,15 @@ class NeuronRenderer {
     this.cellMorphologyObj = null;
   }
 
+  disposeSynapses() {
+    this.scene.remove(this.synConnectionsObj);
+    this.synConnectionsObj.traverse((child) => {
+      if (child instanceof THREE.Mesh) this.disposeObject(child);
+    });
+
+    this.synConnectionsObj = null;
+  }
+
   disposeSecMarkers() {
     this.scene.remove(this.secMarkerObj);
     this.secMarkerObj.traverse((child) => {
