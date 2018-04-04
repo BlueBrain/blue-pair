@@ -3,6 +3,11 @@
 VERSION:=$(shell cat VERSION)
 export VERSION
 
+NEURODAMUS_BRANCH ?= sandbox/vangeit/mousify
+CIRCUIT_PATH ?= /gpfs/bbp.cscs.ch/project/proj66/circuits/O1/20180305/CircuitConfig
+CIRCUIT_NAME ?= mouse-o1
+REDIS_HOST ?=
+
 define HELPTEXT
 Makefile usage
  Targets:
@@ -36,8 +41,13 @@ endif
 			echo "tagging $(VERSION)" && \
 			echo "VERSION = '$(VERSION)'" > backend/blue_pair/version.py && \
 			sed -i 's/"version": "\([0-9.]\+\)"/"version": "$(VERSION)"/' frontend/package.json && \
-			$(MAKE) -C backend docker_push_version && \
-			$(MAKE) -C frontend docker_push_version && \
+			NEURODAMUS_BRANCH=$(NEURODAMUS_BRANCH) \
+				CIRCUIT_PATH=$(CIRCUIT_PATH) \
+				CIRCUIT_NAME=$(CIRCUIT_NAME) \
+				REDIS_HOST=$(REDIS_HOST) \
+				$(MAKE) -C backend docker_push_version && \
+			CIRCUIT_NAME=$(CIRCUIT_NAME) \
+				$(MAKE) -C frontend docker_push_version && \
 			git add backend/blue_pair/version.py frontend/package.json && \
 			git commit -m "release $(VERSION)" && \
 			git tag -a $(VERSION) -m $(VERSION) && \
@@ -47,5 +57,10 @@ endif
 
 release: build
 	@echo "releasing $(VERSION)"
-	$(MAKE) -C backend docker_push_latest
-	$(MAKE) -C frontend docker_push_latest
+	NEURODAMUS_BRANCH=$(NEURODAMUS_BRANCH) \
+		CIRCUIT_PATH=$(CIRCUIT_PATH) \
+		CIRCUIT_NAME=$(CIRCUIT_NAME) \
+		REDIS_HOST=$(REDIS_HOST) \
+		$(MAKE) -C backend docker_push_latest
+	CIRCUIT_NAME=$(CIRCUIT_NAME) \
+		$(MAKE) -C frontend docker_push_latest

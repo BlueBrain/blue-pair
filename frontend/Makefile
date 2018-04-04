@@ -3,8 +3,11 @@
 VERSION?=$(shell cat ../VERSION)
 
 NODE_MODULES:=node_modules
-SERVER_HOST:=blue-pair.ocp.bbp.epfl.ch
+CIRCUIT_NAME?=mouse-o1
+
+SERVER_HOST:=blue-pair-svc-$(CIRCUIT_NAME).ocp.bbp.epfl.ch
 SERVER_PORT:=80
+
 
 define HELPTEXT
 Makefile usage
@@ -32,24 +35,24 @@ build: | $(NODE_MODULES)
 	SERVER_HOST=$(SERVER_HOST) SERVER_PORT=$(SERVER_PORT) npm run build
 
 docker_build_version: build
-	docker build -t blue-pair:$(VERSION) \
+	docker build -t blue-pair-$(CIRCUIT_NAME):$(VERSION) \
 		--build-arg=http_proxy=http://bbpproxy.epfl.ch:80/ \
 		--build-arg=https_proxy=http://bbpproxy.epfl.ch:80/ \
 		.
 
 docker_build_latest: build
-	docker build -t blue-pair:latest \
+	docker build -t blue-pair-$(CIRCUIT_NAME):latest \
 		--build-arg=http_proxy=http://bbpproxy.epfl.ch:80/ \
 		--build-arg=https_proxy=http://bbpproxy.epfl.ch:80/ \
 		.
 
 docker_push_version: docker_build_version
-	docker tag blue-pair:$(VERSION) docker-registry-default.ocp.bbp.epfl.ch/bbp-ou-nse/blue-pair:$(VERSION)
-	docker push docker-registry-default.ocp.bbp.epfl.ch/bbp-ou-nse/blue-pair:$(VERSION)
+	docker tag blue-pair-$(CIRCUIT_NAME):$(VERSION) docker-registry-default.ocp.bbp.epfl.ch/bbp-ou-nse/blue-pair-$(CIRCUIT_NAME):$(VERSION)
+	docker push docker-registry-default.ocp.bbp.epfl.ch/bbp-ou-nse/blue-pair-$(CIRCUIT_NAME):$(VERSION)
 	@echo 'frontend version($(VERSION)) pushed to OpenShift registy'
 
 docker_push_latest: docker_build_latest
-	docker tag blue-pair:latest docker-registry-default.ocp.bbp.epfl.ch/bbp-ou-nse/blue-pair:latest
-	docker push docker-registry-default.ocp.bbp.epfl.ch/bbp-ou-nse/blue-pair:latest
+	docker tag blue-pair-$(CIRCUIT_NAME):latest docker-registry-default.ocp.bbp.epfl.ch/bbp-ou-nse/blue-pair-$(CIRCUIT_NAME):latest
+	docker push docker-registry-default.ocp.bbp.epfl.ch/bbp-ou-nse/blue-pair-$(CIRCUIT_NAME):latest
 	@echo 'frontend latest version pushed to OpenShift registry.'
 	@echo 'frontend release done'
