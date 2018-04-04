@@ -136,6 +136,18 @@ echo '### Done'
 
 echo
 echo '########################################################################################'
+echo '### Sync nrnPath/nrn_positions.h5'
+echo '### Source:' "$nrn_path"/nrn_positions.h5
+echo '### Destination:' "$target_pod:$nrn_path"/nrn_positions.h5
+rsync \
+    -Lh \
+    --progress \
+    --ignore-existing \
+    "$nrn_path"/nrn_positions.h5 "$target_pod:$nrn_path"/nrn_positions.h5
+echo '### Done'
+
+echo
+echo '########################################################################################'
 echo '### Create MorphologyPath folder'
 echo '### Path:' "$target_pod:$morphology_path"
 oc rsh $target_pod mkdir -p "$morphology_path"
