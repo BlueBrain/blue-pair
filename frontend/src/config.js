@@ -10,8 +10,8 @@ const devConfig = {
 
 const prodConfig = {
   server: {
-    host: process.env.SERVER_HOST,
-    port: process.env.SERVER_PORT,
+    host: process.env.VUE_APP_SERVER_HOST,
+    port: process.env.VUE_APP_SERVER_PORT,
   },
 };
 

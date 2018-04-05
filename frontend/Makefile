@@ -32,7 +32,7 @@ run_dev: | $(NODE_MODULES)
 	npm run serve
 
 build: | $(NODE_MODULES)
-	SERVER_HOST=$(SERVER_HOST) SERVER_PORT=$(SERVER_PORT) npm run build
+	VUE_APP_SERVER_HOST=$(SERVER_HOST) VUE_APP_SERVER_PORT=$(SERVER_PORT) npm run build
 
 docker_build_version: build
 	docker build -t blue-pair-$(CIRCUIT_NAME):$(VERSION) \
