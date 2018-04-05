@@ -43,6 +43,10 @@ $(NEURON_SRC_DIR):
 $(NEURODAMUS_SRC_DIR):
 	git clone https://$$(whoami)@bbpcode.epfl.ch/code/a/sim/neurodamus/bbp $@
 
+install_bluepy: | $(VENV_DIR)
+	source $(VENV_DIR)/bin/activate && \
+	pip install -i 'https://bbpteam.epfl.ch/repository/devpi/bbprelman/dev/+simple/' bluepy
+
 neurodamus_branch: | $(NEURODAMUS_SRC_DIR)
 	cd $(NEURODAMUS_SRC_DIR) && \
 	git pull --all && \
@@ -62,10 +66,15 @@ run_dev:
 		-p 8888:8000 \
 		blue-pair-svc-$(CIRCUIT_NAME)
 
-copy_circuit_data:
+copy_circuit_data: morphology_generate_list
 	./copy-circuit-data.sh \
 		$(CIRCUIT_PATH) \
 		$(shell oc get pods -o custom-columns=:.metadata.name | grep blue-pair-svc-$(CIRCUIT_NAME))
+
+morphology_generate_list: install_bluepy
+	source $(VENV_DIR)/bin/activate && \
+	cd tmp && \
+	CIRCUIT_PATH=$(CIRCUIT_PATH) python ../tools/generate-morphology-list.py
 
 docker_build_version: neurodamus_branch python_build | $(NEURON_SRC_DIR)
 	docker build -t blue-pair-svc-$(CIRCUIT_NAME):$(VERSION) \
