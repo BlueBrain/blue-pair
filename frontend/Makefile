@@ -29,10 +29,14 @@ $(NODE_MODULES):
 	npm install
 
 run_dev: | $(NODE_MODULES)
+	VUE_APP_CIRCUIT_NAME=$(CIRCUIT_NAME) \
 	npm run serve
 
 build: | $(NODE_MODULES)
-	VUE_APP_SERVER_HOST=$(SERVER_HOST) VUE_APP_SERVER_PORT=$(SERVER_PORT) npm run build
+	VUE_APP_SERVER_HOST=$(SERVER_HOST) \
+	VUE_APP_SERVER_PORT=$(SERVER_PORT) \
+	VUE_APP_CIRCUIT_NAME=$(CIRCUIT_NAME) \
+	npm run build
 
 docker_build_version: build
 	docker build -t bp-$(CIRCUIT_NAME):$(VERSION) \

@@ -2,7 +2,7 @@
 <template>
   <div class="top-bar">
     <div class="title">
-      Pair recording App
+      Pair recording App: {{ circuitName }}
     </div>
     <div class="status">
       {{ status.message }}
@@ -14,6 +14,8 @@
 <script>
   import store from '@/store';
 
+  const circuitName = process.env.VUE_APP_CIRCUIT_NAME;
+
   export default {
     name: 'top-bar',
     data() {
@@ -21,6 +23,7 @@
         status: {
           message: 'Ready',
         },
+        circuitName,
       };
     },
     mounted() {
