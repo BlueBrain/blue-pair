@@ -35,24 +35,24 @@ build: | $(NODE_MODULES)
 	VUE_APP_SERVER_HOST=$(SERVER_HOST) VUE_APP_SERVER_PORT=$(SERVER_PORT) npm run build
 
 docker_build_version: build
-	docker build -t blue-pair-$(CIRCUIT_NAME):$(VERSION) \
+	docker build -t bp-$(CIRCUIT_NAME):$(VERSION) \
 		--build-arg=http_proxy=http://bbpproxy.epfl.ch:80/ \
 		--build-arg=https_proxy=http://bbpproxy.epfl.ch:80/ \
 		.
 
 docker_build_latest: build
-	docker build -t blue-pair-$(CIRCUIT_NAME):latest \
+	docker build -t bp-$(CIRCUIT_NAME):latest \
 		--build-arg=http_proxy=http://bbpproxy.epfl.ch:80/ \
 		--build-arg=https_proxy=http://bbpproxy.epfl.ch:80/ \
 		.
 
 docker_push_version: docker_build_version
-	docker tag blue-pair-$(CIRCUIT_NAME):$(VERSION) docker-registry-default.ocp.bbp.epfl.ch/bbp-ou-nse/blue-pair-$(CIRCUIT_NAME):$(VERSION)
-	docker push docker-registry-default.ocp.bbp.epfl.ch/bbp-ou-nse/blue-pair-$(CIRCUIT_NAME):$(VERSION)
+	docker tag bp-$(CIRCUIT_NAME):$(VERSION) docker-registry-default.ocp.bbp.epfl.ch/bbp-ou-nse/bp-$(CIRCUIT_NAME):$(VERSION)
+	docker push docker-registry-default.ocp.bbp.epfl.ch/bbp-ou-nse/bp-$(CIRCUIT_NAME):$(VERSION)
 	@echo 'frontend version($(VERSION)) pushed to OpenShift registy'
 
 docker_push_latest: docker_build_latest
-	docker tag blue-pair-$(CIRCUIT_NAME):latest docker-registry-default.ocp.bbp.epfl.ch/bbp-ou-nse/blue-pair-$(CIRCUIT_NAME):latest
-	docker push docker-registry-default.ocp.bbp.epfl.ch/bbp-ou-nse/blue-pair-$(CIRCUIT_NAME):latest
+	docker tag bp-$(CIRCUIT_NAME):latest docker-registry-default.ocp.bbp.epfl.ch/bbp-ou-nse/bp-$(CIRCUIT_NAME):latest
+	docker push docker-registry-default.ocp.bbp.epfl.ch/bbp-ou-nse/bp-$(CIRCUIT_NAME):latest
 	@echo 'frontend latest version pushed to OpenShift registry.'
 	@echo 'frontend release done'

@@ -49,9 +49,9 @@ install_bluepy: | $(VENV_DIR)
 
 neurodamus_branch: | $(NEURODAMUS_SRC_DIR)
 	cd $(NEURODAMUS_SRC_DIR) && \
+	git reset HEAD --hard && \
 	git pull --all && \
-	git checkout $(NEURODAMUS_BRANCH) && \
-	git reset HEAD --hard
+	git checkout -f $(NEURODAMUS_BRANCH)
 
 python_build: | $(VENV_DIR)
 	$(VENV_DIR)/bin/python setup.py sdist
@@ -64,12 +64,12 @@ run_dev:
 		-e DEBUG=True \
 		-v $$(pwd)/blue_pair:/usr/local/lib/python2.7/dist-packages/blue_pair \
 		-p 8888:8000 \
-		blue-pair-svc-$(CIRCUIT_NAME)
+		bp-svc-$(CIRCUIT_NAME)
 
 copy_circuit_data: morphology_generate_list
 	./copy-circuit-data.sh \
 		$(CIRCUIT_PATH) \
-		$(shell oc get pods -o custom-columns=:.metadata.name | grep blue-pair-svc-$(CIRCUIT_NAME))
+		$(shell oc get pods -o custom-columns=:.metadata.name | grep bp-svc-$(CIRCUIT_NAME))
 
 morphology_generate_list: install_bluepy
 	source $(VENV_DIR)/bin/activate && \
@@ -77,7 +77,7 @@ morphology_generate_list: install_bluepy
 	CIRCUIT_PATH=$(CIRCUIT_PATH) python ../tools/generate-morphology-list.py
 
 docker_build_version: neurodamus_branch python_build | $(NEURON_SRC_DIR)
-	docker build -t blue-pair-svc-$(CIRCUIT_NAME):$(VERSION) \
+	docker build -t bp-svc-$(CIRCUIT_NAME):$(VERSION) \
 		--build-arg=redis_host=$(REDIS_HOST) \
 		--build-arg=circuit_path=$(CIRCUIT_PATH) \
 		--build-arg=http_proxy=http://bbpproxy.epfl.ch:80/ \
@@ -85,7 +85,7 @@ docker_build_version: neurodamus_branch python_build | $(NEURON_SRC_DIR)
 		.
 
 docker_build_latest: neurodamus_branch python_build | $(NEURON_SRC_DIR)
-	docker build -t blue-pair-svc-$(CIRCUIT_NAME):latest \
+	docker build -t bp-svc-$(CIRCUIT_NAME):latest \
 		--build-arg=redis_host=$(REDIS_HOST) \
 		--build-arg=circuit_path=$(CIRCUIT_PATH) \
 		--build-arg=http_proxy=http://bbpproxy.epfl.ch:80/ \
@@ -93,12 +93,12 @@ docker_build_latest: neurodamus_branch python_build | $(NEURON_SRC_DIR)
 		.
 
 docker_push_version: docker_build_version
-	docker tag blue-pair-svc:$(VERSION) docker-registry-default.ocp.bbp.epfl.ch/bbp-ou-nse/blue-pair-svc-$(CIRCUIT_NAME):$(VERSION)
-	docker push docker-registry-default.ocp.bbp.epfl.ch/bbp-ou-nse/blue-pair-svc-$(CIRCUIT_NAME):$(VERSION)
+	docker tag bp-svc:$(VERSION) docker-registry-default.ocp.bbp.epfl.ch/bbp-ou-nse/bp-svc-$(CIRCUIT_NAME):$(VERSION)
+	docker push docker-registry-default.ocp.bbp.epfl.ch/bbp-ou-nse/bp-svc-$(CIRCUIT_NAME):$(VERSION)
 	@echo 'backend version($(VERSION)) pushed to OpenShift registy'
 
 docker_push_latest:
-	docker tag blue-pair-svc-$(CIRCUIT_NAME):latest docker-registry-default.ocp.bbp.epfl.ch/bbp-ou-nse/blue-pair-svc-$(CIRCUIT_NAME):latest
-	docker push docker-registry-default.ocp.bbp.epfl.ch/bbp-ou-nse/blue-pair-svc-$(CIRCUIT_NAME):latest
+	docker tag bp-svc-$(CIRCUIT_NAME):latest docker-registry-default.ocp.bbp.epfl.ch/bbp-ou-nse/bp-svc-$(CIRCUIT_NAME):latest
+	docker push docker-registry-default.ocp.bbp.epfl.ch/bbp-ou-nse/bp-svc-$(CIRCUIT_NAME):latest
 	@echo 'backend latest version pushed to OpenShift registry.'
 	@echo 'backend release done'
