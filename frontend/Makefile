@@ -5,7 +5,7 @@ VERSION?=$(shell cat ../VERSION)
 NODE_MODULES:=node_modules
 CIRCUIT_NAME?=mouse-o1
 
-SERVER_HOST:=blue-pair-svc-$(CIRCUIT_NAME).ocp.bbp.epfl.ch
+SERVER_HOST:=bp-svc-$(CIRCUIT_NAME).ocp.bbp.epfl.ch
 SERVER_PORT:=80
 
 
