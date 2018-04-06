@@ -181,3 +181,11 @@
     },
   };
 </script>
+
+
+<style lang="scss" scoped>
+  .ivu-card {
+    margin-bottom: 12px;
+  }
+</style>
+

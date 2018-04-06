@@ -3,8 +3,8 @@
   <div>
     <neuron-size/>
     <neuron-color/>
-    <neuron-prop-filter/>
     <neuron-selector></neuron-selector>
+    <neuron-prop-filter/>
     <hover-neuron-info/>
   </div>
 </template>

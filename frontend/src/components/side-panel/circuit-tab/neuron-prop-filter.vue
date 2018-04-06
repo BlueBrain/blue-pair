@@ -286,7 +286,7 @@
   }
 
   .ivu-card {
-    margin-top: 12px;
+    margin-bottom: 12px;
   }
 
   .current-filters {
