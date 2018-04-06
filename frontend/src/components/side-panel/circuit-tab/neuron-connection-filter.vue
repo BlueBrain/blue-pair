@@ -3,7 +3,8 @@
   <div>
     <h5>Connectivity filter:</h5>
     <Row :gutter="6">
-      <i-col span="4">
+      <!-- TODO: remove filter type if it will be not in demand -->
+      <!-- <i-col span="4">
         <i-select
           v-model="ctrl.currentFilterType"
           size="small"
@@ -12,8 +13,8 @@
           <i-option value="include">Include</i-option>
           <i-option value="exclude">Exclude</i-option>
         </i-select>
-      </i-col>
-      <i-col span="6">
+      </i-col> -->
+      <i-col span="10">
         <i-select
           size="small"
           placeholder="Connection type"
@@ -152,7 +153,7 @@
     data() {
       return {
         ctrl: {
-          currentFilterType: '',
+          currentFilterType: 'include',
           currentConnectionType: '',
           connectionTypes: ['afferent', 'efferent'],
           gids: [],
