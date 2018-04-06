@@ -3,7 +3,14 @@
   <Card>
     <Row>
       <i-col>
-        <h5>Cells added for simulation:</h5>
+        <h4 class="title">
+          Cells added for simulation:
+          <span
+            class="title-message"
+            v-if="!simAddedNeurons.length && !selectedNeuron"
+          >Pick a cell</span>
+        </h4>
+        <div class="gid-list-container">
           <Tag
             v-for="neuron in simAddedNeurons"
             :key="neuron.gid"
@@ -23,10 +30,9 @@
           >
             <strong>gid: </strong> {{ selectedNeuron.gid }}
           </Button>
+        </div>
       </i-col>
     </Row>
-
-    <br>
 
     <div class="separator"></div>
 
@@ -55,7 +61,7 @@
 
 <script>
   import store from '@/store';
-  import NeuronConnectionFilter from './neuron-connection-filter';
+  import NeuronConnectionFilter from './neuron-connection-filter.vue';
 
   export default {
     name: 'neuron-selector',
@@ -73,18 +79,20 @@
       store.$on('updateSelectedNeuron', () => {
         this.selectedNeuron = store.state.circuit.selectedNeuron;
       });
-      store.$on('resetSimConfigBtn', () => this.simInit = false);
+      store.$on('resetSimConfigBtn', () => { this.simInit = false; });
     },
     methods: {
       onNeuronAdd(neuron) {
         this.simAddedNeurons.push(neuron);
         this.selectedNeuron = null;
+        // TODO: move logic below to store action
         store.state.circuit.simAddedNeurons = this.simAddedNeurons;
         store.state.circuit.selectedNeuron = null;
         store.$dispatch('neuronAddedToSim', neuron.gid);
       },
       onNeuronRemove(neuron) {
         this.simAddedNeurons = this.simAddedNeurons.filter(nrn => nrn.gid !== neuron.gid);
+        // TODO: move logic below to store action
         store.state.circuit.simAddedNeurons = this.simAddedNeurons;
         store.$dispatch('neuronRemovedFromSim', neuron.gid);
       },
@@ -98,8 +106,27 @@
 
 
 <style scoped lang="scss">
+  .title {
+    margin-bottom: 6px;
+  }
+
+  .title-message {
+    font-weight: normal;
+    font-size: 12px;
+    color: #888888;
+    margin-left: 6px;
+  }
+
+  .gid-list-container {
+    min-height: 24px;
+  }
+
   .ivu-card {
     margin-bottom: 12px;
+  }
+
+  .ivu-tag {
+    margin: 1px 6px 1px 0;
   }
 
   .separator {

@@ -1,7 +1,7 @@
 
 <template>
   <Card>
-    <h5>Display filter:</h5>
+    <h4 class="title">Display filter:</h4>
     <Row :gutter="6">
       <i-col span="4">
         <i-select
@@ -281,7 +281,7 @@
 
 
 <style scoped lang="scss">
-  h5 {
+  .title {
     margin-bottom: 12px;
   }
 

@@ -1,7 +1,10 @@
 
 <template>
   <div>
-    <h5>Connectivity filter:</h5>
+    <h4 class="title">
+      Connectivity filter:
+      <span v-if="!gids.length" class="title-message">Pick a cell to use a filter</span>
+    </h4>
     <Row :gutter="6">
       <!-- TODO: remove filter type if it will be not in demand -->
       <!-- <i-col span="4">
@@ -18,6 +21,7 @@
         <i-select
           size="small"
           placeholder="Connection type"
+          :disabled="!gids.length"
           v-model="ctrl.currentConnectionType"
           @on-change="updateFilters"
         >
@@ -32,6 +36,7 @@
         <i-select
           size="small"
           placeholder="Neuron"
+          :disabled="!gids.length"
           v-model="ctrl.currentgid"
         >
           <i-option
@@ -271,7 +276,14 @@
 
 
 <style lang="scss" scoped>
-  h5 {
+  .title {
     margin-bottom: 12px;
+  }
+
+  .title-message {
+    font-weight: normal;
+    font-size: 12px;
+    margin-left: 4px;
+    color: #888888;
   }
 </style>
