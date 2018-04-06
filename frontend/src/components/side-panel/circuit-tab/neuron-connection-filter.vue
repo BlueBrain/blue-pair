@@ -1,6 +1,7 @@
 
 <template>
   <div>
+    <h5>Connectivity filter:</h5>
     <Row :gutter="6">
       <i-col span="4">
         <i-select
@@ -266,3 +267,10 @@
     },
   }
 </script>
+
+
+<style lang="scss" scoped>
+  h5 {
+    margin-bottom: 12px;
+  }
+</style>
