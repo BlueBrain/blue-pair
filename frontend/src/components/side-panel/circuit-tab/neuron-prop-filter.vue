@@ -1,6 +1,7 @@
 
 <template>
   <Card>
+    <h5>Display filter:</h5>
     <Row :gutter="6">
       <i-col span="4">
         <i-select
@@ -280,6 +281,10 @@
 
 
 <style scoped lang="scss">
+  h5 {
+    margin-bottom: 12px;
+  }
+
   .ivu-card {
     margin-top: 12px;
   }
