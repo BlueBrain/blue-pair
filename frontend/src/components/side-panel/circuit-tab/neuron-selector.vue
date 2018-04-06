@@ -28,6 +28,8 @@
 
     <br>
 
+    <div class="separator"></div>
+
     <neuron-connection-filter/>
 
     <br>
@@ -97,7 +99,11 @@
 
 <style scoped lang="scss">
   .ivu-card {
-    margin-top: 12px;
     margin-bottom: 12px;
+  }
+
+  .separator {
+    border-top: 1px solid #dddee1;
+    margin: 16px 0;
   }
 </style>
