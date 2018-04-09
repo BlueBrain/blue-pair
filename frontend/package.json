@@ -27,7 +27,8 @@
     "lodash": "^4.17.5",
     "three": "^0.91.0",
     "three-orbit-controls": "^82.1.0",
-    "vue": "^2.5.16"
+    "vue": "^2.5.16",
+    "vue-slider-component": "^2.6.1"
   },
   "devDependencies": {
     "@vue/cli-plugin-babel": "^3.0.0-beta.6",
