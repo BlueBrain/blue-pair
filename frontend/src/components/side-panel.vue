@@ -58,4 +58,8 @@
     border: 1px solid #bdc2c8;
     background-color: #fefdfb;
   }
+
+  .ivu-tabs {
+    overflow: auto;
+  }
 </style>

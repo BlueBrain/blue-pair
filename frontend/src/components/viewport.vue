@@ -1,7 +1,8 @@
 
 <template>
-  <div id="canvas-container">
+  <div id="container">
     <canvas :id="canvasId"></canvas>
+    <bottom-panel/>
   </div>
 </template>
 
@@ -9,6 +10,7 @@
 <script>
   import store from '@/store';
   import NeuronRenderer from '@/services/neuron-renderer';
+  import BottomPanel from './viewport/bottom-panel.vue';
 
   export default {
     name: 'viewport-component',
@@ -16,6 +18,9 @@
       return {
         canvasId: 'canvas',
       };
+    },
+    components: {
+      'bottom-panel': BottomPanel,
     },
     mounted() {
       this.renderer = new NeuronRenderer({
@@ -26,7 +31,7 @@
       // TODO: refactor
       store.$dispatch('loadCircuit');
       store.$on('circuitLoaded', this.initRenderer.bind(this));
-      store.$on('setPointNeuronSize', size => this.renderer.setNeuronCloudPointSize(size));
+      store.$on('setSomaSize', size => this.renderer.setNeuronCloudPointSize(size));
       store.$on('redrawCircuit', this.redrawNeurons.bind(this));
       store.$on('showCellMorphology', morphObj => this.renderer.initMorphology(morphObj));
       store.$on('removeCellMorphology', () => {
@@ -100,11 +105,28 @@
 </script>
 
 
-<style scoped>
-  #canvas-container {
+<style scoped lang="scss">
+  #container {
     position: absolute;
     top: 28px;
     width: calc(100% - 620px);
     height: calc(100% - 28px);
+  }
+
+  .bottom-panel-ctrl {
+    height: 232px;
+    position: relative;
+
+    .color-by-ctrl {
+      position: absolute;
+      z-index: 10;
+      right: 51px;
+      bottom: 12px;
+      height: 40px;
+      width: 220px;
+      background-color: white;
+      border: 1px solid #dddee1;
+      border-right: none;
+    }
   }
 </style>

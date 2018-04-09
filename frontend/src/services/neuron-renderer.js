@@ -19,6 +19,8 @@ const FAR = 50000;
 const AMBIENT_LIGHT_COLOR = 0x555555;
 const CAMERA_LIGHT_COLOR = 0xffffff;
 const BACKGROUND_COLOR = 0xfefdfb;
+// TODO: make it possible to switch bg color
+// const BACKGROUND_COLOR = 0x272821;
 const HOVER_BOX_COLOR = 0xffdf00;
 const hoverNeuronColor = new THREE.Color(0xf26d21).toArray();
 
@@ -117,7 +119,7 @@ class NeuronRenderer {
 
     const material = new THREE.PointsMaterial({
       vertexColors: THREE.VertexColors,
-      size: store.state.circuit.pointNeuronSize,
+      size: store.state.circuit.somaSize,
       opacity: 0.85,
       transparent: true,
       alphaTest: 0.4,
@@ -392,6 +394,9 @@ class NeuronRenderer {
   }
 
   hoverMorphSegment(mesh) {
+    console.log(mesh.object.material.emissive);
+    mesh.object.material.emissive.copy(mesh.object.material.color);
+
     if (this.hoverBox) {
       if (
         this.hoverBox.userData.sectionName === mesh.object.userData.sectionName &&

@@ -20,6 +20,9 @@
           ></div>
         </div>
       </div>
+      <div class="soma-color-ctrl-container">
+        <soma-color-ctrl/>
+      </div>
     </div>
   </transition>
 </template>
@@ -29,9 +32,13 @@
   import * as chroma from 'chroma-js';
 
   import store from '@/store';
+  import SomaColorCtrl from './soma-color-ctrl.vue';
 
   export default {
     name: 'color-palette',
+    components: {
+      'soma-color-ctrl': SomaColorCtrl,
+    },
     data() {
       return {
         colorPalette: {},
@@ -77,19 +84,26 @@
   }
 
   .container {
-    position: absolute;
     background-color: #fefdfb;
     border-top: 1px solid #bdc2c8;
-    bottom: 0;
-    left: 0;
-    right: 620px;
-    padding: 16px
+    padding: 16px 16px 10px 16px;
+    position: relative;
   }
 
   .palette-container {
+    margin-top: 3px;
     display: flex;
     flex-wrap: wrap;
     flex: 1 1 100%;
+    width: calc(100% - 240px);
+    min-height: 24px;
+  }
+
+  .soma-color-ctrl-container {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 220px;
   }
 
   .palette-item {
@@ -102,6 +116,7 @@
 
     small {
       padding: 0 6px;
+      min-width: 56px;
     }
 
     .color-block {

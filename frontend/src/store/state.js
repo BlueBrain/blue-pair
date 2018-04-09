@@ -6,7 +6,7 @@ const state = {
     neurons: [],
     neuronPropIndex: {},
     neuronProps: [],
-    pointNeuronSize: 10,
+    somaSize: 10,
     globalFilterIndex: [],
     connectionFilterIndex: [],
     selectedNeuron: null,

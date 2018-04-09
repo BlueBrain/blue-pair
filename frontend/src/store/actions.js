@@ -56,8 +56,8 @@ const actions = {
     store.$emit('redrawCircuit');
   },
 
-  setPointNeuronSize(store, size) {
-    store.$emit('setPointNeuronSize', size);
+  setSomaSize(store, size) {
+    store.$emit('setSomaSize', size);
   },
 
   updateSelectedNeuron(store) {
