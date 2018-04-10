@@ -25,6 +25,9 @@ const BACKGROUND_COLOR = 0xfefdfb;
 const HOVER_BOX_COLOR = 0xffdf00;
 const hoverNeuronColor = new THREE.Color(0xf26d21).toArray();
 
+const inhSynMaterial = new THREE.MeshLambertMaterial({ color: 0x1020ff });
+const excSynMaterial = new THREE.MeshLambertMaterial({ color: 0xff0000 });
+
 const baseMorphColors = {
   soma: chroma('#A9A9A9'),
   axon: chroma('#0080FF'),
@@ -166,22 +169,30 @@ class NeuronRenderer {
   showSynConnections() {
     const connections = store.state.simulation.synConnections;
     this.synConnectionsObj = new THREE.Object3D();
-    const material = new THREE.MeshLambertMaterial({ color: 0x1020ff });
-    connections.forEach(([x, y, z]) => {
+    connections.forEach(([x, y, z, synType]) => {
       const geometry = new THREE.SphereGeometry(5, 32, 32);
-      const synapse = new THREE.Mesh(geometry, material);
+      const synapse = new THREE.Mesh(geometry, synType > 100 ? excSynMaterial : inhSynMaterial);
       synapse.position.set(x, y, z);
       this.synConnectionsObj.add(synapse);
     });
     this.scene.add(this.synConnectionsObj);
   }
 
-  hideNeuronCloud() {
-    this.neuronCloud.points.visible = false;
+  disposeSynapses() {
+    this.scene.remove(this.synConnectionsObj);
+    this.synConnectionsObj.traverse((child) => {
+      if (child instanceof THREE.Mesh) this.disposeObject(child);
+    });
+
+    this.synConnectionsObj = null;
   }
 
   showNeuronCloud() {
     this.neuronCloud.points.visible = true;
+  }
+
+  hideNeuronCloud() {
+    this.neuronCloud.points.visible = false;
   }
 
   initMorphology() {
@@ -303,15 +314,6 @@ class NeuronRenderer {
     });
 
     this.cellMorphologyObj = null;
-  }
-
-  disposeSynapses() {
-    this.scene.remove(this.synConnectionsObj);
-    this.synConnectionsObj.traverse((child) => {
-      if (child instanceof THREE.Mesh) this.disposeObject(child);
-    });
-
-    this.synConnectionsObj = null;
   }
 
   disposeSecMarkers() {

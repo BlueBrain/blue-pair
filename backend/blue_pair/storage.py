@@ -34,6 +34,9 @@ def get_pair_syn_list(gid_1, gid_2):
         Synapse.POST_X_CENTER,
         Synapse.POST_Y_CENTER,
         Synapse.POST_Z_CENTER,
+        Synapse.TYPE,
+        Synapse.PRE_GID,
+        Synapse.PRE_SECTION_ID,
         Synapse.POST_GID,
         Synapse.POST_SECTION_ID
     ]
