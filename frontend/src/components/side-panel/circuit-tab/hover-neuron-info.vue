@@ -1,13 +1,17 @@
 
 <template>
-  <Card v-if="table.data.length">
-    <i-table
-      :columns="table.columns"
-      :data="table.data"
-      :show-header="false"
-      size="small"
-    ></i-table>
-  </Card>
+  <div>
+    <transition name="fade">
+      <Card v-if="table.data.length && visible">
+        <i-table
+          :columns="table.columns"
+          :data="table.data"
+          :show-header="false"
+          size="small"
+        ></i-table>
+      </Card>
+    </transition>
+  </div>
 </template>
 
 
@@ -18,6 +22,7 @@
     name: 'hover-neuron-info',
     data() {
       return {
+        visible: false,
         table: {
           columns: [{
             key: 'property',
@@ -32,11 +37,14 @@
     },
     mounted() {
       store.$on('updateHoveredNeuron', (hoveredNeuron) => {
-        this.table.data.forEach(propObj => propObj.value = hoveredNeuron ? hoveredNeuron[propObj.property] : '');
+        this.visible = !!hoveredNeuron;
+        this.table.data.forEach((propObj) => {
+          propObj.value = hoveredNeuron ? hoveredNeuron[propObj.property] : '';
+        });
       });
 
       store.$on('circuitLoaded', () => {
-        this.table.data = store.state.circuit.neuronProps.map(prop => ({property: prop, value: ''}));
+        this.table.data = store.state.circuit.neuronProps.map(prop => ({ property: prop, value: '' }));
       });
     },
   };

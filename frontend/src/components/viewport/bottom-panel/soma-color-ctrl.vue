@@ -6,6 +6,8 @@
         size="small"
         placeholder="Color by"
         v-model="currentProp"
+        :transfer="true"
+        placement="top"
         @on-change="onColorPropChange"
       >
         <i-option

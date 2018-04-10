@@ -45,6 +45,12 @@ const actions = {
 
   updateHoveredNeuron(store, neuron) {
     store.$emit('updateHoveredNeuron', neuron);
+
+    if (neuron) {
+      store.$emit('highlightSimAddedNeuron', neuron);
+    } else {
+      store.$emit('unhighlightSimAddedNeuron');
+    }
   },
 
   propFilterUpdated(store) {
@@ -60,8 +66,8 @@ const actions = {
     store.$emit('setSomaSize', size);
   },
 
-  updateSelectedNeuron(store) {
-    store.$emit('updateSelectedNeuron');
+  neuronClicked(store, neuron) {
+    store.$emit('addNeuronToSim', neuron);
   },
 
   neuronAddedToSim(store, neuron) {
@@ -70,6 +76,14 @@ const actions = {
 
   neuronRemovedFromSim(store, neuron) {
     store.$emit('neuronRemovedFromSim', neuron);
+  },
+
+  simNeuronHovered(store, gid) {
+    store.$emit('highlightCircuitSoma', gid);
+  },
+
+  simNeuronUnhovered(store) {
+    store.$emit('removeCircuitSomaHighlight');
   },
 
   morphSegmentClicked(store, segment) {
@@ -99,6 +113,18 @@ const actions = {
     });
   },
 
+  paletteKeyUnhover(store) {
+    store.$emit('removeTmpGlobalFilter');
+  },
+
+  simConfigNeuronHovered(store, gid) {
+    store.$emit('highlightMorphCell', gid);
+  },
+
+  simConfigNeuronUnhovered(store) {
+    store.$emit('unhighlightMorphCell');
+  },
+
   runSim(store) {
     store.$emit('setStatus', { message: 'Runnig simulation' });
     socket.send('get_sim_traces', {
@@ -113,10 +139,6 @@ const actions = {
 
   updateSimCellConfigs(store, cellConfigs) {
     store.state.simulation.cellConfigs = cellConfigs;
-  },
-
-  paletteKeyUnhover(store) {
-    store.$emit('removeTmpGlobalFilter');
   },
 
   circuitTabSelected(store) {

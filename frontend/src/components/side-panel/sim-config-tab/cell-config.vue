@@ -61,7 +61,10 @@
         :key="cellConfig.neuron.gid"
       >
         <Panel :name="PANEL.neuronInfo">
-          <strong>GID: {{ cellConfig.neuron.gid }}</strong>
+          <strong
+            @mouseenter="onCellGidHover(cellConfig.neuron.gid)"
+            @mouseleave="onCellGidUnhover()"
+          >GID: {{ cellConfig.neuron.gid }}</strong>
           <div slot="content">
             <neuron-info :neuron="cellConfig.neuron"/>
           </div>
@@ -285,6 +288,12 @@
         store.$dispatch('runSim');
       },
       onCollapseChange() {},
+      onCellGidHover(gid) {
+        store.$dispatch('simConfigNeuronHovered', gid);
+      },
+      onCellGidUnhover() {
+        store.$dispatch('simConfigNeuronUnhovered');
+      },
     },
   };
 </script>

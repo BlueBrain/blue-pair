@@ -21,6 +21,7 @@ class Store {
   }
 
   $dispatch(action, payload) {
+    if (!actions[action]) throw new Error(`Store action ${action} is not available`);
     setTimeout(() => actions[action](this, payload), 0);
   }
 

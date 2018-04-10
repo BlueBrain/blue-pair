@@ -29,10 +29,10 @@
         },
       };
     },
-    mounted() {
+    created() {
       this.table.data = Object.entries(this.neuron)
         .filter(([prop]) => !hiddenProps.includes(prop))
-        .map(([prop, val]) => ({prop, val}));
+        .map(([prop, val]) => ({ prop, val }));
     },
   };
 </script>

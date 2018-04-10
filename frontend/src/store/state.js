@@ -9,7 +9,6 @@ const state = {
     somaSize: 10,
     globalFilterIndex: [],
     connectionFilterIndex: [],
-    selectedNeuron: null,
     simAddedNeurons: [],
     color: {
       neuronProp: '',

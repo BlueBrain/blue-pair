@@ -21,6 +21,7 @@
         <i-select
           size="small"
           placeholder="Connection type"
+          :transfer="true"
           :disabled="!gids.length"
           v-model="ctrl.currentConnectionType"
           @on-change="updateFilters"
@@ -37,6 +38,7 @@
           size="small"
           placeholder="Neuron"
           :disabled="!gids.length"
+          :transfer="true"
           v-model="ctrl.currentgid"
         >
           <i-option
@@ -103,7 +105,7 @@
             v-for="filter in currentFilters.exclude"
             :key="filter.connectionType + filter.gid"
             @on-close="removeFilter('exclude', filter)"
-          >{{ filter.connectionType }} gid:{{ filter.gid }}</Tag>
+          >{{ filter.connectionType }} gid: {{ filter.gid }}</Tag>
         </i-col>
         <i-col
           span="8"
@@ -263,7 +265,7 @@
             allowedGids = difference(allowedGids, fSet.excludeUnion ? union(...gidSets) : intersection(...gidSets));
           }
 
-          const allowedNeuronsIndex = allowedGids.reduce((r, gid) => Object.assign(r, {[gid - 1]: true}), {});
+          const allowedNeuronsIndex = allowedGids.reduce((r, gid) => Object.assign(r, { [gid - 1]: true }), {});
           store.state.circuit.connectionFilterIndex.forEach((visible, index, array) => {
             array[index] = allowedNeuronsIndex[index];
           });
@@ -271,7 +273,7 @@
         }, 20);
       },
     },
-  }
+  };
 </script>
 
 
@@ -285,5 +287,13 @@
     font-size: 12px;
     margin-left: 4px;
     color: #888888;
+  }
+
+  .current-filters {
+    margin-top: 12px;
+  }
+
+  .text-right {
+    text-align: right;
   }
 </style>

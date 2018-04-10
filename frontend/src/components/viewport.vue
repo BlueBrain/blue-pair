@@ -43,6 +43,12 @@
       store.$on('hideCircuit', () => this.renderer.hideNeuronCloud());
       store.$on('showCircuit', () => this.renderer.showNeuronCloud());
 
+      store.$on('highlightMorphCell', gid => this.renderer.highlightMorphCell(gid));
+      store.$on('unhighlightMorphCell', () => this.renderer.unhighlightMorphCell());
+
+      store.$on('highlightCircuitSoma', gid => this.renderer.highlightCircuitSoma(gid));
+      store.$on('removeCircuitSomaHighlight', () => this.renderer.removeCircuitSomaHighlight());
+
       store.$on('addSecMarker', config => this.renderer.addSecMarker(config));
       store.$on('removeSecMarker', config => this.renderer.removeSecMarker(config));
     },
@@ -55,8 +61,7 @@
         switch (obj.type) {
           case 'neuronCloud':
             const neuron = store.$get('neuron', obj.index);
-            store.state.circuit.selectedNeuron = neuron;
-            store.$dispatch('updateSelectedNeuron');
+            store.$dispatch('neuronClicked', neuron);
             break;
           case 'morphSegment':
             store.$dispatch('morphSegmentClicked', obj.data);

@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import * as chroma from 'chroma-js';
 import throttle from 'lodash/throttle';
 import isEqual from 'lodash/isEqual';
+import { TweenLite, TimelineLite } from 'gsap';
 
 // TODO: refactor to remove store operations
 // and move them to vue viewport component
@@ -32,6 +33,8 @@ const baseMorphColors = {
   myelin: chroma('#F5F5F5'),
 };
 
+const neuronTexture = new THREE.TextureLoader().load('/neuron-texture.png');
+
 
 class NeuronRenderer {
   constructor({ canvasElementId, onHover, onClick }) {
@@ -46,6 +49,7 @@ class NeuronRenderer {
     const { clientWidth, clientHeight } = canvas.parentElement;
 
     this.renderer.setSize(clientWidth, clientHeight);
+    this.renderer.setPixelRatio(window.devicePixelRatio || 1);
 
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(BACKGROUND_COLOR);
@@ -65,6 +69,7 @@ class NeuronRenderer {
     this.controls.enableDamping = true;
 
     this.hoveredNeuron = null;
+    this.highlightedNeuron = null;
     this.mousePressed = false;
 
     this.secMarkerObj = new THREE.Object3D();
@@ -115,14 +120,12 @@ class NeuronRenderer {
     geometry.addAttribute('color', this.neuronCloud.colorBufferAttr);
     geometry.addAttribute('alpha', this.neuronCloud.alphaBufferAttr);
 
-    const neuronTexture = new THREE.TextureLoader().load('/neuron-texture.png');
-
     const material = new THREE.PointsMaterial({
       vertexColors: THREE.VertexColors,
       size: store.state.circuit.somaSize,
       opacity: 0.85,
       transparent: true,
-      alphaTest: 0.4,
+      alphaTest: 0.1,
       sizeAttenuation: true,
       map: neuronTexture,
     });
@@ -131,6 +134,21 @@ class NeuronRenderer {
     this.neuronCloud.points.name = 'neuronCloud';
     this.neuronCloud.points.frustumCulled = false;
     this.scene.add(this.neuronCloud.points);
+
+    const highlightedNeuronGeometry = new THREE.Geometry();
+    const highlightedNeuronMaterial = new THREE.PointsMaterial({
+      size: 0,
+      transparent: true,
+      opacity: 0,
+      map: neuronTexture,
+    });
+    highlightedNeuronGeometry.vertices.push(new THREE.Vector3(0, 0, 0));
+    this.highlightedNeuron = new THREE.Points(
+      highlightedNeuronGeometry,
+      highlightedNeuronMaterial,
+    );
+    this.highlightedNeuron.frustumCulled = false;
+    this.scene.add(this.highlightedNeuron);
   }
 
   alignCamera() {
@@ -394,9 +412,6 @@ class NeuronRenderer {
   }
 
   hoverMorphSegment(mesh) {
-    console.log(mesh.object.material.emissive);
-    mesh.object.material.emissive.copy(mesh.object.material.color);
-
     if (this.hoverBox) {
       if (
         this.hoverBox.userData.sectionName === mesh.object.userData.sectionName &&
@@ -421,12 +436,77 @@ class NeuronRenderer {
     this.scene.add(this.hoverBox);
   }
 
+  highlightMorphCell(gid) {
+    this.cellMorphologyObj.traverse((child) => {
+      if (!(child instanceof THREE.Mesh)) return;
+
+      if (child.userData.neuron.gid === gid) {
+        child.userData.color = child.material.color;
+        child.material.color = new THREE.Color(0xf26d21);
+      }
+    });
+  }
+
+  unhighlightMorphCell() {
+    this.cellMorphologyObj.traverse((child) => {
+      if (!(child instanceof THREE.Mesh)) return;
+
+      if (child.userData.color) {
+        child.material.color = child.userData.color;
+        delete child.userData.color;
+      }
+    });
+  }
+
   unhoverMorphSegment() {
     if (!this.hoverBox) return;
 
     this.scene.remove(this.hoverBox);
     this.disposeObject(this.hoverBox);
     this.hoverBox = null;
+  }
+
+  highlightCircuitSoma(gid) {
+    if (this.neuronHighlightAnimation && !this.neuronHighlightAnimation.reversed()) return;
+
+    const neuronIndex = gid - 1;
+
+    this.highlightedNeuron.material.color = new THREE.Color(
+      // TODO: obtain color from store getter?
+      this.neuronCloud.colorBufferAttr.getX(neuronIndex),
+      this.neuronCloud.colorBufferAttr.getY(neuronIndex),
+      this.neuronCloud.colorBufferAttr.getZ(neuronIndex),
+    );
+
+    const position = new THREE.Vector3(...store.$get('neuronPosition', neuronIndex));
+    this.highlightedNeuron.geometry.vertices[0] = position;
+
+    this.neuronHighlightAnimation = new TimelineLite({ paused: true });
+    this.neuronHighlightAnimation.add([
+      TweenLite.fromTo(
+        this.neuronCloud.points.material,
+        0.3,
+        { size: this.neuronCloud.points.material.size, opacity: 0.85 },
+        { size: 8, opacity: 0.3 },
+      ),
+      TweenLite.fromTo(
+        this.highlightedNeuron.material,
+        0.3,
+        { size: 1, opacity: 0 },
+        { size: 48, opacity: 1 },
+      ),
+    ]);
+    this.neuronHighlightAnimation.eventCallback('onUpdate', () => {
+      this.highlightedNeuron.geometry.verticesNeedUpdate = true;
+      this.highlightedNeuron.geometry.colorsNeedUpdate = true;
+    });
+    this.neuronHighlightAnimation.play();
+  }
+
+  removeCircuitSomaHighlight() {
+    const animation = this.neuronHighlightAnimation;
+    animation.eventCallback('onReverseComplete', () => animation.kill());
+    animation.reverse();
   }
 
   disposeObject(obj) {

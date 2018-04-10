@@ -49,7 +49,7 @@
 <style scoped lang="scss">
   .side-panel {
     position: absolute;
-    overflow: auto;
+    overflow: scroll;
     top: 28px;
     bottom: 0;
     right: 0px;
@@ -57,9 +57,5 @@
     padding: 16px;
     border: 1px solid #bdc2c8;
     background-color: #fefdfb;
-  }
-
-  .ivu-tabs {
-    overflow: auto;
   }
 </style>

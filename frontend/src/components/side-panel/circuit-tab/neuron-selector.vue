@@ -7,29 +7,31 @@
           Cells added for simulation:
           <span
             class="title-message"
-            v-if="!simAddedNeurons.length && !selectedNeuron"
+            v-if="!simAddedNeurons.length"
           >Pick a cell</span>
         </h4>
         <div class="gid-list-container">
-          <Tag
+          <Poptip
+            trigger="hover"
+            placement="left-start"
+            :transfer="true"
+            width="540"
             v-for="neuron in simAddedNeurons"
             :key="neuron.gid"
-            color="blue"
-            closable
-            @click.native="onNeuronClick"
-            @on-close="onNeuronRemove(neuron)"
           >
-            <strong>gid: </strong> {{ neuron.gid }}
-          </Tag>
-          <Button
-            icon="ios-plus-empty"
-            type="dashed"
-            size="small"
-            v-if="selectedNeuron"
-            @click="onNeuronAdd(selectedNeuron)"
-          >
-            <strong>gid: </strong> {{ selectedNeuron.gid }}
-          </Button>
+            <Tag
+              :color="highlightedNeuronGid === neuron.gid ? 'yellow' : 'blue'"
+              closable
+              @mouseover.native="onNeuronHover(neuron.gid)"
+              @mouseleave.native="onNeuronHoverStop()"
+              @on-close="onNeuronRemove(neuron)"
+            >
+              <strong>gid: </strong> {{ neuron.gid }}
+            </Tag>
+            <div slot="content">
+              <neuron-info :neuron="neuron"/>
+            </div>
+          </Poptip>
         </div>
       </i-col>
     </Row>
@@ -62,32 +64,34 @@
 <script>
   import store from '@/store';
   import NeuronConnectionFilter from './neuron-connection-filter.vue';
+  import NeuronInfo from '@/components/shared/neuron-info.vue';
 
   export default {
     name: 'neuron-selector',
     components: {
       'neuron-connection-filter': NeuronConnectionFilter,
+      'neuron-info': NeuronInfo,
     },
     data() {
       return {
-        selectedNeuron: store.state.circuit.selectedNeuron,
         simAddedNeurons: store.state.circuit.simAddedNeurons,
         simInit: false,
+        highlightedNeuronGid: null,
       };
     },
     mounted() {
-      store.$on('updateSelectedNeuron', () => {
-        this.selectedNeuron = store.state.circuit.selectedNeuron;
-      });
+      store.$on('addNeuronToSim', neuron => this.onNeuronAdd(neuron));
       store.$on('resetSimConfigBtn', () => { this.simInit = false; });
+      store.$on('highlightSimAddedNeuron', (neuron) => { this.highlightedNeuronGid = neuron.gid; });
+      store.$on('unhighlightSimAddedNeuron', () => { this.highlightedNeuronGid = null; });
     },
     methods: {
       onNeuronAdd(neuron) {
+        if (this.simAddedNeurons.find(nrn => nrn.gid === neuron.gid)) return;
+
         this.simAddedNeurons.push(neuron);
-        this.selectedNeuron = null;
         // TODO: move logic below to store action
         store.state.circuit.simAddedNeurons = this.simAddedNeurons;
-        store.state.circuit.selectedNeuron = null;
         store.$dispatch('neuronAddedToSim', neuron.gid);
       },
       onNeuronRemove(neuron) {
@@ -99,6 +103,12 @@
       onConfigureSimulationBtnClick() {
         this.simInit = true;
         store.$dispatch('loadMorphology');
+      },
+      onNeuronHover(gid) {
+        store.$dispatch('simNeuronHovered', gid);
+      },
+      onNeuronHoverStop() {
+        store.$dispatch('simNeuronUnhovered');
       },
     },
   };

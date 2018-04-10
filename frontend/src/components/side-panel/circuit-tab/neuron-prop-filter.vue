@@ -8,6 +8,7 @@
           v-model="ctrl.currentType"
           size="small"
           placeholder="Filter"
+          :transfer="true"
         >
           <i-option value="include">Include</i-option>
           <i-option value="exclude">Exclude</i-option>
@@ -17,6 +18,7 @@
         <i-select
           size="small"
           placeholder="Prop"
+          :transfer="true"
           v-model="ctrl.currentProp"
           @on-change="updateFilters"
         >
@@ -33,6 +35,7 @@
           v-model="ctrl.currentValue"
           :data="ctrl.values"
           :filter-method="valueFilterMethod"
+          :transfer="true"
           placeholder="Value"
         ></AutoComplete>
       </i-col>
