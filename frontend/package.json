@@ -23,7 +23,7 @@
     "distinct-colors": "^1.0.4",
     "dygraphs": "^2.1.0",
     "gsap": "^1.20.4",
-    "iview": "^2.11.0",
+    "iview": "^2.13.0",
     "localforage": "^1.7.1",
     "lodash": "^4.17.5",
     "three": "^0.91.0",
