@@ -25,8 +25,8 @@ const BACKGROUND_COLOR = 0xfefdfb;
 const HOVER_BOX_COLOR = 0xffdf00;
 const hoverNeuronColor = new THREE.Color(0xf26d21).toArray();
 
-const inhSynMaterial = new THREE.MeshLambertMaterial({ color: 0x1020ff });
 const excSynMaterial = new THREE.MeshLambertMaterial({ color: 0xff0000 });
+const inhSynMaterial = new THREE.MeshLambertMaterial({ color: 0x1020ff });
 
 const baseMorphColors = {
   soma: chroma('#A9A9A9'),
@@ -225,8 +225,8 @@ class NeuronRenderer {
           const geometry = new THREE.CylinderGeometry(sec.diam[i], sec.diam[i], length, 20, 1, false);
           // TODO: reuse color objects
           const glColor = baseMorphColors[sectionType]
-            .brighten(cellIndex)
-            .desaturate(cellIndex)
+            .brighten((cellIndex - (gids.length / 2)) / 2)
+            .desaturate((cellIndex - (gids.length / 2)) / 2)
             .gl();
 
           const color = new THREE.Color(...glColor);
@@ -439,14 +439,23 @@ class NeuronRenderer {
   }
 
   highlightMorphCell(gid) {
+    const segmentScaleObjects = [];
     this.cellMorphologyObj.traverse((child) => {
       if (!(child instanceof THREE.Mesh)) return;
 
       if (child.userData.neuron.gid === gid) {
         child.userData.color = child.material.color;
         child.material.color = new THREE.Color(0xf26d21);
+        segmentScaleObjects.push(child.scale);
       }
     });
+
+    this.morphCellHighlightAnimation = TweenLite.fromTo(
+      segmentScaleObjects,
+      0.3,
+      { x: 1, z: 1 },
+      { x: 2, z: 2 },
+    );
   }
 
   unhighlightMorphCell() {
@@ -458,6 +467,10 @@ class NeuronRenderer {
         delete child.userData.color;
       }
     });
+
+    const animation = this.morphCellHighlightAnimation;
+    animation.eventCallback('onReverseComplete', () => animation.kill());
+    animation.reverse();
   }
 
   unhoverMorphSegment() {

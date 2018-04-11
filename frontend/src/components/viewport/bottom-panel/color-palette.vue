@@ -1,9 +1,8 @@
 
 <template>
-  <transition name="fade">
     <div
       class="container"
-      v-if="colorPalette && visible"
+      v-if="colorPalette"
     >
       <div class="palette-container">
         <div
@@ -24,7 +23,6 @@
         <soma-color-ctrl/>
       </div>
     </div>
-  </transition>
 </template>
 
 
@@ -42,7 +40,6 @@
     data() {
       return {
         colorPalette: {},
-        visible: true,
       };
     },
     mounted() {
@@ -54,8 +51,6 @@
           return Object.assign(palette, { [colorKey]: color });
         }, {});
       });
-      store.$on('hideColorPalette', () => this.hide());
-      store.$on('showColorPalette', () => this.show());
     },
     methods: {
       onMouseOver(paletteKey) {

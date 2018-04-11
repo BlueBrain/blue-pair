@@ -145,7 +145,7 @@ const actions = {
     store.$emit('resetSimConfigBtn');
     store.$emit('showCircuit');
     store.$emit('removeCellMorphology');
-    store.$emit('showColorPalette');
+    store.$emit('setBottomPanelMode', 'cellSelection');
   },
 
   async loadMorphology(store) {
@@ -169,13 +169,29 @@ const actions = {
 
     const simNeurons = cloneDeep(store.state.circuit.simAddedNeurons);
     store.$emit('updateSimCellConfig', simNeurons);
-    store.$emit('hideColorPalette');
+    store.$emit('setBottomPanelMode', 'simulationConfig');
     store.$emit('showCellMorphology');
     store.$emit('hideCircuit');
     store.$emit('setSimulationConfigTabActive');
 
     store.$emit('setStatus', { message: 'Getting synapses' });
     const synConnectionsRaw = await socket.request('get_syn_connections', gids);
+    /**
+     * @desc Array of synaptic connections between given cells.
+     * synConnections = [
+     *   [
+     *     Synapse.POST_X_CENTER,
+     *     Synapse.POST_Y_CENTER,
+     *     Synapse.POST_Z_CENTER,
+     *     Synapse.TYPE,
+     *     Synapse.PRE_GID,
+     *     Synapse.PRE_SECTION_ID,
+     *     Synapse.POST_GID,
+     *     Synapse.POST_SECTION_ID
+     *   ],
+     *   ...
+     * ]
+     */
     store.state.simulation.synConnections = synConnectionsRaw.connections;
 
     store.$emit('setStatus', { message: 'Ready' });
