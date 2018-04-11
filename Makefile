@@ -1,4 +1,4 @@
-.PHONY: help test build release run_dev_backend run_dev_frontend
+.PHONY: help test build release run_dev_backend run_dev_frontend docker_push_latest deploy
 
 VERSION:=$(shell cat VERSION)
 export VERSION
@@ -55,8 +55,12 @@ endif
 			git push --tags; \
 		fi
 
-release: build
-	@echo "releasing $(VERSION)"
+release: build docker_push_latest
+
+deploy: docker_push_latest
+
+docker_push_latest:
+	@echo "pushing docker images for version $(VERSION)"
 	NEURODAMUS_BRANCH=$(NEURODAMUS_BRANCH) \
 		CIRCUIT_PATH=$(CIRCUIT_PATH) \
 		CIRCUIT_NAME=$(CIRCUIT_NAME) \

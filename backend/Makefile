@@ -97,7 +97,7 @@ docker_push_version: docker_build_version
 	docker push docker-registry-default.ocp.bbp.epfl.ch/bbp-ou-nse/bp-svc-$(CIRCUIT_NAME):$(VERSION)
 	@echo 'backend version($(VERSION)) pushed to OpenShift registy'
 
-docker_push_latest:
+docker_push_latest: docker_build_latest
 	docker tag bp-svc-$(CIRCUIT_NAME):latest docker-registry-default.ocp.bbp.epfl.ch/bbp-ou-nse/bp-svc-$(CIRCUIT_NAME):latest
 	docker push docker-registry-default.ocp.bbp.epfl.ch/bbp-ou-nse/bp-svc-$(CIRCUIT_NAME):latest
 	@echo 'backend latest version pushed to OpenShift registry.'
