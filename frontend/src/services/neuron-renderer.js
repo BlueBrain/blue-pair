@@ -171,7 +171,7 @@ class NeuronRenderer {
     this.synConnectionsObj = new THREE.Object3D();
     connections.forEach(([x, y, z, synType]) => {
       const geometry = new THREE.SphereGeometry(5, 32, 32);
-      const synapse = new THREE.Mesh(geometry, synType > 100 ? excSynMaterial : inhSynMaterial);
+      const synapse = new THREE.Mesh(geometry, synType >= 100 ? excSynMaterial : inhSynMaterial);
       synapse.position.set(x, y, z);
       this.synConnectionsObj.add(synapse);
     });
