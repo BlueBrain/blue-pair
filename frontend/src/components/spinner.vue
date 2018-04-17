@@ -8,7 +8,7 @@
   export default {
     name: 'spinner',
     mounted() {
-      store.$on('showSpinner', (msg) => {
+      store.$on('showGlobalSpinner', (msg) => {
         const config = {};
 
         if (msg) {
@@ -17,13 +17,13 @@
               class: 'spin-icon-load',
               props: { type: 'load-c', size: 18 },
             }),
-            h('div', 'Loading'),
+            h('div', msg),
           ]);
         }
 
         this.$Spin.show(config);
       });
-      store.$on('hideSpinner', () => this.$Spin.hide());
+      store.$on('hideGlobalSpinner', () => this.$Spin.hide());
     },
   };
 </script>
