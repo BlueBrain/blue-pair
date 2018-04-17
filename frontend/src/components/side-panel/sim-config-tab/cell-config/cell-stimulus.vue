@@ -1,8 +1,13 @@
 
 <template>
-  <div class="stimulus-container-inner">
+  <div
+    class="stimulus-container-inner"
+    :class="{'disabled': !stimulus.sectionName}"
+  >
     <!-- HEADER -->
-    <p class="title">{{ sectionName | prettySectionName }}</p>
+    <p class="title">
+      Sec: {{ stimulus.sectionName || '---' | prettySectionName }}
+    </p>
 
     <div class="close-btn" @click="onClose">
       <Icon type="ios-close-empty"></Icon>
@@ -15,6 +20,7 @@
           size="small"
           placeholder="Current injection type"
           v-model="stimulus.type"
+          :disabled="!stimulus.sectionName"
           @on-change="onChange"
         >
             <i-option
@@ -44,6 +50,7 @@
                 :min="0"
                 :max="3000"
                 :step="100"
+                :disabled="!stimulus.sectionName"
                 @on-change="onChange"
               >
               </InputNumber>
@@ -59,6 +66,7 @@
                 :min="0"
                 :max="3000"
                 :step="100"
+                :disabled="!stimulus.sectionName"
                 @on-change="onChange"
               >
               </InputNumber>
@@ -75,6 +83,7 @@
                 :min="0.1"
                 :max="10"
                 :step="0.1"
+                :disabled="!stimulus.sectionName"
                 @on-change="onChange"
               ></InputNumber>
             </FormItem>
@@ -160,7 +169,7 @@
 
   export default {
     name: 'cell-stimulus',
-    props: ['value', 'sectionName'],
+    props: ['value'],
     data() {
       return {
         stimulusTypes,
@@ -196,9 +205,14 @@
     background-color: #ffa50021;
     border-radius: 3px;
     padding: 8px;
+
+    &.disabled {
+      background-color: #eee;
+    }
   }
 
   .title {
+    font-weight: 500;
     line-height: 24px;
     margin-bottom: 6px;
   }

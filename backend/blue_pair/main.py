@@ -66,6 +66,7 @@ class WSHandler(tornado.websocket.WebSocketHandler):
             self.send_message('cell_morphology', cell_morph)
 
         elif cmd == 'get_sim_traces':
+            self.send_message('backend_ready')
             sim_config = msg['data']
             traces = get_sim_traces(sim_config)
 

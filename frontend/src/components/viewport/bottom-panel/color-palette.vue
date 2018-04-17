@@ -71,13 +71,6 @@
 
 
 <style scoped lang="scss">
-  .fade-enter-active, .fade-leave-active {
-    transition: opacity .3s;
-  }
-  .fade-enter, .fade-leave-to {
-    opacity: 0;
-  }
-
   .container {
     background-color: #fefdfb;
     border-top: 1px solid #bdc2c8;

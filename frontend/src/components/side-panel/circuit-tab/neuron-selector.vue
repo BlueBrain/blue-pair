@@ -95,6 +95,10 @@
         store.$dispatch('neuronAddedToSim', neuron.gid);
       },
       onNeuronRemove(neuron) {
+        // removed element will not receive mouseleave event,
+        // so emitting event manually to remove soma highlight in viewport
+        this.onNeuronHoverStop();
+
         this.simAddedNeurons = this.simAddedNeurons.filter(nrn => nrn.gid !== neuron.gid);
         // TODO: move logic below to store action
         store.state.circuit.simAddedNeurons = this.simAddedNeurons;

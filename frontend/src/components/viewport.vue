@@ -2,6 +2,7 @@
 <template>
   <div id="container">
     <canvas :id="canvasId"></canvas>
+    <morph-segment-poptip/>
     <bottom-panel/>
   </div>
 </template>
@@ -11,6 +12,7 @@
   import store from '@/store';
   import NeuronRenderer from '@/services/neuron-renderer';
   import BottomPanel from './viewport/bottom-panel.vue';
+  import MorphSegmentPoptip from './viewport/morph-segment-poptip.vue';
 
   export default {
     name: 'viewport-component',
@@ -21,6 +23,7 @@
     },
     components: {
       'bottom-panel': BottomPanel,
+      'morph-segment-poptip': MorphSegmentPoptip,
     },
     mounted() {
       this.renderer = new NeuronRenderer({
@@ -65,7 +68,7 @@
             store.$dispatch('neuronClicked', neuron);
             break;
           case 'morphSegment':
-            store.$dispatch('morphSegmentClicked', obj.data);
+            store.$dispatch('morphSegmentClicked', obj);
             break;
           default:
             break;

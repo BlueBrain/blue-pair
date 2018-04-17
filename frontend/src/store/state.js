@@ -17,12 +17,15 @@ const state = {
   },
   simulation: {
     synapseSize: 3,
+    waitingSecSelection: false,
     morphology: {},
-    globalConfig: {
+    params: {
       tStop: 400,
       timeStep: 0.025,
     },
-    cellConfigs: [],
+    stimuli: [],
+    recordings: [],
+    traces: [],
   },
 };
 

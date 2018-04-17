@@ -2,6 +2,7 @@
 import socket from '@/services/websocket';
 import storage from '@/services/storage';
 import cloneDeep from 'lodash/cloneDeep';
+import remove from 'lodash/remove';
 
 // TODO: prefix events with target component's names
 
@@ -32,6 +33,14 @@ const actions = {
     store.$emit('initNeuronColor');
     store.$emit('initNeuronPropFilter');
     store.$emit('circuitLoaded');
+  },
+
+  showGlobalSpinner(store, msg) {
+    store.$emit('showGlobalSpinner', msg);
+  },
+
+  hideGlobalSpinner(store) {
+    store.$emit('hideGlobalSpinner');
   },
 
   circuitColorUpdated(store) {
@@ -90,24 +99,15 @@ const actions = {
     store.$emit('removeCircuitSomaHighlight');
   },
 
-  morphSegmentClicked(store, segment) {
+  setWaitingSecSelection(store, val) {
+    store.state.simulation.waitingSecSelection = val;
+  },
+
+  morphSegmentClicked(store, context) {
+    const segment = context.data;
     store.$emit('morphSegmentSelected', segment);
-  },
 
-  secRecordingAdded(store, config) {
-    store.$emit('addSecMarker', Object.assign({}, config, { type: 'recording' }));
-  },
-
-  secRecordingRemoved(store, config) {
-    store.$emit('removeSecMarker', Object.assign({}, config, { type: 'recording' }));
-  },
-
-  secInjectionAdded(store, config) {
-    store.$emit('addSecMarker', Object.assign({}, config, { type: 'injection' }));
-  },
-
-  secInjectionRemoved(store, config) {
-    store.$emit('removeSecMarker', Object.assign({}, config, { type: 'injection' }));
+    if (!store.state.simulation.waitingSecSelection) store.$emit('showMorphSegmentPoptip', context);
   },
 
   paletteKeyHover(store, paletteKey) {
@@ -131,18 +131,29 @@ const actions = {
 
   runSim(store) {
     store.$emit('setStatus', { message: 'Runnig simulation' });
-    socket.send('get_sim_traces', {
-      cells: store.state.simulation.cellConfigs,
-      globalConfig: store.state.simulation.globalConfig,
+    // store.$dispatch('showGlobalSpinner', 'Waiting for simulation backend to be ready...');
+
+    store.$once('ws:backend_ready', () => {
+      store.$dispatch('showGlobalSpinner', 'Initializing simulation...');
     });
+
+    store.$once('ws:simulation_result', () => store.$dispatch('hideGlobalSpinner'));
+
+    const gids = store.state.circuit.simAddedNeurons.map(n => n.gid);
+
+    const simConfig = {
+      gids,
+      tStop: store.state.simulation.params.tStop,
+      timeStep: store.state.simulation.params.timeStep,
+      stimuli: store.state.simulation.stimuli,
+      recordings: store.state.simulation.recordings,
+    };
+
+    socket.send('get_sim_traces', simConfig);
   },
 
-  updateGlobalSimConfig(store, config) {
-    Object.assign(store.state.simulation.globalConfig, config);
-  },
-
-  updateSimCellConfigs(store, cellConfigs) {
-    store.state.simulation.cellConfigs = cellConfigs;
+  updateGlobalSimParams(store, params) {
+    Object.assign(store.state.simulation.params, params);
   },
 
   circuitTabSelected(store) {
@@ -150,6 +161,57 @@ const actions = {
     store.$emit('showCircuit');
     store.$emit('removeCellMorphology');
     store.$emit('setBottomPanelMode', 'cellSelection');
+  },
+
+  addStimulus(store, segment) {
+    store.state.simulation.stimuli.push({
+      gid: segment.gid,
+      sectionName: segment.sectionName,
+      type: 'step',
+      delay: 100,
+      duration: 400,
+      current: 0.7,
+      stopCurrent: 0.2,
+    });
+    store.$emit('addSecMarker', {
+      type: 'stimulus',
+      gid: segment.gid,
+      sectionName: segment.sectionName,
+    });
+    store.$emit('updateStimuli');
+  },
+
+  removeStimulus(store, stimulus) {
+    remove(store.state.simulation.stimuli, s => s.sectionName === stimulus.sectionName);
+    store.$emit('removeSecMarker', {
+      type: 'stimulus',
+      gid: stimulus.gid,
+      sectionName: stimulus.sectionName,
+    });
+    store.$emit('updateStimuli');
+  },
+
+  addRecording(store, segment) {
+    store.state.simulation.recordings.push({
+      gid: segment.gid,
+      sectionName: segment.sectionName,
+    });
+    store.$emit('addSecMarker', {
+      type: 'recording',
+      gid: segment.gid,
+      sectionName: segment.sectionName,
+    });
+    store.$emit('updateRecordings');
+  },
+
+  removeRecording(store, recording) {
+    remove(store.state.simulation.recordings, r => r.sectionName === recording.sectionName);
+    store.$emit('removeSecMarker', {
+      type: 'recording',
+      gid: recording.gid,
+      sectionName: recording.sectionName,
+    });
+    store.$emit('updateRecordings');
   },
 
   async loadMorphology(store) {

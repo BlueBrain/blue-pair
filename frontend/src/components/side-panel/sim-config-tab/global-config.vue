@@ -33,6 +33,21 @@
         </Form>
       </i-col>
     </Row>
+
+    <br>
+
+    <Row>
+      <i-col span="6" offset="18">
+        <i-button
+          long
+          size="small"
+          type="primary"
+          :loading="loading"
+          @click="onRunSimBtnClick"
+        >Run Simulation</i-button>
+      </i-col>
+    </Row>
+
   </Card>
 </template>
 
@@ -44,13 +59,21 @@
     name: 'global-config',
     data() {
       return {
-        config: store.state.simulation.globalConfig,
+        config: store.state.simulation.params,
+        loading: false,
       };
     },
     methods: {
       onConfigChange() {
-        store.$dispatch('updateGlobalSimConfig', this.config);
+        store.$dispatch('updateGlobalSimParams', this.config);
       },
+      onRunSimBtnClick() {
+        this.loading = true;
+        store.$dispatch('runSim');
+      },
+    },
+    mounted() {
+      store.$on('ws:simulation_result', () => { this.loading = false; });
     },
   };
 </script>

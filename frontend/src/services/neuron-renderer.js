@@ -2,7 +2,6 @@
 import * as THREE from 'three';
 import * as chroma from 'chroma-js';
 import throttle from 'lodash/throttle';
-import isEqual from 'lodash/isEqual';
 import { TweenLite, TimelineLite } from 'gsap';
 
 // TODO: refactor to remove store operations
@@ -81,16 +80,19 @@ class NeuronRenderer {
     const segInjTexture = new THREE.TextureLoader().load('/seg-inj-texture.png');
     segInjTexture.wrapS = THREE.RepeatWrapping;
     segInjTexture.wrapT = THREE.RepeatWrapping;
+    segInjTexture.repeat.set(1, 3);
 
     const segRecTexture = new THREE.TextureLoader().load('/seg-rec-texture.png');
     segRecTexture.wrapS = THREE.RepeatWrapping;
     segRecTexture.wrapT = THREE.RepeatWrapping;
+    segRecTexture.repeat.set(1, 3);
 
     this.recMarkerMaterial = new THREE.MeshBasicMaterial({
       color: 0x00bfff,
       opacity: 0.7,
       map: segRecTexture,
       transparent: true,
+      side: THREE.DoubleSide,
     });
 
     this.injMarkerMaterial = new THREE.MeshBasicMaterial({
@@ -98,6 +100,7 @@ class NeuronRenderer {
       opacity: 0.7,
       map: segInjTexture,
       transparent: true,
+      side: THREE.DoubleSide,
     });
 
     this.onHoverHandler = onHover;
@@ -169,11 +172,14 @@ class NeuronRenderer {
   showSynConnections() {
     const connections = store.state.simulation.synConnections;
     this.synConnectionsObj = new THREE.Object3D();
-    connections.forEach(([x, y, z, synType]) => {
-      const geometry = new THREE.SphereGeometry(5, 32, 32);
+    connections.forEach(([x, y, z, synType, preGid, preSecId, postGid]) => {
+      const container = new THREE.Object3D();
+      const geometry = new THREE.SphereGeometry(4, 32, 32);
       const synapse = new THREE.Mesh(geometry, synType >= 100 ? excSynMaterial : inhSynMaterial);
-      synapse.position.set(x, y, z);
-      this.synConnectionsObj.add(synapse);
+      synapse.userData.gid = postGid;
+      container.add(synapse);
+      container.position.set(x, y, z);
+      this.synConnectionsObj.add(container);
     });
     this.scene.add(this.synConnectionsObj);
   }
@@ -231,7 +237,7 @@ class NeuronRenderer {
 
           const color = new THREE.Color(...glColor);
           // TODO: reuse material
-          const material = new THREE.MeshLambertMaterial({ color });
+          const material = new THREE.MeshLambertMaterial({ color, transparent: true });
           const cylinder = new THREE.Mesh(geometry, material);
           cylinder.name = 'morphSegment';
           // TODO: optimize memory consumption?
@@ -273,7 +279,7 @@ class NeuronRenderer {
       const diam = sec.diam[i] + diamDelta;
       const markerGeometry = new THREE.CylinderGeometry(diam, diam, length, 20, 1, true);
       const material = config.type === 'recording' ? this.recMarkerMaterial : this.injMarkerMaterial;
-      const marker = new THREE.Mesh(markerGeometry, material);
+      const marker = new THREE.Mesh(markerGeometry, material.clone());
       marker.name = 'sectionMarker';
       marker.userData = config;
       marker.scale.setY(scaleLength);
@@ -292,11 +298,11 @@ class NeuronRenderer {
     });
   }
 
-  removeSecMarker(config) {
+  removeSecMarker(segment) {
     // TODO: refactor
     const markersToRemove = [];
     this.secMarkerObj.traverse((child) => {
-      if (child instanceof THREE.Mesh && isEqual(config, child.userData)) {
+      if (child instanceof THREE.Mesh && segment.sectionName === child.userData.sectionName) {
         markersToRemove.push(child);
       }
     });
@@ -367,6 +373,10 @@ class NeuronRenderer {
       type: clickedMesh.object.name,
       index: clickedMesh.index,
       data: clickedMesh.object.userData,
+      clickPosition: {
+        x: e.clientX,
+        y: e.clientY,
+      },
     });
   }
 
@@ -448,38 +458,71 @@ class NeuronRenderer {
   }
 
   highlightMorphCell(gid) {
-    const segmentScaleObjects = [];
+    const materialsToShow = [];
+    const materialsToHide = [];
+
+    if (this.morphCellHighlightAnimation) this.morphCellHighlightAnimation.kill();
+
+    // TODO: refactor to avoid repetitions
     this.cellMorphologyObj.traverse((child) => {
       if (!(child instanceof THREE.Mesh)) return;
 
       if (child.userData.neuron.gid === gid) {
-        child.userData.color = child.material.color;
-        child.material.color = new THREE.Color(0xf26d21);
-        segmentScaleObjects.push(child.scale);
+        materialsToShow.push(child.material);
+      } else {
+        materialsToHide.push(child.material);
       }
     });
 
-    this.morphCellHighlightAnimation = TweenLite.fromTo(
-      segmentScaleObjects,
-      0.3,
-      { x: 1, z: 1 },
-      { x: 2, z: 2 },
-    );
+    this.secMarkerObj.traverse((child) => {
+      if (!(child instanceof THREE.Mesh)) return;
+
+      if (child.userData.gid === gid) {
+        materialsToShow.push(child.material);
+      } else {
+        materialsToHide.push(child.material);
+      }
+    });
+
+    if (this.synConnectionsObj) {
+      this.synConnectionsObj.traverse((child) => {
+        if (!(child instanceof THREE.Mesh)) return;
+
+        if (child.userData.gid === gid) {
+          materialsToShow.push(child.material);
+        } else {
+          materialsToHide.push(child.material);
+        }
+      });
+    }
+
+    this.morphCellHighlightAnimation = new TimelineLite();
+    this.morphCellHighlightAnimation
+      .to(materialsToHide, 0.3, { opacity: 0.1 })
+      .to(materialsToShow, 0.3, { opacity: 1 }, 0);
   }
 
   unhighlightMorphCell() {
+    if (this.morphCellHighlightAnimation) this.morphCellHighlightAnimation.kill();
+
+    const materialsToShow = [];
     this.cellMorphologyObj.traverse((child) => {
       if (!(child instanceof THREE.Mesh)) return;
 
-      if (child.userData.color) {
-        child.material.color = child.userData.color;
-        delete child.userData.color;
-      }
+      materialsToShow.push(child.material);
     });
 
-    const animation = this.morphCellHighlightAnimation;
-    animation.eventCallback('onReverseComplete', () => animation.kill());
-    animation.reverse();
+    this.secMarkerObj.traverse((child) => {
+      if (child instanceof THREE.Mesh) materialsToShow.push(child.material);
+    });
+
+    if (this.synConnectionsObj) {
+      this.synConnectionsObj.traverse((child) => {
+        if (child instanceof THREE.Mesh) materialsToShow.push(child.material);
+      });
+    }
+
+    this.morphCellHighlightAnimation = TweenLite.to(materialsToShow, 0.3, { opacity: 1 });
   }
 
   unhoverMorphSegment() {
@@ -491,7 +534,7 @@ class NeuronRenderer {
   }
 
   highlightCircuitSoma(gid) {
-    if (this.neuronHighlightAnimation && !this.neuronHighlightAnimation.reversed()) return;
+    if (this.neuronHighlightAnimation) this.neuronHighlightAnimation.kill();
 
     const neuronIndex = gid - 1;
 
@@ -505,32 +548,31 @@ class NeuronRenderer {
     const position = new THREE.Vector3(...store.$get('neuronPosition', neuronIndex));
     this.highlightedNeuron.geometry.vertices[0] = position;
 
-    this.neuronHighlightAnimation = new TimelineLite({ paused: true });
-    this.neuronHighlightAnimation.add([
-      TweenLite.fromTo(
-        this.neuronCloud.points.material,
-        0.3,
-        { size: this.neuronCloud.points.material.size, opacity: 0.85 },
-        { size: 8, opacity: 0.3 },
-      ),
-      TweenLite.fromTo(
-        this.highlightedNeuron.material,
-        0.3,
-        { size: 1, opacity: 0 },
-        { size: 48, opacity: 1 },
-      ),
-    ]);
+    this.neuronHighlightAnimation = new TimelineLite();
+    this.neuronHighlightAnimation
+      .to(this.neuronCloud.points.material, 0.3, { size: 8, opacity: 0.3 })
+      .to(this.highlightedNeuron.material, 0.3, { size: 48, opacity: 1 }, 0);
+
     this.neuronHighlightAnimation.eventCallback('onUpdate', () => {
       this.highlightedNeuron.geometry.verticesNeedUpdate = true;
       this.highlightedNeuron.geometry.colorsNeedUpdate = true;
     });
-    this.neuronHighlightAnimation.play();
   }
 
   removeCircuitSomaHighlight() {
-    const animation = this.neuronHighlightAnimation;
-    animation.eventCallback('onReverseComplete', () => animation.kill());
-    animation.reverse();
+    if (this.neuronHighlightAnimation) this.neuronHighlightAnimation.kill();
+
+    const { somaSize } = store.state.circuit;
+
+    this.neuronHighlightAnimation = new TimelineLite();
+    this.neuronHighlightAnimation
+      .to(this.neuronCloud.points.material, 0.3, { size: somaSize, opacity: 0.85 })
+      .to(this.highlightedNeuron.material, 0.3, { size: 0, opacity: 0 }, 0);
+
+    this.neuronHighlightAnimation.eventCallback('onUpdate', () => {
+      this.highlightedNeuron.geometry.verticesNeedUpdate = true;
+      this.highlightedNeuron.geometry.colorsNeedUpdate = true;
+    });
   }
 
   disposeObject(obj) {
