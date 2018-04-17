@@ -1,4 +1,7 @@
 
+import clone from 'lodash/clone';
+import some from 'lodash/some';
+
 const getters = {
   neuron(store, index) {
     const { neurons, neuronPropIndex } = store.state.circuit;
@@ -18,6 +21,22 @@ const getters = {
       neurons[index][neuronPropIndex.y],
       neurons[index][neuronPropIndex.z],
     ];
+  },
+
+  stimuli(store) {
+    return clone(store.state.simulation.stimuli);
+  },
+
+  recordings(store) {
+    return clone(store.state.simulation.recordings);
+  },
+
+  isStimulusPresent(store, segment) {
+    return some(store.state.simulation.stimuli, s => s.sectionName === segment.sectionName);
+  },
+
+  isRecordingPresent(store, segment) {
+    return some(store.state.simulation.recordings, r => r.sectionName === segment.sectionName);
   },
 };
 
