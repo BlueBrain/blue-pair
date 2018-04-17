@@ -16,13 +16,13 @@ class Store {
     return getters[property](this, args);
   }
 
-  $dispatchSync(action, payload) {
-    actions[action](this, payload);
+  $dispatchAsync(action, payload) {
+    setTimeout(() => actions[action](this, payload), 0);
   }
 
   $dispatch(action, payload) {
     if (!actions[action]) throw new Error(`Store action ${action} is not available`);
-    setTimeout(() => actions[action](this, payload), 0);
+    actions[action](this, payload);
   }
 
   $emitSync(action, payload) {
@@ -35,6 +35,10 @@ class Store {
 
   $on(action, handler) {
     this.eventBus.$on(action, handler);
+  }
+
+  $once(action, handler) {
+    this.eventBus.$once(action, handler);
   }
 }
 
