@@ -66,6 +66,10 @@ const actions = {
     store.$emit('setSomaSize', size);
   },
 
+  setSynapseSize(store, size) {
+    store.$emit('setSynapseSize', size);
+  },
+
   neuronClicked(store, neuron) {
     store.$emit('addNeuronToSim', neuron);
   },

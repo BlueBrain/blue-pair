@@ -32,6 +32,7 @@
       store.$dispatch('loadCircuit');
       store.$on('circuitLoaded', this.initRenderer.bind(this));
       store.$on('setSomaSize', size => this.renderer.setNeuronCloudPointSize(size));
+      store.$on('setSynapseSize', size => this.renderer.setMorphSynapseSize(size));
       store.$on('redrawCircuit', this.redrawNeurons.bind(this));
       store.$on('showCellMorphology', morphObj => this.renderer.initMorphology(morphObj));
       store.$on('removeCellMorphology', () => {

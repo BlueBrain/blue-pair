@@ -16,6 +16,7 @@ const state = {
     },
   },
   simulation: {
+    synapseSize: 3,
     morphology: {},
     globalConfig: {
       tStop: 400,

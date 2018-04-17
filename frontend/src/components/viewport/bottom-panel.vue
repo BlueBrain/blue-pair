@@ -14,6 +14,9 @@
     <transition name="fade">
       <div class="sim-panel" v-if="mode === 'simulationConfig'">
         <syn-color-palette/>
+        <div class="synapse-size-ctrl">
+          <synapse-size-ctrl/>
+        </div>
       </div>
     </transition>
 
@@ -27,6 +30,7 @@
   // Cell selection components
   import ColorPalette from './bottom-panel/color-palette.vue';
   import SomaSizeCtrl from './bottom-panel/soma-size-ctrl.vue';
+  import SynapseSizeCtrl from './bottom-panel/synapse-size-ctrl.vue';
 
   // Simulation config components
   import SynColorPalette from './bottom-panel/syn-color-palette.vue';
@@ -36,6 +40,7 @@
       'color-palette': ColorPalette,
       'soma-size-ctrl': SomaSizeCtrl,
       'syn-color-palette': SynColorPalette,
+      'synapse-size-ctrl': SynapseSizeCtrl,
     },
     data() {
       return {
@@ -56,7 +61,7 @@
     right: 0;
     bottom: 0;
 
-    .soma-size-ctrl {
+    .soma-size-ctrl, .synapse-size-ctrl {
       position: absolute;
       right: 12px;
       top: -224px;

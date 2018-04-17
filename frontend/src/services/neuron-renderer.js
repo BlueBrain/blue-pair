@@ -330,6 +330,15 @@ class NeuronRenderer {
     this.neuronCloud.points.material.size = size;
   }
 
+  setMorphSynapseSize(size) {
+    const scale = size / 3;
+    this.synConnectionsObj.traverse((child) => {
+      if (child instanceof THREE.Mesh) {
+        child.scale.set(scale, scale, scale);
+      }
+    });
+  }
+
   updateNeuronCloud() {
     this.neuronCloud.points.geometry.attributes.position.needsUpdate = true;
     this.neuronCloud.points.geometry.attributes.color.needsUpdate = true;
