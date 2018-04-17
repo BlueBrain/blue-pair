@@ -1,4 +1,6 @@
 
+import get from 'lodash/get';
+
 import config from '@/config';
 import eventBus from './event-bus';
 
@@ -61,10 +63,11 @@ class Ws {
     this.socket.addEventListener('message', (e) => {
       const message = JSON.parse(e.data);
 
-      if (message.data.cmdid) {
-        const requestResolver = this.requestResolvers.get(message.data.cmdid);
+      const cmdId = get(message, 'data.cmdid');
+      if (cmdId) {
+        const requestResolver = this.requestResolvers.get(cmdId);
         requestResolver(message.data);
-        this.requestResolvers.delete(message.id);
+        this.requestResolvers.delete(cmdId);
         return;
       }
 
