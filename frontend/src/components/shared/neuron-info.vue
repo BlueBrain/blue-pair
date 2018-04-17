@@ -10,11 +10,13 @@
 
 
 <script>
+  import store from '@/store';
+
   const hiddenProps = ['x', 'y', 'z', 'orientation'];
 
   export default {
     name: 'neuron-info',
-    props: ['neuron'],
+    props: ['neuron', 'gid'],
     data() {
       return {
         table: {
@@ -30,7 +32,8 @@
       };
     },
     created() {
-      this.table.data = Object.entries(this.neuron)
+      const neuron = this.neuron || store.$get('neuron', this.gid);
+      this.table.data = Object.entries(neuron)
         .filter(([prop]) => !hiddenProps.includes(prop))
         .map(([prop, val]) => ({ prop, val }));
     },
