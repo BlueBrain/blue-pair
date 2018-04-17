@@ -25,3 +25,32 @@
     },
   };
 </script>
+
+
+<style lang="scss">
+  .fade-enter-active, .fade-leave-active {
+    transition: opacity .2s;
+  }
+  .fade-enter, .fade-leave-to {
+    opacity: 0;
+  }
+
+  .fadeHeight-enter-active, .fadeHeight-leave-active {
+    transition: all .2s;
+    max-height: 200px;
+  }
+  .fadeHeight-enter, .fadeHeight-leave-to
+  {
+    opacity: 0;
+    max-height: 0px;
+  }
+
+  .mt-12 {
+    margin-top: 12px;
+  }
+
+  .ivu-collapse-header {
+    height: 24px !important;
+    line-height: 24px !important;
+  }
+</style>
