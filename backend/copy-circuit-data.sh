@@ -207,6 +207,27 @@ rsync \
 echo '### Done'
 
 
+echo
+echo '####################################################################################################'
+echo '### Create folder for TargetFile'
+echo '### Path:' "$target_pod:$(dirname "$target_file")"
+oc rsh "$target_pod" mkdir -p "$(dirname $target_file)"
+echo '### Done'
+
+
+echo
+echo '####################################################################################################'
+echo '### Sync TargetFile'
+echo '### Source:' "$target_file"
+echo '### Destination:' "$target_pod:$target_file"
+rsync \
+    -Lh \
+    --progress \
+    --ignore-existing \
+    "$target_file" "$target_pod:$target_file"
+echo '### Done'
+
+
 # Copy circuit config last as backend starts when this file is present
 echo
 echo '####################################################################################################'
