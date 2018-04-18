@@ -32,7 +32,7 @@
       };
     },
     created() {
-      const neuron = this.neuron || store.$get('neuron', this.gid);
+      const neuron = this.neuron || store.$get('neuron', this.gid - 1);
       this.table.data = Object.entries(neuron)
         .filter(([prop]) => !hiddenProps.includes(prop))
         .map(([prop, val]) => ({ prop, val }));
