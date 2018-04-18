@@ -24,8 +24,8 @@ const BACKGROUND_COLOR = 0xfefdfb;
 const HOVER_BOX_COLOR = 0xffdf00;
 const hoverNeuronColor = new THREE.Color(0xf26d21).toArray();
 
-const excSynMaterial = new THREE.MeshLambertMaterial({ color: 0xff0000 });
-const inhSynMaterial = new THREE.MeshLambertMaterial({ color: 0x1020ff });
+const excSynMaterial = new THREE.MeshLambertMaterial({ color: 0xff0000, transparent: true });
+const inhSynMaterial = new THREE.MeshLambertMaterial({ color: 0x1020ff, transparent: true });
 
 const baseMorphColors = {
   soma: chroma('#A9A9A9'),
@@ -175,7 +175,8 @@ class NeuronRenderer {
     connections.forEach(([x, y, z, synType, preGid, preSecId, postGid]) => {
       const container = new THREE.Object3D();
       const geometry = new THREE.SphereGeometry(4, 32, 32);
-      const synapse = new THREE.Mesh(geometry, synType >= 100 ? excSynMaterial : inhSynMaterial);
+      const material = (synType >= 100 ? excSynMaterial : inhSynMaterial).clone();
+      const synapse = new THREE.Mesh(geometry, material);
       synapse.userData.gid = postGid;
       container.add(synapse);
       container.position.set(x, y, z);
