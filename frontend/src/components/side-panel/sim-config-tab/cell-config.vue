@@ -23,7 +23,12 @@
                 :transfer="true"
                 width="540"
               >
-                <h4>GID: {{ gid }}</h4>
+                <h4
+                  @mouseover="onGidHover(gid)"
+                  @mouseleave="onGidUnhover()"
+                >
+                  GID: {{ gid }}
+                </h4>
                 <div slot="content">
                   <neuron-info :gid="gid"/>
                 </div>
@@ -33,8 +38,6 @@
                 class="stimuli-container"
                 v-for="(stimulus, stimulusIndex) of stimuliSet"
                 :key="stimulus.sectionName"
-                @mouseover="onStimulusHover(stimulus)"
-                @mouseleave="onStimulusUnhover()"
               >
                 <transition name="fadeHeight">
                   <cell-stimulus
@@ -97,7 +100,12 @@
                 :transfer="true"
                 width="540"
               >
-                <h4>GID: {{ gid }}</h4>
+                <h4
+                  @mouseover="onGidHover(gid)"
+                  @mouseleave="onGidUnhover()"
+                >
+                  GID: {{ gid }}
+                </h4>
                 <div slot="content">
                   <neuron-info :gid="gid"/>
                 </div>
@@ -111,7 +119,12 @@
                   :key="recording.sectionName"
                   @on-close="removeRecording(recording)"
                 >
-                  <span>{{ recording.sectionName  || '---' | shortSectionName }}</span>
+                  <span
+                    @mouseover="onSectionLabelHover(recording)"
+                    @mouseleave="onSectionLabelUnhover()"
+                  >
+                    {{ recording.sectionName  || '---' | shortSectionName }}
+                  </span>
                 </Tag>
               </div>
 
@@ -121,14 +134,18 @@
                 name="fade"
                 mode="out-in"
               >
-                <Tag
-                  type="border"
-                  closable
-                  v-if="tmpRecording"
-                  @on-close="removeTmpRecording()"
-                >
-                  GID: ---, sec: ---
-                </Tag>
+                <div v-if="tmpRecording">
+                  <Tag
+                    type="border"
+                    closable
+                    @on-close="removeTmpRecording()"
+                  >
+                    GID: ---, sec: ---
+                  </Tag>
+                  <span class="cta-title ml-6">
+                    Click on a segment in 3d viewer to make a selection
+                  </span>
+                </div>
                 <i-button
                   v-else
                   size="small"
@@ -154,7 +171,12 @@
               v-for="(trace, gid) of traces"
               :key="gid"
             >
-              <h4>GID: {{ gid }}</h4>
+              <h4
+                @mouseover="onGidHover(gid)"
+                @mouseleave="onGidUnhover()"
+              >
+                GID: {{ gid }}
+              </h4>
               <dygraph
                 v-if="trace.chart.data.length"
                 :data="trace.chart.data"
@@ -271,14 +293,11 @@
       uncollapsePanel(panel) {
         this.collapsePanel[panel] = [0];
       },
-      onStimulusHover(stimulus) {
-        if (this.hover) return;
-        store.$dispatch('simConfigNeuronHovered', stimulus.gid);
-        this.hover = true;
+      onGidHover(gid) {
+        store.$dispatch('simConfigGidLabelHovered', Number(gid));
       },
-      onStimulusUnhover() {
-        this.hover = false;
-        store.$dispatch('simConfigNeuronUnhovered');
+      onGidUnhover() {
+        store.$dispatch('simConfigGidLabelUnhovered');
       },
       addTmpStimulus() {
         this.tmpStimulus = {
@@ -309,6 +328,12 @@
       },
       updateWaitingSecSelection() {
         store.$dispatch('setWaitingSecSelection', !!this.tmpRecording || this.tmpStimulus);
+      },
+      onSectionLabelHover(section) {
+        store.$dispatch('simConfigSectionLabelHovered', section.gid);
+      },
+      onSectionLabelUnhover() {
+        store.$dispatch('simConfigSectionLabelUnhovered');
       },
     },
     computed: {

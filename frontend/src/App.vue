@@ -49,6 +49,10 @@
     margin-top: 12px;
   }
 
+  .ml-6 {
+    margin-left: 6px;
+  }
+
   .ivu-collapse-header {
     height: 24px !important;
     line-height: 24px !important;

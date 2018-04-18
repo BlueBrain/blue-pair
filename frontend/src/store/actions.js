@@ -105,9 +105,10 @@ const actions = {
 
   morphSegmentClicked(store, context) {
     const segment = context.data;
-    store.$emit('morphSegmentSelected', segment);
 
     if (!store.state.simulation.waitingSecSelection) store.$emit('showMorphSegmentPoptip', context);
+
+    store.$emit('morphSegmentSelected', segment);
   },
 
   paletteKeyHover(store, paletteKey) {
@@ -121,11 +122,19 @@ const actions = {
     store.$emit('removeTmpGlobalFilter');
   },
 
-  simConfigNeuronHovered(store, gid) {
+  simConfigGidLabelHovered(store, gid) {
     store.$emit('highlightMorphCell', gid);
   },
 
-  simConfigNeuronUnhovered(store) {
+  simConfigGidLabelUnhovered(store) {
+    store.$emit('unhighlightMorphCell');
+  },
+
+  simConfigSectionLabelHovered(store, gid) {
+    store.$emit('highlightMorphCell', gid);
+  },
+
+  simConfigSectionLabelUnhovered(store) {
     store.$emit('unhighlightMorphCell');
   },
 

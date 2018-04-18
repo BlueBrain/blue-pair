@@ -5,11 +5,24 @@
     :class="{'disabled': !stimulus.sectionName}"
   >
     <!-- HEADER -->
-    <p class="title">
+    <p
+      class="title"
+      @mouseover="onSectionLabelHover(stimulus)"
+      @mouseleave="onSectionLabelUnhover()"
+    >
       Sec: {{ stimulus.sectionName || '---' | prettySectionName }}
+      <span
+        class="cta-title ml-6"
+        v-if="!stimulus.sectionName"
+      >
+        Click on a segment in 3d viewer to make a selection
+      </span>
     </p>
 
-    <div class="close-btn" @click="onClose">
+    <div
+      class="close-btn"
+      @click="onClose"
+    >
       <Icon type="ios-close-empty"></Icon>
     </div>
 
@@ -162,6 +175,8 @@
 
 
 <script>
+  import store from '@/store';
+
   const stimulusTypes = {
     step: 'Step current',
     ramp: 'Ramp current',
@@ -174,6 +189,7 @@
       return {
         stimulusTypes,
         stimulus: Object.assign({}, this.value),
+        hovered: false,
       };
     },
     methods: {
@@ -182,6 +198,15 @@
       },
       onClose() {
         this.$emit('on-close');
+      },
+      onSectionLabelHover(stimulus) {
+        if (this.hovered) return;
+        store.$dispatch('simConfigSectionLabelHovered', stimulus.gid);
+        this.hovered = true;
+      },
+      onSectionLabelUnhover() {
+        this.hovered = false;
+        store.$dispatch('simConfigSectionLabelUnhovered');
       },
     },
   };
@@ -215,6 +240,13 @@
     font-weight: 500;
     line-height: 24px;
     margin-bottom: 6px;
+  }
+
+  .cta-title {
+    font-weight: normal;
+    font-size: 12px;
+    color: #888888;
+    margin-bottom: 12px;
   }
 
   .close-btn {
