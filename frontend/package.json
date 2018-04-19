@@ -26,7 +26,7 @@
     "iview": "^2.13.0",
     "localforage": "^1.7.1",
     "lodash": "^4.17.5",
-    "three": "^0.91.0",
+    "three": "^0.92.0",
     "three-orbit-controls": "^82.1.0",
     "vue": "^2.5.16",
     "vue-slider-component": "^2.6.2"
