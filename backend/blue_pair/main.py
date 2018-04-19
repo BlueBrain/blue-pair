@@ -1,5 +1,6 @@
 
 import os
+import time
 import json
 import logging
 
@@ -9,14 +10,22 @@ import tornado.websocket
 
 from tornado.log import enable_pretty_logging
 
-from blue_pair.storage import Storage
-from blue_pair.utils import NumpyAwareJSONEncoder
-from blue_pair.sim import get_sim_traces
-
 
 enable_pretty_logging()
 L = logging.getLogger(__name__)
 L.setLevel(logging.DEBUG if os.getenv('DEBUG', False) else logging.INFO)
+
+circuit_path = os.environ['CIRCUIT_PATH']
+while not os.path.isfile(circuit_path):
+    L.warning('circuit config is not found (not uploaded yet / wrong path)')
+    L.info('waiting while circuit config will become available')
+    time.sleep(60)
+
+
+from blue_pair.storage import Storage
+from blue_pair.utils import NumpyAwareJSONEncoder
+from blue_pair.sim import get_sim_traces
+
 
 L.debug('creating storage instance')
 STORAGE = Storage()
@@ -36,10 +45,22 @@ class WSHandler(tornado.websocket.WebSocketHandler):
 
         if cmd == 'get_circuit_cells':
             cells = STORAGE.get_circuit_cells()
-            cells['cmdid'] = cmdid
+            cell_count = len(cells)
 
-            L.debug('sending circuit cells to the client')
-            self.send_message('circuit_cells', cells)
+            L.debug('sending circuit cell properties to the client')
+            circuit_info = {
+                'properties': cells.columns.tolist(),
+                'count': cell_count
+            }
+            self.send_message('circuit_cell_info', circuit_info)
+
+            current_index = 0
+            chunk_size = int(cell_count / 100)
+            while current_index < cell_count:
+                cell_data_chunk = cells[current_index : current_index + chunk_size]
+                L.debug('sending circuit cell data chunk for cells %s:%s to the client', current_index, current_index + chunk_size)
+                self.send_message('circuit_cells_data', cell_data_chunk.values)
+                current_index = current_index + chunk_size
 
         elif cmd == 'get_cell_connectome':
             gid = msg['data']
@@ -67,8 +88,11 @@ class WSHandler(tornado.websocket.WebSocketHandler):
 
         elif cmd == 'get_sim_traces':
             self.send_message('backend_ready')
+            def p(traces):
+                self.send_message('simulation_result', traces)
+
             sim_config = msg['data']
-            traces = get_sim_traces(sim_config)
+            traces = get_sim_traces(sim_config, p)
 
             L.debug('sending simulation traces to the client')
             self.send_message('simulation_result', traces)

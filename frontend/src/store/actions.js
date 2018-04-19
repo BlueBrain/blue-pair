@@ -1,30 +1,53 @@
 
-import socket from '@/services/websocket';
-import storage from '@/services/storage';
 import cloneDeep from 'lodash/cloneDeep';
 import remove from 'lodash/remove';
+
+import socket from '@/services/websocket';
+import storage from '@/services/storage';
 
 // TODO: prefix events with target component's names
 
 
 const actions = {
   async loadCircuit(store) {
-    let neuronDataSet = await storage.getItem('neuronData');
-    if (!neuronDataSet) {
-      store.$emit('showSpinner', 'Loading circuit');
-      neuronDataSet = await socket.request('get_circuit_cells');
-      storage.setItem('neuronData', neuronDataSet);
-      store.$emit('hideSpinner');
+    const { circuit } = store.state;
+    const neuronDataSet = await storage.getItem('neuronData');
+
+    if (neuronDataSet) {
+      circuit.neuronProps = neuronDataSet.properties;
+      circuit.neurons = neuronDataSet.data;
+      store.$dispatch('initCircuit');
+      return;
     }
 
-    store.state.circuit.neuronProps = neuronDataSet.properties;
+    store.$emit('showCircuitLoadingModal');
 
-    store.state.circuit.neuronPropIndex = neuronDataSet.properties
+    store.$once('ws:circuit_cell_info', (info) => {
+      circuit.neuronCount = info.count;
+      circuit.neuronProps = info.properties;
+    });
+
+    store.$on('ws:circuit_cells_data', (cellData) => {
+      circuit.neurons.push(...cellData);
+      const progress = Math.ceil((circuit.neurons.length / circuit.neuronCount) * 100);
+      store.$emit('setCircuitLoadingProgress', progress);
+      if (circuit.neurons.length === circuit.neuronCount) {
+        storage.setItem('neuronData', {
+          properties: circuit.neuronProps,
+          data: circuit.neurons,
+        });
+        store.$dispatch('initCircuit');
+      }
+    });
+
+    socket.request('get_circuit_cells');
+  },
+
+  initCircuit(store) {
+    store.state.circuit.neuronPropIndex = store.state.circuit.neuronProps
       .reduce((propIndexObj, propName, propIndex) => Object.assign(propIndexObj, {
         [propName]: propIndex,
       }), {});
-
-    store.state.circuit.neurons = neuronDataSet.data;
 
     const neuronsCount = store.state.circuit.neurons.length;
     store.state.circuit.globalFilterIndex = new Array(neuronsCount).fill(true);
@@ -33,6 +56,7 @@ const actions = {
     store.$emit('initNeuronColor');
     store.$emit('initNeuronPropFilter');
     store.$emit('circuitLoaded');
+    store.$emit('hideCircuitLoadingModal');
   },
 
   showGlobalSpinner(store, msg) {

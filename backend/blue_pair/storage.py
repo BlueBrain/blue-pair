@@ -1,6 +1,7 @@
 
 import os
 import logging
+import time
 
 from multiprocessing import Process, Queue
 from itertools import combinations
@@ -54,11 +55,7 @@ class Storage():
         L.debug('getting cells')
         cells = cache.get('circuit:cells')
         if cells is None:
-            cell_list = circuit.v2.cells.get().to_dict(orient="split")
-            cells = {
-                'properties': cell_list['columns'],
-                'data': cell_list['data']
-            }
+            cells = circuit.v2.cells.get().drop('orientation', 1);
             cache.set('circuit:cells', cells)
         L.debug('getting cells done')
         return cells

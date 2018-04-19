@@ -5,15 +5,19 @@
     <viewport-component/>
     <side-panel/>
     <spinner/>
+    <circuit-loading-modal />
   </div>
 </template>
 
 
 <script>
+  import store from '@/store';
+
   import TopBar from './components/top-bar';
   import Viewport from './components/viewport';
   import SidePanel from './components/side-panel';
   import Spinner from './components/spinner';
+  import CircuitLoadingModal from './components/circuit-loading-modal.vue';
 
   export default {
     name: 'app',
@@ -22,6 +26,7 @@
       'viewport-component': Viewport,
       'side-panel': SidePanel,
       'spinner': Spinner,
+      'circuit-loading-modal': CircuitLoadingModal,
     },
   };
 </script>
