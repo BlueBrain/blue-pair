@@ -1,5 +1,5 @@
 
-FROM debian:stretch
+FROM debian:stretch as builder
 
 LABEL maintainer="BlueBrain NSE(Neuroscientific Software Engineering)"
 
@@ -13,19 +13,13 @@ ENV REDIS_HOST=$redis_host
 # Install system dependencies
 # TODO: possibly to reduce amount of packages installed
 # to decrease the size of resulting docker image
-RUN apt-get update \
-  && apt-get install -y -q --no-install-recommends \
-  locales \
-  build-essential \
-  python-dev \
-  python2.7 \
-  python-pip \
-  libreadline-dev \
-  rsync \
-  libz-dev \
-  && apt-get clean \
-  && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* \
-  && pip install --upgrade setuptools pip virtualenv
+RUN apt-get update && apt-get install -yq --no-install-recommends \
+    locales \
+    python-dev \
+    build-essential \
+    libreadline-dev \
+    rsync \
+    libz-dev
 
 ENV LANG en_US.UTF-8
 
@@ -60,6 +54,7 @@ RUN rm -rf bbp/lib/modlib/Bin*.mod \
   && rm -rf bbp/lib/modlib/hdf*.mod \
   && rm -rf bbp/lib/modlib/MemUsage*.mod
 
+
 # Compile channel mechanisms
 RUN nrnivmodl bbp/lib/modlib
 
@@ -67,22 +62,38 @@ RUN nrnivmodl bbp/lib/modlib
 # Install blue-pair
 WORKDIR /opt/blue-pair
 
-# install latest sdist, this has to be run before: venv/bin/python setup.py sdist
-COPY dist/* dist/
-RUN pip install \
-  --no-cache-dir \
-  -i https://bbpteam.epfl.ch/repository/devpi/simple \
-  $(ls -t $PWD/dist/*.* | head -n 1)
 
-# Remove build dependencies
-RUN apt-get remove --purge -y \
-  build-essential \
-  libreadline-dev \
-  libz-dev
 
-ADD entrypoint.sh entrypoint.sh
 
+FROM python:2.7.14-slim-stretch
 WORKDIR /opt/blue-pair
+COPY dist/* ./dist/
+RUN apt-get update && \
+  apt-get install -yq --no-install-recommends \
+    rsync \
+    gcc \
+    build-essential && \
+  pip install \
+    --no-cache-dir \
+    -i https://bbpteam.epfl.ch/repository/devpi/simple \
+    $(ls -t $PWD/dist/*.* | head -n 1) && \
+  apt-get remove --purge -y gcc build-essential && \
+  apt-get autoremove -y && \
+  apt-get clean
+
+ARG circuit_path
+ARG redis_host
+ENV DEBIAN_FRONTEND=noninteractive
+ENV CIRCUIT_PATH=$circuit_path
+ENV REDIS_HOST=$redis_host
+ENV PATH="/usr/local/nrn/x86_64/bin:${PATH}"
+ENV PYTHONPATH="/usr/local/nrn/lib/python"
+ENV HOC_LIBRARY_PATH=/opt/blue-pair/hoclib
+
+COPY --from=builder /usr/local/nrn /usr/local/nrn
+COPY --from=builder /opt/blue-pair/x86_64 ./x86_64
+COPY tmp/bbp/lib/hoclib ./hoclib
+COPY entrypoint.sh .
 
 EXPOSE 8000
 
