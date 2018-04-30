@@ -1,0 +1,172 @@
+
+<template>
+  <div>
+    <p
+      v-if="isNoRecordings"
+      class="cta-title"
+    >
+      Pick a cell section or press plus button below to add recording
+    </p>
+    <div
+      else
+      class="recordings-group"
+      v-for="(recordingsSet, gid) of recordings"
+      :key="gid"
+    >
+      <Poptip
+        trigger="hover"
+        placement="left-start"
+        :transfer="true"
+        width="540"
+      >
+        <h4
+          @mouseover="onGidHover(gid)"
+          @mouseleave="onGidUnhover()"
+        >
+          GID: {{ gid }}
+        </h4>
+        <div slot="content">
+          <neuron-info :gid="gid"/>
+        </div>
+      </Poptip>
+
+      <div class="recordings-container">
+        <Tag
+          closable
+          class="recording-tag"
+          v-for="recording of recordingsSet"
+          :key="recording.sectionName"
+          @on-close="removeRecording(recording)"
+        >
+          <span
+            @mouseover="onSectionLabelHover(recording)"
+            @mouseleave="onSectionLabelUnhover()"
+          >
+            {{ recording.sectionName  || '---' | shortSectionName }}
+          </span>
+        </Tag>
+      </div>
+
+    </div>
+    <div class="tmp-recording-container mt-12">
+      <transition
+        name="fade"
+        mode="out-in"
+      >
+        <div v-if="tmpRecording">
+          <Tag
+            type="border"
+            closable
+            @on-close="removeTmpRecording()"
+          >
+            GID: ---, sec: ---
+          </Tag>
+          <span class="cta-title ml-6">
+            Click on a segment in 3d viewer to make a selection
+          </span>
+        </div>
+        <i-button
+          v-else
+          size="small"
+          @click="addTmpRecording()"
+        >
+          Add recording
+        </i-button>
+      </transition>
+    </div>
+  </div>
+</template>
+
+
+<script>
+  import groupBy from 'lodash/groupBy';
+
+  import store from '@/store';
+  import NeuronInfo from '@/components/shared/neuron-info';
+
+  export default {
+    name: 'cell-recordings',
+    components: {
+      'neuron-info': NeuronInfo,
+    },
+    data() {
+      return {
+        tmpRecording: null,
+        recordings: {},
+      };
+    },
+    methods: {
+      removeRecording(recording) {
+        store.$dispatch('removeRecording', recording);
+      },
+      onGidHover(gid) {
+        store.$dispatch('simConfigGidLabelHovered', Number(gid));
+      },
+      onGidUnhover() {
+        store.$dispatch('simConfigGidLabelUnhovered');
+      },
+      addTmpRecording() {
+        this.tmpRecording = {
+          gid: null,
+          sectionName: null,
+        };
+        this.updateWaitingSecSelection();
+      },
+      removeTmpRecording() {
+        this.tmpRecording = null;
+        this.updateWaitingSecSelection();
+      },
+      updateWaitingSecSelection() {
+        store.$dispatch('setWaitingSecSelection', !!this.tmpRecording || this.tmpStimulus);
+      },
+      onSectionLabelHover(section) {
+        store.$dispatch('simConfigSectionLabelHovered', section.gid);
+      },
+      onSectionLabelUnhover() {
+        store.$dispatch('simConfigSectionLabelUnhovered');
+      },
+    },
+    computed: {
+      isNoRecordings() {
+        return !(Object.keys(this.recordings).length);
+      },
+    },
+    mounted() {
+      store.$on('updateRecordings', () => {
+        this.recordings = groupBy(store.$get('recordings'), recording => recording.gid);
+        // this.uncollapsePanel(PANEL.recordings);
+      });
+      store.$on('morphSegmentSelected', (segment) => {
+        if (this.tmpRecording && !store.$get('isRecordingPresent', segment)) {
+          store.$dispatch('addRecording', {
+            gid: segment.neuron.gid,
+            sectionName: segment.sectionName,
+          });
+          this.removeTmpRecording();
+        }
+      });
+    },
+  };
+</script>
+
+
+<style lang="scss" scoped>
+  .tmp-recording-container {
+    .ivu-tag {
+      margin: 0;
+    }
+  }
+
+  .recordings-group {
+    margin-bottom: 12px;
+
+    h4 {
+      margin: 12px 0 6px 0;
+      cursor: help;
+    }
+  }
+
+  .recording-tag.ivu-tag {
+    background-color: rgba(#00bfff, .3);
+  }
+</style>
