@@ -51,7 +51,7 @@
           size="small"
           type="primary"
           long
-          :disabled="simAddedNeurons.length < 2"
+          :disabled="!simAddedNeurons.length"
           :loading="simInit"
           @click="onConfigureSimulationBtnClick"
         >Sim config</i-button>
