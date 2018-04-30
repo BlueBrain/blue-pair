@@ -62,7 +62,7 @@ run_dev:
 		-it \
 		-v /gpfs:/gpfs:ro \
 		-e DEBUG=True \
-		-v $$(pwd)/blue_pair:/usr/local/lib/python2.7/dist-packages/blue_pair \
+		-v $$(pwd)/blue_pair:/usr/local/lib/python2.7/site-packages/blue_pair \
 		-p 8888:8000 \
 		bp-svc-$(CIRCUIT_NAME)
 
