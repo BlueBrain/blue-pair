@@ -30,25 +30,6 @@ L.debug('creating cache client')
 cache = RedisClient()
 L.debug('cache client has been created')
 
-def get_pair_syn_list(gid_1, gid_2):
-    props = [
-        Synapse.POST_X_CENTER,
-        Synapse.POST_Y_CENTER,
-        Synapse.POST_Z_CENTER,
-        Synapse.TYPE,
-        Synapse.PRE_GID,
-        Synapse.PRE_SECTION_ID,
-        Synapse.POST_GID,
-        Synapse.POST_SECTION_ID
-    ]
-
-    syn_list = pd.concat([
-        circuit.v2.connectome.pair_synapses(gid_1, gid_2, properties=props),
-        circuit.v2.connectome.pair_synapses(gid_2, gid_1, properties=props)
-    ])
-
-    return syn_list
-
 
 class Storage():
     def get_circuit_cells(self):
@@ -74,15 +55,39 @@ class Storage():
 
     def get_syn_connections(self, gids):
         L.debug('getting syn connections for %s', gids)
-        synapseSetList = [
-            get_pair_syn_list(gid_pair[0], gid_pair[1]) for gid_pair in combinations(gids, 2)
+
+        props = [
+            Synapse.POST_X_CENTER,
+            Synapse.POST_Y_CENTER,
+            Synapse.POST_Z_CENTER,
+            Synapse.TYPE,
+            Synapse.PRE_GID,
+            Synapse.PRE_SECTION_ID,
+            Synapse.POST_GID,
+            Synapse.POST_SECTION_ID
         ]
 
-        connections = np.array(pd.concat(synapseSetList))
+        props_str = [
+            'postXCenter',
+            'postYCenter',
+            'postZCenter',
+            'type',
+            'preGid',
+            'preSectionGid',
+            'postGid',
+            'postSectionId'
+        ]
+
+        syn_dict = {}
+
+        for gid in gids:
+            syn_dict[gid] = circuit.v2.connectome.afferent_synapses(gid, properties=props).values.tolist()
+
         L.debug('getting syn connections for %s done', gids)
 
         return {
-            'connections': connections
+            'connections': syn_dict,
+            'connection_properties': props_str
         }
 
     def get_cell_morphology(self, gids):
