@@ -33,6 +33,17 @@
 
 
 <style lang="scss">
+  html {
+    overflow: hidden;
+    height: 100%;
+  }
+
+  body {
+    height: 100%;
+    overflow: auto;
+  }
+
+  // TODO: move to separate style file
   .fade-enter-active, .fade-leave-active {
     transition: opacity .2s;
   }
@@ -61,5 +72,12 @@
   .ivu-collapse-header {
     height: 24px !important;
     line-height: 24px !important;
+  }
+
+  .cta-title {
+    font-weight: normal;
+    font-size: 12px;
+    color: #888888;
+    margin-bottom: 12px;
   }
 </style>

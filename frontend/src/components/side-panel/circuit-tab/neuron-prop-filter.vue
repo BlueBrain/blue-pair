@@ -166,10 +166,12 @@
     },
     mounted() {
       store.$on('initNeuronPropFilter', this.initFilters);
+
       store.$on('addTmpGlobalFilter', (tmpFilter) => {
         this.tmpFilter = tmpFilter;
         this.updateGlobalFilterIndex();
       });
+
       store.$on('removeTmpGlobalFilter', () => {
         this.tmpFilter = null;
         setTimeout(() => this.updateGlobalFilterIndex(), 200);
@@ -190,7 +192,7 @@
           const propUniqueValues = Array.from(new Set(neurons.map(n => n[propIndex])));
           if (propUniqueValues.length > 1000) return filterSet;
 
-          return Object.assign(filterSet, {[propName]: propUniqueValues.sort()});
+          return Object.assign(filterSet, { [propName]: propUniqueValues.sort() });
         }, {});
 
         this.ctrl.props = Object.keys(this.filterSet);
