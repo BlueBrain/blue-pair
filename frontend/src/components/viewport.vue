@@ -41,9 +41,11 @@
       store.$on('removeCellMorphology', () => {
         this.renderer.disposeSecMarkers();
         this.renderer.disposeCellMorphology();
-        this.renderer.disposeSynapses();
+        this.renderer.destroySynapseCloud();
       });
-      store.$on('showSynConnections', () => this.renderer.showSynConnections());
+      store.$on('initSynapseCloud', cloudSize => this.renderer.initSynapseCloud(cloudSize));
+      store.$on('updateSynapses', () => this.renderer.updateSynapses());
+
       store.$on('hideCircuit', () => this.renderer.hideNeuronCloud());
       store.$on('showCircuit', () => this.renderer.showNeuronCloud());
 

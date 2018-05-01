@@ -24,9 +24,6 @@ const BACKGROUND_COLOR = 0xfefdfb;
 const HOVER_BOX_COLOR = 0xffdf00;
 const hoverNeuronColor = new THREE.Color(0xf26d21).toArray();
 
-const excSynMaterial = new THREE.MeshLambertMaterial({ color: 0xff0000, transparent: true });
-const inhSynMaterial = new THREE.MeshLambertMaterial({ color: 0x1020ff, transparent: true });
-
 const baseMorphColors = {
   soma: chroma('#A9A9A9'),
   axon: chroma('#0080FF'),
@@ -36,6 +33,7 @@ const baseMorphColors = {
 };
 
 const neuronTexture = new THREE.TextureLoader().load('/neuron-texture.png');
+const synapseTexture = new THREE.TextureLoader().load('/neuron-texture.png');
 
 
 class NeuronRenderer {
@@ -103,6 +101,16 @@ class NeuronRenderer {
       side: THREE.DoubleSide,
     });
 
+    this.synapseMaterial = new THREE.PointsMaterial({
+      vertexColors: THREE.VertexColors,
+      size: store.state.simulation.synapseSize,
+      opacity: 0.85,
+      transparent: true,
+      alphaTest: 0.1,
+      sizeAttenuation: true,
+      map: synapseTexture,
+    });
+
     this.onHoverHandler = onHover;
     this.onClickHandler = onClick;
 
@@ -157,6 +165,37 @@ class NeuronRenderer {
     this.scene.add(this.highlightedNeuron);
   }
 
+  initSynapseCloud(cloudSize) {
+    const positionBuffer = new Float32Array(cloudSize * 3);
+    const colorBuffer = new Float32Array(cloudSize * 3);
+    const alphaBuffer = new Float32Array(cloudSize).fill(0.8);
+
+    this.synapseCloud = {
+      positionBufferAttr: new THREE.BufferAttribute(positionBuffer, 3),
+      colorBufferAttr: new THREE.BufferAttribute(colorBuffer, 3),
+      alphaBufferAttr: new THREE.BufferAttribute(alphaBuffer, 1),
+    };
+
+    const geometry = new THREE.BufferGeometry();
+    geometry.addAttribute('position', this.synapseCloud.positionBufferAttr);
+    geometry.addAttribute('color', this.synapseCloud.colorBufferAttr);
+    geometry.addAttribute('alpha', this.synapseCloud.alphaBufferAttr);
+
+    this.synapseCloud.points = new THREE.Points(geometry, this.synapseMaterial);
+    this.synapseCloud.points.name = 'synapseCloud';
+    this.synapseCloud.points.frustumCulled = false;
+    this.scene.add(this.synapseCloud.points);
+  }
+
+  destroySynapseCloud() {
+    this.scene.remove(this.synapseCloud.points);
+    this.synapseCloud.points.traverse((child) => {
+      if (child instanceof THREE.Mesh) this.disposeObject(child);
+    });
+
+    this.synapseCloud = null;
+  }
+
   alignCamera() {
     this.neuronCloud.points.geometry.computeBoundingSphere();
     const { center, radius } = this.neuronCloud.points.geometry.boundingSphere;
@@ -169,29 +208,27 @@ class NeuronRenderer {
     this.controls.target = center;
   }
 
-  showSynConnections() {
-    const connections = store.state.simulation.synConnections;
-    this.synConnectionsObj = new THREE.Object3D();
-    connections.forEach(([x, y, z, synType, preGid, preSecId, postGid]) => {
-      const container = new THREE.Object3D();
-      const geometry = new THREE.SphereGeometry(4, 32, 32);
-      const material = (synType >= 100 ? excSynMaterial : inhSynMaterial).clone();
-      const synapse = new THREE.Mesh(geometry, material);
-      synapse.userData.gid = postGid;
-      container.add(synapse);
-      container.position.set(x, y, z);
-      this.synConnectionsObj.add(container);
-    });
-    this.scene.add(this.synConnectionsObj);
-  }
+  updateSynapses() {
+    const { synapses } = store.state.simulation;
+    const { positionBufferAttr, colorBufferAttr } = this.synapseCloud;
 
-  disposeSynapses() {
-    this.scene.remove(this.synConnectionsObj);
-    this.synConnectionsObj.traverse((child) => {
-      if (child instanceof THREE.Mesh) this.disposeObject(child);
+    synapses.forEach((synapse, neuronIndex) => {
+      if (!synapse.visible) {
+        // TODO: find a better way to hide part of the cloud
+        positionBufferAttr.setXYZ(neuronIndex, 10000, 10000, 10000);
+        return;
+      }
+
+      const position = [synapse.postXCenter, synapse.postYCenter, synapse.postZCenter];
+
+      const color = synapse.type >= 100 ? [1, 0, 0] : [0, 0, 1];
+
+      positionBufferAttr.setXYZ(neuronIndex, ...position);
+      colorBufferAttr.setXYZ(neuronIndex, ...color);
     });
 
-    this.synConnectionsObj = null;
+    this.synapseCloud.points.geometry.attributes.position.needsUpdate = true;
+    this.synapseCloud.points.geometry.attributes.color.needsUpdate = true;
   }
 
   showNeuronCloud() {
@@ -338,12 +375,7 @@ class NeuronRenderer {
   }
 
   setMorphSynapseSize(size) {
-    const scale = size / 3;
-    this.synConnectionsObj.traverse((child) => {
-      if (child instanceof THREE.Mesh) {
-        child.scale.set(scale, scale, scale);
-      }
-    });
+    this.synapseCloud.points.material.size = size;
   }
 
   updateNeuronCloud() {

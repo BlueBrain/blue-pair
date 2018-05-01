@@ -17,13 +17,17 @@ const state = {
     },
   },
   simulation: {
-    synapseSize: 3,
+    synapseSize: 6,
+    synapsePropIndex: {},
+    synapseProps: [],
+    synapses: [],
     waitingSecSelection: false,
     morphology: {},
     params: {
       tStop: 400,
       timeStep: 0.025,
     },
+    synInputs: [],
     stimuli: [],
     recordings: [],
     traces: [],

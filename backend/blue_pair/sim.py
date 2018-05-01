@@ -6,6 +6,20 @@ from multiprocessing import Queue, Process
 
 import bglibpy
 
+global custom_progress_cb
+def default_progress_cb():
+    print('default cb')
+    pass
+
+custom_progress_cb = default_progress_cb
+
+
+def progress_callback(self):
+        custom_progress_cb()
+        bglibpy.neuron.h.cvode.event(bglibpy.neuron.h.t + self.progress_dt, self.progress_callback)
+
+bglibpy.Simulation.progress_callback = progress_callback
+
 
 L = logging.getLogger(__name__)
 L.setLevel(logging.DEBUG if os.getenv('DEBUG', False) else logging.INFO)
@@ -14,17 +28,21 @@ L.setLevel(logging.DEBUG if os.getenv('DEBUG', False) else logging.INFO)
 CIRCUIT_PATH = os.environ['CIRCUIT_PATH']
 
 
-def get_sim_traces(sim_config):
+
+def get_sim_traces(sim_config, progress_cb):
     mp_queue = Queue()
-    mp_process = Process(target=get_sim_traces_mp, args=(mp_queue, sim_config))
+    mp_process = Process(target=get_sim_traces_mp, args=(mp_queue, sim_config, progress_cb))
     mp_process.start()
     traces = mp_queue.get()
     mp_process.join()
     return traces
 
 
-def get_sim_traces_mp(mp_queue, sim_config):
-    sim = Sim(sim_config)
+def get_sim_traces_mp(mp_queue, sim_config, progress_cb):
+    def progress():
+        progress_cb(sim.get_traces())
+
+    sim = Sim(sim_config, progress)
     sim.run()
     traces = sim.get_traces()
     # TODO: add progress
@@ -32,13 +50,16 @@ def get_sim_traces_mp(mp_queue, sim_config):
 
 
 class Sim(object):
-    def __init__(self, sim_config):
+    def __init__(self, sim_config, progress_cb):
         L.debug('creating simulation')
+
+        global custom_progress_cb
 
         self.sim_config = sim_config
         self.recording_list = []
-        cell_config_list = sim_config['cells']
-        self.gids = sorted([cell_config['neuron']['gid'] for cell_config in cell_config_list])
+        self.gids = sorted(sim_config['gids'])
+
+        custom_progress_cb = progress_cb
 
         L.debug('creating bglibpy SSim instance')
         self.ssim = bglibpy.SSim(CIRCUIT_PATH)
@@ -46,21 +67,23 @@ class Sim(object):
         L.debug('instantiating ssim gids: %s', self.gids)
         self.ssim.instantiate_gids(self.gids, add_synapses=True, add_minis=True)
 
-        for cell_config in cell_config_list:
-            gid = cell_config['neuron']['gid']
-            for recording in cell_config['recordings']:
-                self._add_recording_section(gid, recording['sectionName'])
-            for stimulus in cell_config['stimuli']:
-                self._add_current_injection(gid, stimulus)
+        for recording in sim_config['recordings']:
+            self._add_recording_section(recording)
 
-    def _add_recording_section(self, gid, sec_name):
+        for stimulus in sim_config['stimuli']:
+            self._add_current_injection(stimulus)
+
+    def _add_recording_section(self, recording):
+        gid = recording['gid']
+        sec_name = recording['sectionName']
         L.debug('adding recording section for %s in cell %s', sec_name, gid)
 
         sec = self._get_sec_by_name(sec_name)
         self.ssim.cells[gid].add_voltage_recording(sec, .5)
         self.recording_list.append((gid, sec))
 
-    def _add_current_injection(self, gid, injection_config):
+    def _add_current_injection(self, injection_config):
+        gid = injection_config['gid']
         sec_name = injection_config['sectionName']
         sec = self._get_sec_by_name(sec_name)
         injection_type = injection_config['type']
@@ -89,11 +112,10 @@ class Sim(object):
             )
 
     def run(self):
-        global_sim_config = self.sim_config['globalConfig']
-        t_stop = global_sim_config['tStop']
-        time_step = global_sim_config['timeStep']
+        t_stop = self.sim_config['tStop']
+        time_step = self.sim_config['timeStep']
         L.debug('starting simulation with t_stop=%s, dt=%s', t_stop, time_step)
-        self.ssim.run(t_stop=t_stop, dt=time_step)
+        self.ssim.run(t_stop=t_stop, dt=time_step, show_progress=True)
         L.debug('simulation has been finished')
 
     def get_traces(self):

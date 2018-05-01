@@ -247,6 +247,19 @@ const actions = {
     store.$emit('updateRecordings');
   },
 
+  setSynInputs(store, synInputs) {
+    const { neurons, neuronPropIndex } = store.state.circuit;
+    store.state.simulation.synInputs = synInputs;
+
+    store.state.simulation.synapses.forEach((synapse) => {
+      synapse.visible = !!synInputs.find((input) => {
+        return neurons[synapse.preGid - 1][neuronPropIndex[input.preSynCellProp]] === input.preSynCellPropVal;
+      });
+    });
+
+    store.$emit('updateSynapses');
+  },
+
   async loadMorphology(store) {
     store.$emit('updateSimCellConfig', store.state.circuit.simAddedNeurons);
     const gids = store.state.circuit.simAddedNeurons.map(n => n.gid);
@@ -275,26 +288,43 @@ const actions = {
 
     store.$emit('setStatus', { message: 'Getting synapses' });
     const synConnectionsRaw = await socket.request('get_syn_connections', gids);
+    const synapseProps = synConnectionsRaw.connection_properties;
+    store.state.simulation.synapseProps = synapseProps;
+
+    const synapsePropIndex = synapseProps
+      .reduce((propIndexObj, propName, propIndex) => Object.assign(propIndexObj, {
+        [propName]: propIndex,
+      }), {});
+
+    const synapsesByGid = synConnectionsRaw.connections;
+
     /**
-     * @desc Array of synaptic connections between given cells.
-     * synConnections = [
-     *   [
-     *     Synapse.POST_X_CENTER,
-     *     Synapse.POST_Y_CENTER,
-     *     Synapse.POST_Z_CENTER,
-     *     Synapse.TYPE,
-     *     Synapse.PRE_GID,
-     *     Synapse.PRE_SECTION_ID,
-     *     Synapse.POST_GID,
-     *     Synapse.POST_SECTION_ID
-     *   ],
+     * @description Transform list of synapse values indexed by gid:
+     * {
+     *   gid0: [[syn0Props...], [syn1Props...], ...],
+     *   ...
+     * }
+     * to list of synapse objects extended with their gids and indexes:
+     * [
+     *   { gid, index, [prop]: val },
      *   ...
      * ]
      */
-    store.state.simulation.synConnections = synConnectionsRaw.connections;
+    const synapses = gids.reduce((allSynapses, gid) => {
+      const extendedSynapses = synapsesByGid[gid].map((synVals, synIndex) => {
+        const synObject = synapseProps.reduce((synObj, synProp) => Object.assign(synObj, {
+          [synProp]: synVals[synapsePropIndex[synProp]],
+        }), {});
+        const extendedSynObject = Object.assign(synObject, { gid, index: synIndex });
+        return extendedSynObject;
+      });
+      return allSynapses.concat(extendedSynapses);
+    }, []);
+    store.state.simulation.synapses = synapses;
 
+    store.$emit('initSynapseCloud', synapses.length);
+    store.$emit('synInputsCtrl:init');
     store.$emit('setStatus', { message: 'Ready' });
-    store.$emit('showSynConnections');
   },
 };
 
