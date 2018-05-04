@@ -4,14 +4,14 @@
     class="sym-input-container-inner"
     :class="{'disabled': !synInput.gid}"
   >
-    <p class="title">
-      Gid: {{ synInput.gid }}
-      <span
-        class="cta-title ml-6"
-        v-if="!synInput.gid"
+    <p class="mb-6">
+      Synapses visible:
+      <i-switch
+        size="small"
+        v-model="synInput.synapsesVisible"
+        @on-change="emitSynInputChange"
       >
-        Click on a segment in 3d viewer to make a selection
-      </span>
+      </i-switch>
     </p>
 
     <div
@@ -24,11 +24,12 @@
     <Row :gutter="6">
       <i-col span="8">
         <i-select
+          v-model="synInput.preSynCellProp"
+          :disabled="!synInput.gid"
+          :transfer="true"
           size="small"
           placeholder="Prop"
-          :transfer="true"
-          v-model="synInput.preSynCellProp"
-          @on-change="updateFilters"
+          @on-change="onPreSynCellPropChange"
         >
           <i-option
             v-for="prop in preSynCellProps"
@@ -38,23 +39,28 @@
         </i-select>
       </i-col>
       <i-col span="12">
+        <!-- TODO: use v-model when this bug is fixed: https://github.com/iview/iview/issues/2489 -->
         <AutoComplete
-          size="small"
-          v-model="synInput.preSynCellPropVal"
+          :value="synInput.preSynCellPropVal"
+          :disabled="!synInput.gid"
           :data="preSynCellPropValues"
           :filter-method="valueFilterMethod"
           :transfer="true"
+          size="small"
           placeholder="Value"
+          @on-change="onPreSynCellPropValueChange"
         ></AutoComplete>
       </i-col>
       <i-col span="4">
         <InputNumber
-          size="small"
           v-model="synInput.spikeFrequency"
+          :disabled="!synInput.gid"
           :min="0.5"
           :max="40"
           :step="0.5"
+          size="small"
           placeholder="f, Hz"
+          @on-change="emitSynInputChange"
         ></InputNumber>
       </i-col>
     </Row>
@@ -79,14 +85,34 @@
       this.preSynCellProps = Object.keys(this.filterSet);
     },
     methods: {
+      onPreSynCellPropChange() {
+        this.updateValidity();
+        this.updateFilters();
+        this.emitSynInputChange();
+      },
+      onPreSynCellPropValueChange(val) {
+        this.synInput.preSynCellPropVal = val;
+        this.updateValidity();
+        this.emitSynInputChange();
+      },
+      updateValidity() {
+        this.synInput.valid = this.synInput.gid &&
+          this.synInput.preSynCellProp &&
+          this.synInput.preSynCellPropValue;
+      },
       updateFilters() {
         const { synInputs } = store.state.simulation;
 
         const currentProp = this.synInput.preSynCellProp;
         this.preSynCellPropValues = this.filterSet[currentProp]
           .filter(propValue => !synInputs.find((input) => {
+            if (!input.valid) return false;
+
             return input.preSynCellProp === currentProp && input.preSynCellPropVal === propValue;
           }));
+      },
+      emitSynInputChange() {
+        this.$emit('input', this.synInput);
       },
       onClose() {
         this.$emit('on-close');
@@ -112,19 +138,6 @@
     &.disabled {
       background-color: #eee;
     }
-  }
-
-  .title {
-    font-weight: 500;
-    line-height: 24px;
-    margin-bottom: 6px;
-  }
-
-  .cta-title {
-    font-weight: normal;
-    font-size: 12px;
-    color: #888888;
-    margin-bottom: 12px;
   }
 
   .close-btn {

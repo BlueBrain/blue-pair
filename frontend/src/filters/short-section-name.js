@@ -1,6 +1,6 @@
 
-const shortSectionNameRegex = /\.(.*)/;
+import constants from './../constants';
 
 export default function shortSectionName(longSectionName) {
-  return longSectionName.match(shortSectionNameRegex)[1];
+  return longSectionName.match(constants.shortSectionNameRegex)[1];
 }

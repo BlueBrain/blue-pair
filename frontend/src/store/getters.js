@@ -13,14 +13,8 @@ const getters = {
       }, { gid: index + 1 });
   },
 
-  synapse(store, index) {
-    const { synapses, synapsePropIndex } = store.state.simulation;
-
-    return Object.keys(synapsePropIndex)
-      .reduce((syn, prop) => {
-        const propValue = synapses[index][synapsePropIndex[prop]];
-        return Object.assign(syn, { [prop]: propValue });
-      }, {});
+  synapse(store, synapseIndex) {
+    return store.state.simulation.synapses[synapseIndex];
   },
 
   neuronPosition(store, index) {
@@ -38,7 +32,7 @@ const getters = {
   },
 
   synInputs(store) {
-    return clone(store.state.simulation.stimuli);
+    return clone(store.state.simulation.synInputs);
   },
 
   recordings(store) {

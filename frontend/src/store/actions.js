@@ -5,6 +5,7 @@ import pickBy from 'lodash/pickBy';
 
 import socket from '@/services/websocket';
 import storage from '@/services/storage';
+import constants from './../constants';
 
 // TODO: prefix events with target component's names
 
@@ -103,16 +104,43 @@ const actions = {
 
   synapseHovered(store, synapseIndex) {
     const synapse = store.$get('synapse', synapseIndex);
+    const neuron = store.$get('neuron', synapse.preGid - 1);
     store.$emit('showHoverObjectInfo', {
       header: 'Synapse',
       items: [{
         type: 'table',
-        data: synapse,
+        data: {
+          id: `(${synapse.gid}, ${synapse.index})`,
+          pre_gid: synapse.preGid,
+          post_gid: synapse.gid,
+          type: `${synapse.type} (${synapse.type >= 100 ? 'EXC' : 'INH'})`,
+        },
+      }, {
+        subHeader: 'Pre-synaptic cell:',
+        type: 'table',
+        data: pickBy(neuron, (val, prop) => ['etype', 'mtype'].includes(prop)),
       }],
     });
   },
 
   synapseHoverEnded(store) {
+    store.$emit('hideHoverObjectInfo');
+  },
+
+  morphSegmentHovered(store, segment) {
+    store.$emit('showHoverObjectInfo', {
+      header: 'Section',
+      items: [{
+        type: 'table',
+        data: {
+          section: segment.data.sectionName.match(constants.shortSectionNameRegex)[1],
+          gid: segment.data.neuron.gid,
+        },
+      }],
+    });
+  },
+
+  morphSegmentHoverEnded(store) {
     store.$emit('hideHoverObjectInfo');
   },
 
@@ -267,10 +295,6 @@ const actions = {
     store.$emit('updateRecordings');
   },
 
-  addSynInput(store, gid) {
-    store.$emit('addSynInput', gid);
-  },
-
   removeRecording(store, recording) {
     remove(store.state.simulation.recordings, r => r.sectionName === recording.sectionName);
     store.$emit('removeSecMarker', {
@@ -281,13 +305,45 @@ const actions = {
     store.$emit('updateRecordings');
   },
 
-  setSynInputs(store, synInputs) {
+  addSynInput(store, gid) {
+    const defaultSynInput = {
+      gid: null,
+      id: Date.now(),
+      valid: false,
+      synapsesVisible: true,
+      preSynCellProp: null,
+      preSynCellPropVal: null,
+      spikeFrequency: 10,
+    };
+
+    const synInput = Object.assign(defaultSynInput, { gid });
+    store.state.simulation.synInputs.push(synInput);
+    store.$emit('updateSynInputs');
+    store.$dispatch('updateSynapseStates');
+  },
+
+  removeSynInput(store, synInput) {
+    remove(store.state.simulation.synInputs, i => i.id === synInput.id);
+    store.$emit('updateSynInputs');
+    store.$dispatch('updateSynapseStates');
+  },
+
+  updateSynInput(store, synInput) {
+    const originalSynInput = store.state.simulation.synInputs.find(i => i.id === synInput.id);
+    Object.assign(originalSynInput, synInput);
+    store.$dispatch('updateSynapseStates');
+  },
+
+  updateSynapseStates(store) {
     const { neurons, neuronPropIndex } = store.state.circuit;
-    store.state.simulation.synInputs = synInputs;
+    const { synInputs } = store.state.simulation;
 
     store.state.simulation.synapses.forEach((synapse) => {
       synapse.visible = !!synInputs.find((input) => {
-        return neurons[synapse.preGid - 1][neuronPropIndex[input.preSynCellProp]] === input.preSynCellPropVal;
+        // TODO: make this easy to understand
+        return synapse.gid === input.gid &&
+          input.synapsesVisible &&
+          neurons[synapse.preGid - 1][neuronPropIndex[input.preSynCellProp]] === input.preSynCellPropVal;
       });
     });
 

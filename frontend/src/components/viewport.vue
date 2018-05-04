@@ -71,6 +71,10 @@
           store.$dispatch('synapseHovered', obj.synapseIndex);
           break;
         }
+        case 'morphSegment': {
+          store.$dispatch('morphSegmentHovered', obj);
+          break;
+        }
         default: {
           break;
         }
@@ -85,6 +89,10 @@
         }
         case 'synapse': {
           store.$dispatch('synapseHoverEnded', obj.synapseIndex);
+          break;
+        }
+        case 'morphSegment': {
+          store.$dispatch('morphSegmentHoverEnded', obj);
           break;
         }
         default: {

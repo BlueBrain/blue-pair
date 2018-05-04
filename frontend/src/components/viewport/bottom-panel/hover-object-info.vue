@@ -11,9 +11,9 @@
         v-for="(item, index) in content.items"
         :key="index"
       >
-        <h4 v-if="item.subHeader">
+        <h5 v-if="item.subHeader">
           {{ item.subHeader }}
-        </h4>
+        </h5>
         <div v-if="item.type === 'text'">
           <p>{{ item.data }}</p>
         </div>

@@ -28,6 +28,7 @@ const BACKGROUND_COLOR = 0xfefdfb;
 // const BACKGROUND_COLOR = 0x272821;
 const HOVER_BOX_COLOR = 0xffdf00;
 const hoverNeuronColor = new THREE.Color(0xf26d21).toArray();
+const hoverSynapseColor = new THREE.Color(0xf26d21).toArray();
 
 const baseMorphColors = {
   soma: chroma('#A9A9A9'),
@@ -73,6 +74,7 @@ class NeuronRenderer {
 
     this.hoveredMesh = null;
     this.hoveredNeuron = null;
+    this.hoveredSynapse = null;
     this.highlightedNeuron = null;
     this.mousePressed = false;
 
@@ -239,6 +241,7 @@ class NeuronRenderer {
 
     this.synapseCloud.points.geometry.attributes.position.needsUpdate = true;
     this.synapseCloud.points.geometry.attributes.color.needsUpdate = true;
+    this.synapseCloud.points.geometry.computeBoundingSphere();
   }
 
   showNeuronCloud() {
@@ -332,56 +335,56 @@ class NeuronRenderer {
   }
 
   addSecMarker(config) {
-    const [x, y, z] = store.$get('neuronPosition', config.gid - 1);
-    const { morphology } = store.state.simulation;
+    // const [x, y, z] = store.$get('neuronPosition', config.gid - 1);
+    // const { morphology } = store.state.simulation;
 
-    const sec = morphology[config.gid].morph[config.sectionName];
-    const { quaternion } = morphology[config.gid];
+    // const sec = morphology[config.gid].morph[config.sectionName];
+    // const { quaternion } = morphology[config.gid];
 
-    sec.xstart.forEach((val, i) => {
-      const v = new THREE.Vector3(sec.xcenter[i], sec.ycenter[i], sec.zcenter[i]);
-      const axis = new THREE.Vector3(sec.xdirection[i], sec.ydirection[i], sec.zdirection[i]);
-      axis.normalize();
-      const rotQuat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), axis);
-      const length = sec.length[i];
-      const distance = sec.distance[i];
-      const scaleLength = distance / length;
-      const diamDelta = 2 / Math.ceil(Math.sqrt(sec.diam[i]));
-      const diam = sec.diam[i] + diamDelta;
-      const markerGeometry = new THREE.CylinderGeometry(diam, diam, length, 20, 1, true);
-      const material = config.type === 'recording' ? this.recMarkerMaterial : this.injMarkerMaterial;
-      const marker = new THREE.Mesh(markerGeometry, material.clone());
-      marker.name = 'sectionMarker';
-      marker.userData = config;
-      marker.scale.setY(scaleLength);
-      marker.setRotationFromQuaternion(rotQuat);
-      marker.position.copy(v);
+    // sec.xstart.forEach((val, i) => {
+    //   const v = new THREE.Vector3(sec.xcenter[i], sec.ycenter[i], sec.zcenter[i]);
+    //   const axis = new THREE.Vector3(sec.xdirection[i], sec.ydirection[i], sec.zdirection[i]);
+    //   axis.normalize();
+    //   const rotQuat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), axis);
+    //   const length = sec.length[i];
+    //   const distance = sec.distance[i];
+    //   const scaleLength = distance / length;
+    //   const diamDelta = 2 / Math.ceil(Math.sqrt(sec.diam[i]));
+    //   const diam = sec.diam[i] + diamDelta;
+    //   const markerGeometry = new THREE.CylinderGeometry(diam, diam, length, 20, 1, true);
+    //   const material = config.type === 'recording' ? this.recMarkerMaterial : this.injMarkerMaterial;
+    //   const marker = new THREE.Mesh(markerGeometry, material.clone());
+    //   marker.name = 'sectionMarker';
+    //   marker.userData = config;
+    //   marker.scale.setY(scaleLength);
+    //   marker.setRotationFromQuaternion(rotQuat);
+    //   marker.position.copy(v);
 
-      // global position
-      const markerContainer = new THREE.Object3D();
-      markerContainer.add(marker);
-      const orientation = new THREE.Quaternion();
-      orientation.fromArray(quaternion);
-      markerContainer.applyQuaternion(orientation);
-      markerContainer.position.copy(new THREE.Vector3(x, y, z));
+    //   // global position
+    //   const markerContainer = new THREE.Object3D();
+    //   markerContainer.add(marker);
+    //   const orientation = new THREE.Quaternion();
+    //   orientation.fromArray(quaternion);
+    //   markerContainer.applyQuaternion(orientation);
+    //   markerContainer.position.copy(new THREE.Vector3(x, y, z));
 
-      this.secMarkerObj.add(markerContainer);
-    });
+    //   this.secMarkerObj.add(markerContainer);
+    // });
   }
 
   removeSecMarker(segment) {
     // TODO: refactor
-    const markersToRemove = [];
-    this.secMarkerObj.traverse((child) => {
-      if (child instanceof THREE.Mesh && segment.sectionName === child.userData.sectionName) {
-        markersToRemove.push(child);
-      }
-    });
+    // const markersToRemove = [];
+    // this.secMarkerObj.traverse((child) => {
+    //   if (child instanceof THREE.Mesh && segment.sectionName === child.userData.sectionName) {
+    //     markersToRemove.push(child);
+    //   }
+    // });
 
-    markersToRemove.forEach((mesh) => {
-      this.secMarkerObj.remove(mesh.parent);
-      this.disposeObject(mesh);
-    });
+    // markersToRemove.forEach((mesh) => {
+    //   this.secMarkerObj.remove(mesh.parent);
+    //   this.disposeObject(mesh);
+    // });
   }
 
   disposeCellMorphology() {
@@ -451,7 +454,12 @@ class NeuronRenderer {
 
     const mesh = this.getMeshByNativeCoordinates(e.clientX, e.clientY);
 
-    if (mesh && this.hoveredMesh && mesh === this.hoveredMesh) return;
+    if (
+      mesh &&
+      this.hoveredMesh &&
+      mesh.object.uuid === this.hoveredMesh.object.uuid &&
+      this.hoveredMesh.index === mesh.index
+    ) return;
 
     if (this.hoveredMesh) {
       this.onHoverEnd(this.hoveredMesh);
@@ -536,6 +544,15 @@ class NeuronRenderer {
       synapseIndex,
       type: 'synapse',
     });
+
+    this.hoveredSynapse = [
+      synapseIndex,
+      this.synapseCloud.colorBufferAttr.getX(synapseIndex),
+      this.synapseCloud.colorBufferAttr.getY(synapseIndex),
+      this.synapseCloud.colorBufferAttr.getZ(synapseIndex),
+    ];
+    this.synapseCloud.colorBufferAttr.setXYZ(synapseIndex, ...hoverSynapseColor);
+    this.synapseCloud.points.geometry.attributes.color.needsUpdate = true;
   }
 
   onSynapseHoverEnd(synapseIndex) {
@@ -543,6 +560,10 @@ class NeuronRenderer {
       synapseIndex,
       type: 'synapse',
     });
+
+    this.synapseCloud.colorBufferAttr.setXYZ(...this.hoveredSynapse);
+    this.synapseCloud.points.geometry.attributes.color.needsUpdate = true;
+    this.hoveredSynapse = null;
   }
 
   onMorphSegmentHover(mesh) {
@@ -556,7 +577,7 @@ class NeuronRenderer {
     mesh.object.getWorldPosition(this.hoverBox.position);
     mesh.object.getWorldQuaternion(this.hoverBox.rotation);
     this.hoverBox.name = mesh.object.name;
-    this.hoverBox.userData = mesh.object.userData;
+    this.hoverBox.userData = Object.assign({ skipHoverDetection: true }, mesh.object.userData);
     this.scene.add(this.hoverBox);
 
     this.onHoverExternalHandler({
@@ -705,7 +726,7 @@ class NeuronRenderer {
 
     this.raycaster.setFromCamera(this.mouseGl, this.camera);
     const intersections = this.raycaster.intersectObjects(this.scene.children, true);
-    return intersections.find(mesh => mesh.object.name !== 'sectionMarker');
+    return intersections.find(mesh => !mesh.object.userData.skipHoverDetection);
   }
 
   animate() {

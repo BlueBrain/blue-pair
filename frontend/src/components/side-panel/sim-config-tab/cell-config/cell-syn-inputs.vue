@@ -5,15 +5,41 @@
       Select a pre-synaptic cells to add synapses with Poisson process with given frequency
     </p>
 
-    <div class="mt-12">
-      <cell-syn-input
-        class="syn-input-container"
+    <div
+      class="mt-12"
+      v-for="(synInputs, gid) of synInputsByGid"
+      :key="gid"
+    >
+      <Poptip
+        trigger="hover"
+        placement="left-start"
+        :transfer="true"
+        width="540"
+      >
+        <h4
+          @mouseover="onGidHover(gid)"
+          @mouseleave="onGidUnhover()"
+        >
+          GID: {{ gid }}
+        </h4>
+        <div slot="content">
+          <neuron-info :gid="gid"/>
+        </div>
+      </Poptip>
+
+      <div
+        class="mt-6"
         v-for="(synInput, index) in synInputs"
         :key="synInput.id"
-        v-model="synInputs[index]"
-        :filter-set="filterSet"
-        @on-close="removeSynInput(index)"
-      />
+      >
+        <cell-syn-input
+          class="syn-input-container"
+          v-model="synInputs[index]"
+          :filter-set="filterSet"
+          @on-close="removeSynInput(synInput)"
+          @input="onSynInputChange(synInput)"
+        />
+      </div>
     </div>
 
     <cell-syn-input
@@ -39,7 +65,9 @@
 
 
 <script>
+  import groupBy from 'lodash/groupBy';
   import store from '@/store';
+  import NeuronInfo from '@/components/shared/neuron-info.vue';
   import CellSynInput from './cell-syn-input.vue';
 
   export default {
@@ -47,25 +75,27 @@
     data() {
       return {
         filterSet: {},
-        synInputs: {},
+        synInputsByGid: {},
         tmpSynInput: null,
-        loading: false,
+        loading: true,
       };
     },
     components: {
       'cell-syn-input': CellSynInput,
+      'neuron-info': NeuronInfo,
     },
     mounted() {
       store.$on('synInputsCtrl:init', () => this.init());
+      store.$on('updateSynInputs', () => {
+        this.synInputsByGid = groupBy(store.$get('synInputs'), synInput => synInput.gid);
+      });
       store.$on('addSynInput', gid => this.addSynInput(gid));
       store.$on('morphSegmentSelected', (segment) => {
         if (!this.tmpSynInput) return;
 
-        this.tmpSynInput.gid = segment.neuron.gid;
-
-        this.synInputs.push(this.tmpSynInput);
-        this.removeTmpSynInput();
-        store.$dispatch('setSynInputs', this.synInputs);
+        store.$dispatch('addSynInput', segment.neuron.gid);
+        this.tmpSynInput = null;
+        this.updateWaitingSecSelection();
       });
     },
     methods: {
@@ -91,37 +121,33 @@
 
         this.loading = false;
       },
-      addSynInput(gid) {
-        this.synInputs.push({
-          gid,
-          preSynCellProp: null,
-          preSynCellPropVal: null,
-          spikeFrequency: 10,
-          id: Date.now(),
-        });
+      onSynInputChange(synInput) {
+        store.$dispatch('updateSynInput', synInput);
       },
       addTmpSynInput() {
         this.tmpSynInput = {
           gid: null,
+          id: Date.now(),
+          valid: false,
+          visible: true,
           preSynCellProp: null,
           preSynCellPropVal: null,
           spikeFrequency: 10,
-          id: Date.now(),
         };
 
         this.updateWaitingSecSelection();
       },
-      removeSynInput(index) {
-        this.synInputs.splice(index, 1);
-
-        store.$dispatch('setSynInputs', this.synInputs);
-      },
-      removeTmpSynInput() {
-        this.tmpSynInput = null;
-        this.updateWaitingSecSelection();
+      removeSynInput(synInput) {
+        store.$dispatch('removeSynInput', synInput);
       },
       updateWaitingSecSelection() {
         store.$dispatch('setWaitingSecSelection', !!this.tmpSynInput);
+      },
+      onGidHover(gid) {
+        store.$dispatch('simConfigGidLabelHovered', Number(gid));
+      },
+      onGidHoverEnd() {
+        store.$dispatch('simConfigGidLabelUnhovered');
       },
     },
   };
