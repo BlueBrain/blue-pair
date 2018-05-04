@@ -20,6 +20,8 @@
       </div>
     </transition>
 
+    <hover-object-info class="hover-object-info-container"/>
+
   </div>
 </template>
 
@@ -31,6 +33,7 @@
   import ColorPalette from './bottom-panel/color-palette.vue';
   import SomaSizeCtrl from './bottom-panel/soma-size-ctrl.vue';
   import SynapseSizeCtrl from './bottom-panel/synapse-size-ctrl.vue';
+  import HoverObjectInfo from './bottom-panel/hover-object-info.vue';
 
   // Simulation config components
   import SynColorPalette from './bottom-panel/syn-color-palette.vue';
@@ -41,6 +44,7 @@
       'soma-size-ctrl': SomaSizeCtrl,
       'syn-color-palette': SynColorPalette,
       'synapse-size-ctrl': SynapseSizeCtrl,
+      'hover-object-info': HoverObjectInfo,
     },
     data() {
       return {
@@ -64,6 +68,12 @@
     .soma-size-ctrl, .synapse-size-ctrl {
       position: absolute;
       right: 12px;
+      top: -224px;
+    }
+
+    .hover-object-info-container {
+      position: absolute;
+      left: 12px;
       top: -224px;
     }
   }

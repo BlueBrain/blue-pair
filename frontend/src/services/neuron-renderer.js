@@ -7,10 +7,15 @@ import { TweenLite, TimelineLite } from 'gsap';
 // TODO: refactor to remove store operations
 // and move them to vue viewport component
 import store from '@/store';
+import Stats from './stats';
 
 
 // TODO: consider to use trackball ctrl instead
 const OrbitControls = require('three-orbit-controls')(THREE);
+
+const stats = new Stats();
+stats.showPanel(0);
+document.body.appendChild(stats.dom);
 
 
 const FOG_COLOR = 0xffffff;
@@ -37,9 +42,7 @@ const synapseTexture = new THREE.TextureLoader().load('/neuron-texture.png');
 
 
 class NeuronRenderer {
-  constructor({ canvasElementId, onHover, onClick }) {
-    const canvas = document.getElementById(canvasElementId);
-
+  constructor(canvas, config) {
     this.renderer = new THREE.WebGLRenderer({
       canvas,
       antialias: true,
@@ -68,6 +71,7 @@ class NeuronRenderer {
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
     this.controls.enableDamping = true;
 
+    this.hoveredMesh = null;
     this.hoveredNeuron = null;
     this.highlightedNeuron = null;
     this.mousePressed = false;
@@ -111,8 +115,9 @@ class NeuronRenderer {
       map: synapseTexture,
     });
 
-    this.onHoverHandler = onHover;
-    this.onClickHandler = onClick;
+    this.onHoverExternalHandler = config.onHover;
+    this.onHoverEndExternalHandler = config.onHoverEnd;
+    this.onClickExternalHandler = config.onClick;
 
     this.initEventHandlers();
     this.animate();
@@ -145,6 +150,11 @@ class NeuronRenderer {
     });
 
     this.neuronCloud.points = new THREE.Points(geometry, material);
+
+    // TODO: measure performance improvement
+    this.neuronCloud.points.matrixAutoUpdate = false;
+    this.neuronCloud.points.updateMatrix();
+
     this.neuronCloud.points.name = 'neuronCloud';
     this.neuronCloud.points.frustumCulled = false;
     this.scene.add(this.neuronCloud.points);
@@ -247,6 +257,7 @@ class NeuronRenderer {
     // TODO: improve naming here
 
     gids.forEach((gid, cellIndex) => {
+      const HALF_PI = Math.PI * 0.5;
       const sections = morphology[gid].morph;
       const { quaternion } = morphology[gid];
 
@@ -258,34 +269,56 @@ class NeuronRenderer {
         const sec = sections[sectionName];
         const sectionType = sectionName.match(/\.(\w*)/)[1];
 
-        sec.xstart.forEach((val, i) => {
-          const v = new THREE.Vector3(sec.xcenter[i], sec.ycenter[i], sec.zcenter[i]);
-          const axis = new THREE.Vector3(sec.xdirection[i], sec.ydirection[i], sec.zdirection[i]);
-          axis.normalize();
-          const rotQuat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), axis);
-          const length = sec.length[i];
-          const distance = sec.distance[i];
-          const scaleLength = distance / length;
-          const geometry = new THREE.CylinderGeometry(sec.diam[i], sec.diam[i], length, 20, 1, false);
-          // TODO: reuse color objects
+        const secGeometry = new THREE.Geometry();
+        let color;
+        let material;
+
+        for (let i = 0; i < sec.x.length - 1; i++) {
+          const vstart = new THREE.Vector3(sec.x[i], sec.y[i], sec.z[i]);
+          const vend = new THREE.Vector3(sec.x[i + 1], sec.y[i + 1], sec.z[i + 1]);
+          const distance = vstart.distanceTo(vend);
+          const position = vend.clone().add(vstart).divideScalar(2);
+
+          const geometry = new THREE.CylinderGeometry(
+            sec.d[i],
+            sec.d[i + 1],
+            distance,
+            8,
+            1,
+            false,
+          );
+
+          const orientation = new THREE.Matrix4();
+          const offsetRotation = new THREE.Matrix4();
+          orientation.lookAt(vstart, vend, new THREE.Vector3(0, 1, 0));
+          offsetRotation.makeRotationX(HALF_PI);
+          orientation.multiply(offsetRotation);
+          geometry.applyMatrix(orientation);
+
           const glColor = baseMorphColors[sectionType]
             .brighten((cellIndex - (gids.length / 2)) / 2)
             .desaturate((cellIndex - (gids.length / 2)) / 2)
             .gl();
 
-          const color = new THREE.Color(...glColor);
-          // TODO: reuse material
-          const material = new THREE.MeshLambertMaterial({ color, transparent: true });
+          color = new THREE.Color(...glColor);
+          // TODO: pregenerate materials and reuse them
+          material = new THREE.MeshLambertMaterial({ color, transparent: true });
           const cylinder = new THREE.Mesh(geometry, material);
-          cylinder.name = 'morphSegment';
-          // TODO: optimize memory consumption?
-          cylinder.userData = { neuron, sectionName, segmentIndex: i };
+          cylinder.position.copy(position);
+          cylinder.updateMatrix();
 
-          cylinder.scale.setY(scaleLength);
-          cylinder.setRotationFromQuaternion(rotQuat);
-          cylinder.position.copy(v);
-          cellObj3D.add(cylinder);
-        });
+          secGeometry.merge(cylinder.geometry, cylinder.matrix);
+          // this.disposeObject(cylinder);
+        }
+
+        const sectionMesh = new THREE.Mesh(secGeometry, material);
+        // TODO: measure performance improvement
+        sectionMesh.matrixAutoUpdate = false;
+        // sectionMesh.updateMatrix();
+
+        sectionMesh.name = 'morphSegment';
+        sectionMesh.userData = { neuron, sectionName, segmentIndex: 0 };
+        cellObj3D.add(sectionMesh);
       });
 
       const orientation = new THREE.Quaternion();
@@ -402,7 +435,7 @@ class NeuronRenderer {
     const clickedMesh = this.getMeshByNativeCoordinates(e.clientX, e.clientY);
     if (!clickedMesh) return;
 
-    this.onClickHandler({
+    this.onClickExternalHandler({
       type: clickedMesh.object.name,
       index: clickedMesh.index,
       data: clickedMesh.object.userData,
@@ -417,30 +450,62 @@ class NeuronRenderer {
     if (this.mousePressed) return;
 
     const mesh = this.getMeshByNativeCoordinates(e.clientX, e.clientY);
-    if (!mesh) {
-      this.unhoverMorphSegment();
-      this.unhoverNeuron();
-      return;
+
+    if (mesh && this.hoveredMesh && mesh === this.hoveredMesh) return;
+
+    if (this.hoveredMesh) {
+      this.onHoverEnd(this.hoveredMesh);
+      this.hoveredMesh = null;
     }
 
-    switch (mesh.object.name) {
-      case 'neuronCloud':
-        this.hoverNeuron(mesh.index);
-        break;
-      case 'morphSegment':
-        this.hoverMorphSegment(mesh);
-        break;
-      default:
-        break;
+    if (mesh) {
+      this.onHover(mesh);
+      this.hoveredMesh = mesh;
     }
   }
 
-  hoverNeuron(neuronIndex) {
-    if (this.hoveredNeuron && this.hoveredNeuron[0] === neuronIndex) return;
+  onHover(mesh) {
+    switch (mesh.object.name) {
+    case 'neuronCloud': {
+      this.onNeuronHover(mesh.index);
+      break;
+    }
+    case 'morphSegment': {
+      this.onMorphSegmentHover(mesh);
+      break;
+    }
+    case 'synapseCloud': {
+      this.onSynapseHover(mesh.index);
+      break;
+    }
+    default: {
+      break;
+    }
+    }
+  }
 
-    if (this.hoveredNeuron) this.unhoverNeuron();
+  onHoverEnd(mesh) {
+    switch (mesh.object.name) {
+    case 'neuronCloud': {
+      this.onNeuronHoverEnd(mesh.index);
+      break;
+    }
+    case 'morphSegment': {
+      this.onMorphSegmentHoverEnd(mesh);
+      break;
+    }
+    case 'synapseCloud': {
+      this.onSynapseHoverEnd(mesh.index);
+      break;
+    }
+    default: {
+      break;
+    }
+    }
+  }
 
-    this.onHoverHandler({
+  onNeuronHover(neuronIndex) {
+    this.onHoverExternalHandler({
       type: 'cloudNeuron',
       neuronIndex,
     });
@@ -455,27 +520,32 @@ class NeuronRenderer {
     this.neuronCloud.points.geometry.attributes.color.needsUpdate = true;
   }
 
-  unhoverNeuron() {
-    if (!this.hoveredNeuron) return;
-
-    this.onHoverHandler();
+  onNeuronHoverEnd(neuronIndex) {
+    this.onHoverEndExternalHandler({
+      neuronIndex,
+      type: 'cloudNeuron',
+    });
 
     this.neuronCloud.colorBufferAttr.setXYZ(...this.hoveredNeuron);
     this.neuronCloud.points.geometry.attributes.color.needsUpdate = true;
     this.hoveredNeuron = null;
   }
 
-  hoverMorphSegment(mesh) {
-    if (this.hoverBox) {
-      if (
-        this.hoverBox.userData.sectionName === mesh.object.userData.sectionName &&
-        this.hoverBox.userData.segmentIndex === mesh.object.userData.segmentIndex
-      ) return;
+  onSynapseHover(synapseIndex) {
+    this.onHoverExternalHandler({
+      synapseIndex,
+      type: 'synapse',
+    });
+  }
 
-      this.scene.remove(this.hoverBox);
-      this.disposeObject(this.hoverBox);
-    }
+  onSynapseHoverEnd(synapseIndex) {
+    this.onHoverEndExternalHandler({
+      synapseIndex,
+      type: 'synapse',
+    });
+  }
 
+  onMorphSegmentHover(mesh) {
     const geometry = new THREE.EdgesGeometry(mesh.object.geometry);
     const material = new THREE.LineBasicMaterial({
       color: HOVER_BOX_COLOR,
@@ -488,6 +558,22 @@ class NeuronRenderer {
     this.hoverBox.name = mesh.object.name;
     this.hoverBox.userData = mesh.object.userData;
     this.scene.add(this.hoverBox);
+
+    this.onHoverExternalHandler({
+      type: 'morphSegment',
+      data: mesh.object.userData,
+    });
+  }
+
+  onMorphSegmentHoverEnd(mesh) {
+    this.scene.remove(this.hoverBox);
+    this.disposeObject(this.hoverBox);
+    this.hoverBox = null;
+
+    this.onHoverEndExternalHandler({
+      type: 'morphSegment',
+      data: mesh.object.userData,
+    });
   }
 
   highlightMorphCell(gid) {
@@ -558,14 +644,6 @@ class NeuronRenderer {
     this.morphCellHighlightAnimation = TweenLite.to(materialsToShow, 0.3, { opacity: 1 });
   }
 
-  unhoverMorphSegment() {
-    if (!this.hoverBox) return;
-
-    this.scene.remove(this.hoverBox);
-    this.disposeObject(this.hoverBox);
-    this.hoverBox = null;
-  }
-
   highlightCircuitSoma(gid) {
     if (this.neuronHighlightAnimation) this.neuronHighlightAnimation.kill();
 
@@ -631,9 +709,11 @@ class NeuronRenderer {
   }
 
   animate() {
-    requestAnimationFrame(this.animate.bind(this));
+    stats.begin();
     this.controls.update();
     this.renderer.render(this.scene, this.camera);
+    stats.end();
+    requestAnimationFrame(this.animate.bind(this));
   }
 }
 

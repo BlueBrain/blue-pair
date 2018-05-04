@@ -2,24 +2,40 @@
 <template>
   <positioned-poptip :position="position">
 
-    <i-button
-      type="warning"
-      size="small"
-      :disabled="btn.stimulus.disabled"
-      @click="onStimulusAdd()"
+    <div
+      class="mb-6"
+      v-if="sectionType === 'soma'"
     >
-      + Stimulus
-    </i-button>
+      <i-button
+        type="default"
+        size="small"
+        long
+        @click="onSynInputAdd()"
+      >
+        + Syn inputs
+      </i-button>
+    </div>
 
-    <i-button
-      type="info"
-      size="small"
-      class="ml-6"
-      :disabled="btn.recording.disabled"
-      @click="onRecordingAdd()"
-    >
-      + Recording
-    </i-button>
+    <div>
+      <i-button
+        type="warning"
+        size="small"
+        :disabled="btn.stimulus.disabled"
+        @click="onStimulusAdd()"
+      >
+        + Stimulus
+      </i-button>
+
+      <i-button
+        type="info"
+        size="small"
+        class="ml-6"
+        :disabled="btn.recording.disabled"
+        @click="onRecordingAdd()"
+      >
+        + Recording
+      </i-button>
+    </div>
 
   </positioned-poptip>
 </template>
@@ -31,6 +47,8 @@
   import store from '@/store';
 
   import PositionedPoptip from '@/components/shared/positioned-poptip.vue';
+
+  const sectionTypeRegexp = /\.(\w*)/;
 
   export default {
     name: 'morph-segment-poptip',
@@ -44,6 +62,7 @@
           y: -20,
         },
         segment: null,
+        sectionType: null,
         btn: {
           recording: { disabled: false },
           stimulus: { disabled: false },
@@ -59,6 +78,8 @@
           sectionName: context.data.sectionName,
         };
 
+        this.sectionType = context.data.sectionName.match(sectionTypeRegexp)[1];
+
         this.updateBtnStatus();
       });
     },
@@ -71,6 +92,9 @@
         store.$dispatch('addRecording', this.segment);
         this.updateBtnStatus();
       },
+      onSynInputAdd() {
+        store.$dispatch('addSynInput', this.segment.gid);
+      },
       updateBtnStatus() {
         const { recordings, stimuli } = store.state.simulation;
         const { sectionName } = this.segment;
@@ -81,10 +105,3 @@
     },
   };
 </script>
-
-
-<style lang="scss" scoped>
-  .ml-6 {
-    margin-left: 6px;
-  }
-</style>

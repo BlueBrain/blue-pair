@@ -36,12 +36,14 @@
       };
     },
     mounted() {
-      store.$on('updateHoveredNeuron', (hoveredNeuron) => {
-        this.visible = !!hoveredNeuron;
+      store.$on('showHoveredNeuronInfo', (neuron) => {
         this.table.data.forEach((propObj) => {
-          propObj.value = hoveredNeuron ? hoveredNeuron[propObj.property] : '';
+          propObj.value = neuron ? neuron[propObj.property] : '';
         });
+        this.visible = true;
       });
+
+      store.$on('hideHoveredNeuronInfo', () => { this.visible = false; });
 
       store.$on('circuitLoaded', () => {
         this.table.data = store.state.circuit.neuronProps.map(prop => ({ property: prop, value: '' }));

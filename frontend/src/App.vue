@@ -65,8 +65,16 @@
     margin-top: 12px;
   }
 
+  .mt-6 {
+    margin-top: 6px;
+  }
+
   .ml-6 {
     margin-left: 6px;
+  }
+
+  .mb-6 {
+    margin-bottom: 6px;
   }
 
   .ivu-collapse-header {

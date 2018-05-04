@@ -6,11 +6,21 @@ const getters = {
   neuron(store, index) {
     const { neurons, neuronPropIndex } = store.state.circuit;
 
-    return Object.keys(store.state.circuit.neuronPropIndex)
+    return Object.keys(neuronPropIndex)
       .reduce((nrn, prop) => {
         const propValue = neurons[index][neuronPropIndex[prop]];
         return Object.assign(nrn, { [prop]: propValue });
       }, { gid: index + 1 });
+  },
+
+  synapse(store, index) {
+    const { synapses, synapsePropIndex } = store.state.simulation;
+
+    return Object.keys(synapsePropIndex)
+      .reduce((syn, prop) => {
+        const propValue = synapses[index][synapsePropIndex[prop]];
+        return Object.assign(syn, { [prop]: propValue });
+      }, {});
   },
 
   neuronPosition(store, index) {
@@ -24,6 +34,10 @@ const getters = {
   },
 
   stimuli(store) {
+    return clone(store.state.simulation.stimuli);
+  },
+
+  synInputs(store) {
     return clone(store.state.simulation.stimuli);
   },
 

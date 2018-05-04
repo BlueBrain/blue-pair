@@ -5,65 +5,34 @@
       Select a pre-synaptic cells to add synapses with Poisson process with given frequency
     </p>
 
-    <Row :gutter="6">
-      <i-col span="6">
-        <i-select
-          size="small"
-          placeholder="Prop"
-          :transfer="true"
-          v-model="ctrl.preSynCellCurrentProp"
-          @on-change="updateFilters"
-        >
-          <i-option
-            v-for="prop in ctrl.preSynCellProps"
-            :value="prop"
-            :key="prop"
-          >{{ prop }}</i-option>
-        </i-select>
-      </i-col>
-      <i-col span="10">
-        <AutoComplete
-          size="small"
-          v-model="ctrl.preSynCellPropCurrentValue"
-          :data="ctrl.preSynCellPropValues"
-          :filter-method="valueFilterMethod"
-          :transfer="true"
-          placeholder="Value"
-        ></AutoComplete>
-      </i-col>
-      <i-col span="4">
-        <InputNumber
-          size="small"
-          v-model="ctrl.spikeFrequency"
-          :min="0.5"
-          :max="40"
-          :step="0.5"
-          placeholder="f, Hz"
-        ></InputNumber>
-      </i-col>
-      <i-col span="4" style="text-align: center">
-        <i-button
-          size="small"
-          long
-          type="primary"
-          @click="addSynInput"
-          :disabled=" !ctrl.preSynCellCurrentProp ||
-                      !ctrl.preSynCellPropCurrentValue ||
-                      !filterSet[ctrl.preSynCellCurrentProp].includes(ctrl.preSynCellPropCurrentValue) ||
-                      !ctrl.spikeFrequency"
-        >Add input</i-button>
-      </i-col>
-    </Row>
     <div class="mt-12">
       <cell-syn-input
         class="syn-input-container"
         v-for="(synInput, index) in synInputs"
-        :key="synInput.preSynCellProp + synInput.preSynCellPropVal"
-        :syn-input="synInput"
+        :key="synInput.id"
+        v-model="synInputs[index]"
+        :filter-set="filterSet"
         @on-close="removeSynInput(index)"
       />
     </div>
 
+    <cell-syn-input
+      class="syn-input-container"
+      v-if="tmpSynInput"
+      v-model="tmpSynInput"
+      :filter-set="filterSet"
+      @on-close="removeTmpSynInput()"
+    />
+
+    <i-button
+      class="mt-12"
+      size="small"
+      @click="addTmpSynInput()"
+    >
+      Add synaptic input
+    </i-button>
+
+    <!-- TODO: reset loading state when switching tab to circuit -->
     <Spin size="large" fix v-if="loading"></Spin>
   </div>
 </template>
@@ -77,16 +46,10 @@
     name: 'cell-syn-inputs',
     data() {
       return {
-        ctrl: {
-          preSynCellProps: [],
-          preSynCellCurrentProp: null,
-          preSynCellPropValues: [],
-          preSynCellPropCurrentValue: null,
-          spikeFrequency: null,
-        },
         filterSet: {},
-        synInputs: [],
-        loading: true,
+        synInputs: {},
+        tmpSynInput: null,
+        loading: false,
       };
     },
     components: {
@@ -94,6 +57,16 @@
     },
     mounted() {
       store.$on('synInputsCtrl:init', () => this.init());
+      store.$on('addSynInput', gid => this.addSynInput(gid));
+      store.$on('morphSegmentSelected', (segment) => {
+        if (!this.tmpSynInput) return;
+
+        this.tmpSynInput.gid = segment.neuron.gid;
+
+        this.synInputs.push(this.tmpSynInput);
+        this.removeTmpSynInput();
+        store.$dispatch('setSynInputs', this.synInputs);
+      });
     },
     methods: {
       init() {
@@ -116,43 +89,39 @@
           return Object.assign(filterSet, { [propName]: propUniqueValues.sort() });
         }, {});
 
-        this.ctrl.preSynCellProps = Object.keys(this.filterSet);
-        this.updateFilters();
-
         this.loading = false;
       },
-      updateFilters() {
-        this.ctrl.preSynCellPropCurrentValue = '';
-        if (!this.ctrl.preSynCellCurrentProp) {
-          this.ctrl.preSynCellPropValues = [];
-          return;
-        }
-
-        const currentProp = this.ctrl.preSynCellCurrentProp;
-        this.ctrl.preSynCellPropValues = this.filterSet[currentProp]
-          .filter(propValue => !this.synInputs.find((input) => {
-            return input.preSynCellProp === currentProp && input.preSynCellPropVal === propValue;
-          }));
-      },
-      valueFilterMethod(value, option) {
-        return option.toString().toUpperCase().includes(value.toString().toUpperCase());
-      },
-      addSynInput() {
+      addSynInput(gid) {
         this.synInputs.push({
-          preSynCellProp: this.ctrl.preSynCellCurrentProp,
-          preSynCellPropVal: this.ctrl.preSynCellPropCurrentValue,
-          spikeFrequency: this.ctrl.spikeFrequency,
+          gid,
+          preSynCellProp: null,
+          preSynCellPropVal: null,
+          spikeFrequency: 10,
+          id: Date.now(),
         });
+      },
+      addTmpSynInput() {
+        this.tmpSynInput = {
+          gid: null,
+          preSynCellProp: null,
+          preSynCellPropVal: null,
+          spikeFrequency: 10,
+          id: Date.now(),
+        };
 
-        this.updateFilters();
-
-        store.$dispatch('setSynInputs', this.synInputs);
+        this.updateWaitingSecSelection();
       },
       removeSynInput(index) {
         this.synInputs.splice(index, 1);
-        this.updateFilters();
 
         store.$dispatch('setSynInputs', this.synInputs);
+      },
+      removeTmpSynInput() {
+        this.tmpSynInput = null;
+        this.updateWaitingSecSelection();
+      },
+      updateWaitingSecSelection() {
+        store.$dispatch('setWaitingSecSelection', !!this.tmpSynInput);
       },
     },
   };

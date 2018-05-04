@@ -1,6 +1,7 @@
 
 import cloneDeep from 'lodash/cloneDeep';
 import remove from 'lodash/remove';
+import pickBy from 'lodash/pickBy';
 
 import socket from '@/services/websocket';
 import storage from '@/services/storage';
@@ -76,14 +77,43 @@ const actions = {
     store.$emit('redrawCircuit');
   },
 
-  updateHoveredNeuron(store, neuron) {
-    store.$emit('updateHoveredNeuron', neuron);
+  neuronHovered(store, neuron) {
+    store.$emit('showHoveredNeuronInfo', neuron);
 
-    if (neuron) {
-      store.$emit('highlightSimAddedNeuron', neuron);
-    } else {
-      store.$emit('unhighlightSimAddedNeuron');
-    }
+    // we don't need all properties of neuron to be shown,
+    // for example x, y, z can be skipped.
+    // TODO: move visible property selection to app config page
+    const propsToSkip = ['x', 'y', 'z', 'me_combo', 'morphology'];
+
+    store.$emit('showHoverObjectInfo', {
+      header: 'Neuron',
+      items: [{
+        type: 'table',
+        data: pickBy(neuron, (val, prop) => !propsToSkip.includes(prop)),
+      }],
+    });
+    store.$emit('highlightSimAddedNeuron', neuron);
+  },
+
+  neuronHoverEnded(store) {
+    store.$emit('unhighlightSimAddedNeuron');
+    store.$emit('hideHoverObjectInfo');
+    store.$emit('hideHoveredNeuronInfo');
+  },
+
+  synapseHovered(store, synapseIndex) {
+    const synapse = store.$get('synapse', synapseIndex);
+    store.$emit('showHoverObjectInfo', {
+      header: 'Synapse',
+      items: [{
+        type: 'table',
+        data: synapse,
+      }],
+    });
+  },
+
+  synapseHoverEnded(store) {
+    store.$emit('hideHoverObjectInfo');
   },
 
   propFilterUpdated(store) {
@@ -235,6 +265,10 @@ const actions = {
       sectionName: segment.sectionName,
     });
     store.$emit('updateRecordings');
+  },
+
+  addSynInput(store, gid) {
+    store.$emit('addSynInput', gid);
   },
 
   removeRecording(store, recording) {

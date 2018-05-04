@@ -26,9 +26,10 @@
       'morph-segment-poptip': MorphSegmentPoptip,
     },
     mounted() {
-      this.renderer = new NeuronRenderer({
-        canvasElementId: this.canvasId,
+      const canvas = document.getElementById(this.canvasId);
+      this.renderer = new NeuronRenderer(canvas, {
         onHover: this.onHover.bind(this),
+        onHoverEnd: this.onHoverEnd.bind(this),
         onClick: this.onClick.bind(this),
       });
       // TODO: refactor
@@ -60,20 +61,51 @@
     },
     methods: {
       onHover(obj) {
-        const neuron = obj ? store.$get('neuron', obj.neuronIndex) : null;
-        store.$dispatch('updateHoveredNeuron', neuron);
+        switch (obj.type) {
+        case 'cloudNeuron': {
+          const neuron = store.$get('neuron', obj.neuronIndex);
+          store.$dispatch('neuronHovered', neuron);
+          break;
+        }
+        case 'synapse': {
+          store.$dispatch('synapseHovered', obj.synapseIndex);
+          break;
+        }
+        default: {
+          break;
+        }
+        }
+      },
+      onHoverEnd(obj) {
+        switch (obj.type) {
+        case 'cloudNeuron': {
+          const neuron = store.$get('neuron', obj.neuronIndex);
+          store.$dispatch('neuronHoverEnded', neuron);
+          break;
+        }
+        case 'synapse': {
+          store.$dispatch('synapseHoverEnded', obj.synapseIndex);
+          break;
+        }
+        default: {
+          break;
+        }
+        }
       },
       onClick(obj) {
         switch (obj.type) {
-          case 'neuronCloud':
-            const neuron = store.$get('neuron', obj.index);
-            store.$dispatch('neuronClicked', neuron);
-            break;
-          case 'morphSegment':
-            store.$dispatch('morphSegmentClicked', obj);
-            break;
-          default:
-            break;
+        case 'neuronCloud': {
+          const neuron = store.$get('neuron', obj.index);
+          store.$dispatch('neuronClicked', neuron);
+          break;
+        }
+        case 'morphSegment': {
+          store.$dispatch('morphSegmentClicked', obj);
+          break;
+        }
+        default: {
+          break;
+        }
         }
       },
       initRenderer() {
