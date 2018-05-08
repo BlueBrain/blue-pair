@@ -86,6 +86,7 @@
     },
     methods: {
       onPreSynCellPropChange() {
+        this.synInput.preSynCellPropVal = '';
         this.updateValidity();
         this.updateFilters();
         this.emitSynInputChange();
@@ -108,7 +109,9 @@
           .filter(propValue => !synInputs.find((input) => {
             if (!input.valid) return false;
 
-            return input.preSynCellProp === currentProp && input.preSynCellPropVal === propValue;
+            return input.preSynCellProp === currentProp &&
+              input.preSynCellPropVal === propValue &&
+              input.gid === this.synInput.gid;
           }));
       },
       emitSynInputChange() {
