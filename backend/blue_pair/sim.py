@@ -5,6 +5,7 @@ import logging
 from multiprocessing import Queue, Process
 
 import bglibpy
+import numpy as np
 
 global custom_progress_cb
 def default_progress_cb():
@@ -55,6 +56,7 @@ class Sim(object):
 
         global custom_progress_cb
 
+        self.net_connections = []
         self.sim_config = sim_config
         self.recording_list = []
         self.gids = sorted(sim_config['gids'])
@@ -72,6 +74,24 @@ class Sim(object):
 
         for stimulus in sim_config['stimuli']:
             self._add_current_injection(stimulus)
+
+        for pre_gid in sim_config['synapses']:
+            pre_spiketrain_frequency = sim_config['synapses'][pre_gid]['spikeFrequency']
+            L.debug('generating pre_spiketrain for pre_gid %s with frequency %s Hz', pre_gid, pre_spiketrain_frequency)
+            pre_spiketrain = self.generate_pre_spiketrain(pre_spiketrain_frequency)
+            L.debug('generated pre_spiketrain: %s', pre_spiketrain)
+
+            synapse_description_list = sim_config['synapses'][pre_gid]['synapses']
+            for synapse_description in synapse_description_list:
+                self._add_syn_input(synapse_description, pre_spiketrain)
+
+    def _add_syn_input(self, synapse_description, pre_spiketrain):
+        post_gid = synapse_description['postGid']
+        syn_index = synapse_description['index']
+        L.debug('adding pre_spiketrain to synapse (%s, %s)', post_gid, syn_index)
+        synapse = self.ssim.cells[post_gid].synapses[syn_index]
+        connection = bglibpy.Connection(synapse, pre_spiketrain=pre_spiketrain)
+        self.net_connections.append(connection)
 
     def _add_recording_section(self, recording):
         gid = recording['gid']
@@ -110,6 +130,11 @@ class Sim(object):
                 stop_level,
                 section=sec
             )
+
+    def generate_pre_spiketrain(self, frequency, start_offset=0):
+        spike_interval = 1000 / frequency
+        spiketrain_size = int(round(float(self.sim_config['tStop']) / 1000 * frequency))
+        return np.cumsum(np.random.poisson(spike_interval, spiketrain_size)) + start_offset
 
     def run(self):
         t_stop = self.sim_config['tStop']

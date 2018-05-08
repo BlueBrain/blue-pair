@@ -50,13 +50,13 @@
             return secNames.reduce((trace, secName) => trace.concat(data[gid].voltage[secName][i]), [timestamp]);
           });
 
-          this.traces[gid] = {
+          this.$set(this.traces, gid, {
             chart: {
               data: chartData,
               labels: ['t'].concat(shortSecNames),
             },
             download: {},
-          };
+          });
         });
 
         // this.collapseAllPanels();

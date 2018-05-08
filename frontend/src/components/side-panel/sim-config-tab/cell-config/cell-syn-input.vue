@@ -98,7 +98,7 @@
       updateValidity() {
         this.synInput.valid = this.synInput.gid &&
           this.synInput.preSynCellProp &&
-          this.synInput.preSynCellPropValue;
+          this.synInput.preSynCellPropVal;
       },
       updateFilters() {
         const { synInputs } = store.state.simulation;

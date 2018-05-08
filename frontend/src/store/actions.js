@@ -2,6 +2,9 @@
 import cloneDeep from 'lodash/cloneDeep';
 import remove from 'lodash/remove';
 import pickBy from 'lodash/pickBy';
+import pick from 'lodash/pick';
+import head from 'lodash/head';
+import groupBy from 'lodash/groupBy';
 
 import socket from '@/services/websocket';
 import storage from '@/services/storage';
@@ -221,8 +224,29 @@ const actions = {
   },
 
   runSim(store) {
+    const { synapses, synInputs } = store.state.simulation;
+    const { neurons, neuronPropIndex } = store.state.circuit;
+
+    const simSynapsesByPreGid = synInputs.reduce((synConfig, synInput) => {
+      const syns = synapses.filter((syn) => {
+        return syn.gid === synInput.gid &&
+          synInput.synapsesVisible &&
+          synInput.valid &&
+          neurons[syn.preGid - 1][neuronPropIndex[synInput.preSynCellProp]] === synInput.preSynCellPropVal;
+      });
+      const { spikeFrequency } = synInput;
+      const synapsesByPreGid = groupBy(syns, 'preGid');
+      Object.entries(synapsesByPreGid).forEach(([preGid, cellSynapses]) => {
+        synConfig[preGid] = synConfig[preGid] || {
+          spikeFrequency,
+          synapses: cellSynapses.map(s => pick(s, ['postGid', 'index'])),
+        };
+      });
+      return synConfig;
+    }, {});
+
     store.$emit('setStatus', { message: 'Runnig simulation' });
-    // store.$dispatch('showGlobalSpinner', 'Waiting for simulation backend to be ready...');
+    store.$dispatch('showGlobalSpinner', 'Waiting for simulation backend to be ready...');
 
     store.$once('ws:backend_ready', () => {
       store.$dispatch('showGlobalSpinner', 'Initializing simulation...');
@@ -238,6 +262,7 @@ const actions = {
       timeStep: store.state.simulation.params.timeStep,
       stimuli: store.state.simulation.stimuli,
       recordings: store.state.simulation.recordings,
+      synapses: simSynapsesByPreGid,
     };
 
     socket.send('get_sim_traces', simConfig);
