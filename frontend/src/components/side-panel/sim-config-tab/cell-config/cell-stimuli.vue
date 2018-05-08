@@ -10,22 +10,7 @@
       v-for="(stimuliSet, gid) of stimuli"
       :key="gid"
     >
-      <Poptip
-        trigger="hover"
-        placement="left-start"
-        :transfer="true"
-        width="540"
-      >
-        <h4
-          @mouseover="onGidHover(gid)"
-          @mouseleave="onGidUnhover()"
-        >
-          GID: {{ gid }}
-        </h4>
-        <div slot="content">
-          <neuron-info :gid="gid"/>
-        </div>
-      </Poptip>
+      <gid-label :gid="gid"/>
 
       <div
         class="stimuli-container"
@@ -74,7 +59,7 @@
   import store from '@/store';
 
   import CellStimulus from './cell-stimulus.vue';
-  import NeuronInfo from '@/components/shared/neuron-info.vue';
+  import GidLabel from '@/components/shared/gid-label.vue';
 
   export default {
     name: 'cell-stimuli',
@@ -86,7 +71,7 @@
     },
     components: {
       'cell-stimulus': CellStimulus,
-      'neuron-info': NeuronInfo,
+      'gid-label': GidLabel,
     },
     mounted() {
       store.$on('updateStimuli', () => {
@@ -107,12 +92,6 @@
     methods: {
       removeStimulus(stimulus) {
         store.$dispatch('removeStimulus', stimulus);
-      },
-      onGidHover(gid) {
-        store.$dispatch('simConfigGidLabelHovered', Number(gid));
-      },
-      onGidUnhover() {
-        store.$dispatch('simConfigGidLabelUnhovered');
       },
       addTmpStimulus() {
         this.tmpStimulus = {

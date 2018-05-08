@@ -10,22 +10,7 @@
       v-for="(synInputs, gid) of synInputsByGid"
       :key="gid"
     >
-      <Poptip
-        trigger="hover"
-        placement="left-start"
-        :transfer="true"
-        width="540"
-      >
-        <h4
-          @mouseover="onGidHover(gid)"
-          @mouseleave="onGidUnhover()"
-        >
-          GID: {{ gid }}
-        </h4>
-        <div slot="content">
-          <neuron-info :gid="gid"/>
-        </div>
-      </Poptip>
+      <gid-label :gid="gid"/>
 
       <div
         class="mt-6"
@@ -67,7 +52,7 @@
 <script>
   import groupBy from 'lodash/groupBy';
   import store from '@/store';
-  import NeuronInfo from '@/components/shared/neuron-info.vue';
+  import GidLabel from '@/components/shared/gid-label.vue';
   import CellSynInput from './cell-syn-input.vue';
 
   export default {
@@ -82,7 +67,7 @@
     },
     components: {
       'cell-syn-input': CellSynInput,
-      'neuron-info': NeuronInfo,
+      'gid-label': GidLabel,
     },
     mounted() {
       store.$on('synInputsCtrl:init', () => this.init());
@@ -142,12 +127,6 @@
       },
       updateWaitingSecSelection() {
         store.$dispatch('setWaitingSecSelection', !!this.tmpSynInput);
-      },
-      onGidHover(gid) {
-        store.$dispatch('simConfigGidLabelHovered', Number(gid));
-      },
-      onGidHoverEnd() {
-        store.$dispatch('simConfigGidLabelUnhovered');
       },
     },
   };

@@ -13,22 +13,7 @@
       v-for="(recordingsSet, gid) of recordings"
       :key="gid"
     >
-      <Poptip
-        trigger="hover"
-        placement="left-start"
-        :transfer="true"
-        width="540"
-      >
-        <h4
-          @mouseover="onGidHover(gid)"
-          @mouseleave="onGidUnhover()"
-        >
-          GID: {{ gid }}
-        </h4>
-        <div slot="content">
-          <neuron-info :gid="gid"/>
-        </div>
-      </Poptip>
+      <gid-label :gid="gid"/>
 
       <div class="recordings-container">
         <Tag
@@ -82,12 +67,12 @@
   import groupBy from 'lodash/groupBy';
 
   import store from '@/store';
-  import NeuronInfo from '@/components/shared/neuron-info';
+  import GidLabel from '@/components/shared/gid-label.vue';
 
   export default {
     name: 'cell-recordings',
     components: {
-      'neuron-info': NeuronInfo,
+      'gid-label': GidLabel,
     },
     data() {
       return {
@@ -98,12 +83,6 @@
     methods: {
       removeRecording(recording) {
         store.$dispatch('removeRecording', recording);
-      },
-      onGidHover(gid) {
-        store.$dispatch('simConfigGidLabelHovered', Number(gid));
-      },
-      onGidUnhover() {
-        store.$dispatch('simConfigGidLabelUnhovered');
       },
       addTmpRecording() {
         this.tmpRecording = {

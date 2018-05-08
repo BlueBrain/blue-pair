@@ -6,12 +6,7 @@
       v-for="(trace, gid) of traces"
       :key="gid"
     >
-      <h4
-        @mouseover="onGidHover(gid)"
-        @mouseleave="onGidUnhover()"
-      >
-        GID: {{ gid }}
-      </h4>
+      <gid-label :gid="gid"/>
       <dygraph
         v-if="trace.chart.data.length"
         :data="trace.chart.data"
@@ -25,18 +20,19 @@
 <script>
   import store from '@/store';
   import Dygraph from '@/components/shared/dygraph.vue';
+  import GidLabel from '@/components/shared/gid-label.vue';
 
   export default {
     name: 'cell-traces',
     components: {
       dygraph: Dygraph,
+      'gid-label': GidLabel,
     },
     data() {
       return {
         traces: {},
       };
     },
-    methods: {},
     mounted() {
       store.$on('ws:simulation_result', (data) => {
         // TODO: this handler should be on sim-config-tab component level
