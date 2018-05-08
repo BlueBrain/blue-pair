@@ -50,9 +50,10 @@
     name: 'dygraph',
     props: ['data', 'labels'],
     mounted() {
-      // dygraph in hidden block is being rendered with zero size
-      // TODO: refactor this
-      const width = this.$refs.graph.parentElement.parentElement.parentElement.parentElement.parentElement.clientWidth - 137;
+      // #traces-panel is an element from cell-config component,
+      // when dygraph is being rendered in hidden block size should be supplied
+      // TODO: rethink and refactor?
+      const width = document.getElementById('traces-panel').clientWidth - 137;
 
       this.graph = new Dygraph(this.$refs.graph, this.data, {
         width,

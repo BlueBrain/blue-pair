@@ -44,7 +44,7 @@
         class="mt-12"
         v-model="collapsePanel.traces"
       >
-        <Panel>
+        <Panel id="traces-panel">
           <strong>Traces</strong>
           <div slot="content">
             <cell-traces/>
