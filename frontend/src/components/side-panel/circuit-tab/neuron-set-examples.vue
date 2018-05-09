@@ -25,10 +25,14 @@
           size="small"
           long
           type="primary"
-          disabled
+          :disabled="currentNeuronSetIndex === null"
+          @click="loadNeuronSet()"
         >Load</i-button>
       </i-col>
     </Row>
+    <Transition name="fadeHeight">
+      <pre v-if="currentNeuronSetIndex !== null">{{ neuronSets[currentNeuronSetIndex].description }}</pre>
+    </Transition>
   </Card>
 </template>
 
@@ -42,13 +46,10 @@
       return {
         currentNeuronSetIndex: null,
         neuronSets: [{
-          key: 'martinotiLoop',
-          label: 'Martinoti loop',
-          gids: [100, 200, 300],
-        }, {
-          key: 'martinotiLoop2',
-          label: 'Martinoti loop 2',
-          gids: [102, 202, 303],
+          key: 'Martinotti loop',
+          label: 'Martinotti loop',
+          gids: [24671, 23233, 22724],
+          description: 'Martinotti cell L5_MC, gid: 24671, \nL5_TPC:A with reciprocal connections, gid: 23233\nPost synaptic L5_TPC:A, gid: 22724',
         }],
       };
     },
@@ -65,5 +66,12 @@
 <style lang="scss" scoped>
   .title {
     margin-bottom: 12px;
+  }
+
+  pre {
+    font-size: 12px;
+    padding-left: 12px;
+    border-left: 6px solid #eaeaea;
+    margin: 12px 0 0 1px;
   }
 </style>

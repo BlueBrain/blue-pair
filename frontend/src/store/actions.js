@@ -175,6 +175,16 @@ const actions = {
 
   loadNeuronSetClicked(store, options) {
     const { gids } = options;
+    const currentNeuronGids = store.state.circuit.simAddedNeurons.map(neuron => neuron.gid);
+    currentNeuronGids.forEach((gid) => {
+      const neuron = store.$get('neuron', gid - 1);
+      store.$emit('removeNeuronFromSim', neuron);
+    });
+
+    gids.forEach((gid) => {
+      const neuron = store.$get('neuron', gid - 1);
+      store.$emit('addNeuronToSim', neuron);
+    });
   },
 
   simNeuronHovered(store, gid) {

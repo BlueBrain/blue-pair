@@ -81,6 +81,7 @@
     },
     mounted() {
       store.$on('addNeuronToSim', neuron => this.onNeuronAdd(neuron));
+      store.$on('removeNeuronFromSim', neuron => this.onNeuronRemove(neuron));
       store.$on('resetSimConfigBtn', () => { this.simInit = false; });
       store.$on('highlightSimAddedNeuron', (neuron) => { this.highlightedNeuronGid = neuron.gid; });
       store.$on('unhighlightSimAddedNeuron', () => { this.highlightedNeuronGid = null; });
