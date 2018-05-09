@@ -176,6 +176,9 @@ const actions = {
     store.$emit('neuronRemovedFromSim', neuron);
   },
 
+  loadNeuronSetClicked(store, options) {
+    const { gids } = options;
+  },
   simNeuronHovered(store, gid) {
     store.$emit('highlightCircuitSoma', gid);
   },
