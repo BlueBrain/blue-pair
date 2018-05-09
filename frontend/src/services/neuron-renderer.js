@@ -8,16 +8,10 @@ import { TweenLite, TimelineLite } from 'gsap';
 // TODO: refactor to remove store operations
 // and move them to vue viewport component
 import store from '@/store';
-import Stats from './stats';
 
 
 // TODO: consider to use trackball ctrl instead
 const OrbitControls = require('three-orbit-controls')(THREE);
-
-const stats = new Stats();
-stats.showPanel(0);
-document.body.appendChild(stats.dom);
-
 
 const FOG_COLOR = 0xffffff;
 const NEAR = 1;
@@ -797,10 +791,8 @@ class NeuronRenderer {
   }
 
   animate() {
-    stats.begin();
     this.controls.update();
     this.renderer.render(this.scene, this.camera);
-    stats.end();
     requestAnimationFrame(this.animate.bind(this));
   }
 }

@@ -44,8 +44,8 @@
 
     <Row :gutter="6">
       <i-col
-        span="4"
-        push="20"
+        span="8"
+        push="16"
       >
         <i-button
           size="small"
@@ -54,7 +54,7 @@
           :disabled="!simAddedNeurons.length"
           :loading="simInit"
           @click="onConfigureSimulationBtnClick"
-        >Sim config</i-button>
+        >Proceed to simulation config</i-button>
       </i-col>
     </Row>
   </Card>

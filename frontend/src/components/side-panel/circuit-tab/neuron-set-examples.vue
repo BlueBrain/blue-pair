@@ -2,7 +2,7 @@
 <template>
   <Card>
     <h4 class="title">
-      Neuron set examples:
+      Preconfigured examples:
     </h4>
 
     <Row :gutter="6">
