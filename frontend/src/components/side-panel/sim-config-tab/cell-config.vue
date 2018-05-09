@@ -81,6 +81,12 @@
         },
       };
     },
+    mounted() {
+      store.$on('showOnlyTracesPanel', () => {
+        this.collapseAllPanels();
+        this.uncollapsePanel('traces');
+      });
+    },
     methods: {
       collapseAllPanels() {
         this.collapsePanel.stimuli = [];

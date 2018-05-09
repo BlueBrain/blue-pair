@@ -263,6 +263,7 @@ const actions = {
     }, {});
 
     store.$emit('setStatus', { message: 'Runnig simulation' });
+    store.$emit('showOnlyTracesPanel');
     store.$dispatch('showGlobalSpinner', 'Waiting for simulation backend to be ready...');
 
     store.$once('ws:backend_ready', () => {
