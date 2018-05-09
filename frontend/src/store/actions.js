@@ -82,8 +82,6 @@ const actions = {
   },
 
   neuronHovered(store, neuron) {
-    store.$emit('showHoveredNeuronInfo', neuron);
-
     // we don't need all properties of neuron to be shown,
     // for example x, y, z can be skipped.
     // TODO: move visible property selection to app config page
@@ -102,7 +100,6 @@ const actions = {
   neuronHoverEnded(store) {
     store.$emit('unhighlightSimAddedNeuron');
     store.$emit('hideHoverObjectInfo');
-    store.$emit('hideHoveredNeuronInfo');
   },
 
   synapseHovered(store, synapseIndex) {
@@ -179,6 +176,7 @@ const actions = {
   loadNeuronSetClicked(store, options) {
     const { gids } = options;
   },
+
   simNeuronHovered(store, gid) {
     store.$emit('highlightCircuitSoma', gid);
   },
