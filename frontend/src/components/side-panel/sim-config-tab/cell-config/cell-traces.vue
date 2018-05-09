@@ -6,12 +6,23 @@
       v-for="(trace, gid) of traces"
       :key="gid"
     >
+
       <gid-label :gid="gid"/>
+
       <dygraph
         v-if="trace.chart.data.length"
         :data="trace.chart.data"
         :labels="trace.chart.labels"
       />
+
+      <a
+        class="trace-download"
+        :download="trace.download.filename"
+        :href="trace.download.hrefData"
+      >
+        <Icon type="android-download" size="24"></Icon>
+      </a>
+
     </div>
   </div>
 </template>
@@ -51,12 +62,12 @@
               data: chartData,
               labels: ['t'].concat(shortSecNames),
             },
-            download: {},
+            download: {
+              filename: `${gid}-sim-trace.csv`,
+              hrefData: `data:text/plain;base64,${btoa(chartData.join('\n'))}`,
+            },
           });
         });
-
-        // this.collapseAllPanels();
-        // this.uncollapsePanel(PANEL.traces);
       });
     },
   };
@@ -65,10 +76,19 @@
 
 <style lang="scss" scoped>
   .trace-container {
+    position: relative;
     margin-bottom: 24px;
 
     &:last-child {
       margin-bottom: 0;
     }
+  }
+
+  .trace-download {
+    display: block;
+    height: 16px;
+    position: absolute;
+    right: 0;
+    bottom: 0;
   }
 </style>
