@@ -89,6 +89,7 @@
     },
     methods: {
       collapseAllPanels() {
+        this.collapsePanel.synInputs = [];
         this.collapsePanel.stimuli = [];
         this.collapsePanel.recordings = [];
         this.collapsePanel.traces = [];
