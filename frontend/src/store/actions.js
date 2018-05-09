@@ -440,6 +440,8 @@ const actions = {
     store.$emit('initSynapseCloud', synapses.length);
     store.$emit('synInputsCtrl:init');
     store.$emit('setStatus', { message: 'Ready' });
+
+    // socket.send('get_cell_nm_morphology', gidsToLoad);
   },
 };
 

@@ -110,6 +110,21 @@ class Storage():
         L.debug('getting cell morph for %s done', gids)
         return {'cells': cells}
 
+    def get_cell_nm_morphology(self, gids):
+        L.debug('getting axon cell morph from neurom for %s', gids)
+        cells = {}
+        for gid in gids:
+            cell_morph = cache.get('cell:morph:{}'.format(gid))
+            if cell_morph is None:
+                cell = circuit.v2.morph.get(gid, transform=True)
+                morphology = {
+                    'axon': [section.points for section in cell.sections if section.type.name == 'axon']
+                }
+                cache.set('cell:morph:{}'.format(gid), morphology)
+                cells[gid] = morphology
+        L.debug('getting axon cell morph from neurom for %s done', gids)
+        return {'cells': cells}
+
 def get_cell_morphology_mp(mp_queue, gids):
     L.debug('creating bglibpy SSim object')
     ssim = bglibpy.SSim(CIRCUIT_PATH)

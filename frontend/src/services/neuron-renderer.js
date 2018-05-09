@@ -1,4 +1,5 @@
 
+import last from 'lodash/last';
 import * as THREE from 'three';
 import * as chroma from 'chroma-js';
 import throttle from 'lodash/throttle';
@@ -332,6 +333,72 @@ class NeuronRenderer {
     });
 
     this.scene.add(this.cellMorphologyObj);
+  }
+
+  initNmMorphology(morphs) {
+    let color;
+    let material;
+
+    const gids = store.state.circuit.simAddedNeurons.map(n => n.gid);
+
+    gids.forEach((gid, cellIndex) => {
+      const HALF_PI = Math.PI * 0.5;
+      const sections = morphs[gid].axon;
+
+      const cellMorphGeometry = new THREE.Geometry();
+
+      const glColor = baseMorphColors.axon
+        .brighten((cellIndex - (gids.length / 2)) / 2)
+        .desaturate((cellIndex - (gids.length / 2)) / 2)
+        .gl();
+
+      color = new THREE.Color(...glColor);
+      // TODO: pregenerate materials and reuse them
+      material = new THREE.MeshLambertMaterial({ color, transparent: true });
+
+      const morphSimplificationRatio = 5;
+
+      sections.forEach((sectionPoints) => {
+        for (let i = 0; i < sectionPoints.length - 1; i += morphSimplificationRatio) {
+          const vstart = new THREE.Vector3(sectionPoints[i][0], sectionPoints[i][1], sectionPoints[i][2]);
+          const vend = new THREE.Vector3(
+            sectionPoints[i + morphSimplificationRatio] ? sectionPoints[i + morphSimplificationRatio][0] : last(sectionPoints)[0],
+            sectionPoints[i + morphSimplificationRatio] ? sectionPoints[i + morphSimplificationRatio][1] : last(sectionPoints)[1],
+            sectionPoints[i + morphSimplificationRatio] ? sectionPoints[i + morphSimplificationRatio][2] : last(sectionPoints)[2],
+          );
+          const distance = vstart.distanceTo(vend);
+          const position = vend.clone().add(vstart).divideScalar(2);
+
+          const geometry = new THREE.CylinderGeometry(
+            sectionPoints[i][3] * 2,
+            sectionPoints[i + 1][3] * 2,
+            distance,
+            3,
+            1,
+            true,
+          );
+
+          const orientation = new THREE.Matrix4();
+          const offsetRotation = new THREE.Matrix4();
+          orientation.lookAt(vstart, vend, new THREE.Vector3(0, 1, 0));
+          offsetRotation.makeRotationX(HALF_PI);
+          orientation.multiply(offsetRotation);
+          geometry.applyMatrix(orientation);
+
+          const cylinder = new THREE.Mesh(geometry, material.clone());
+          cylinder.position.copy(position);
+          cylinder.updateMatrix();
+          cylinder.matrixAutoUpdate = false;
+
+          cellMorphGeometry.merge(cylinder.geometry, cylinder.matrix);
+          this.disposeObject(cylinder);
+        }
+
+        const cellMorphMesh = new THREE.Mesh(cellMorphGeometry, material);
+        cellMorphMesh.matrixAutoUpdate = false;
+        this.scene.add(cellMorphMesh);
+      });
+    });
   }
 
   addSecMarker(config) {

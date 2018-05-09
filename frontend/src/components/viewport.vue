@@ -58,6 +58,8 @@
 
       store.$on('addSecMarker', config => this.renderer.addSecMarker(config));
       store.$on('removeSecMarker', config => this.renderer.removeSecMarker(config));
+
+      store.$on('ws:cell_nm_morphology', morphData => this.renderer.initNmMorphology(morphData.cells));
     },
     methods: {
       onHover(obj) {
