@@ -82,7 +82,7 @@
       };
     },
     mounted() {
-      this.preSynCellProps = Object.keys(this.filterSet);
+      this.preSynCellProps = Object.keys(this.filterSet).sort();
     },
     methods: {
       onPreSynCellPropChange() {
