@@ -17,7 +17,7 @@ const state = {
     },
   },
   simulation: {
-    synapseSize: 6,
+    synapseSize: 5,
     synapsePropIndex: {},
     synapseProps: [],
     synapses: [],
@@ -25,7 +25,7 @@ const state = {
     morphology: {},
     params: {
       tStop: 400,
-      timeStep: 0.025,
+      timeStep: 0.05,
     },
     synInputs: [],
     stimuli: [],
