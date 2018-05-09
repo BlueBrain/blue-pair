@@ -104,6 +104,8 @@
           return Object.assign(filterSet, { [propName]: propUniqueValues.sort() });
         }, {});
 
+        this.filterSet.gid = store.state.circuit.simAddedNeurons.map(n => n.gid);
+
         this.loading = false;
       },
       onSynInputChange(synInput) {
