@@ -229,6 +229,12 @@ const actions = {
 
     const simSynapsesByPreGid = synInputs.reduce((synConfig, synInput) => {
       const syns = synapses.filter((syn) => {
+        if (synInput.preSynCellProp === 'gid') {
+          return syn.gid === synInput.gid &&
+            synInput.synapseVisible &&
+            syn.preGid === synInput.preSynCellPropVal;
+        }
+
         return syn.gid === synInput.gid &&
           synInput.synapsesVisible &&
           synInput.valid &&
@@ -366,6 +372,12 @@ const actions = {
     store.state.simulation.synapses.forEach((synapse) => {
       synapse.visible = !!synInputs.find((input) => {
         // TODO: make this easy to understand
+        if (input.preSynCellProp === 'gid') {
+          return synapse.gid === input.gid &&
+            input.synapsesVisible &&
+            synapse.preGid === input.preSynCellPropVal;
+        }
+
         return synapse.gid === input.gid &&
           input.synapsesVisible &&
           neurons[synapse.preGid - 1][neuronPropIndex[input.preSynCellProp]] === input.preSynCellPropVal;
