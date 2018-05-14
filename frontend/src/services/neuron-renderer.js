@@ -243,6 +243,9 @@ class NeuronRenderer {
   }
 
   initMorphology() {
+    // morphology simplification ratio
+    const sRatio = 1;
+
     const gids = store.state.circuit.simAddedNeurons.map(n => n.gid);
     const { morphology } = store.state.simulation;
 
@@ -266,17 +269,21 @@ class NeuronRenderer {
         let color;
         let material;
 
-        for (let i = 0; i < sec.x.length - 1; i++) {
+        for (let i = 0; i < sec.x.length - 1; i += sRatio) {
           const vstart = new THREE.Vector3(sec.x[i], sec.y[i], sec.z[i]);
-          const vend = new THREE.Vector3(sec.x[i + 1], sec.y[i + 1], sec.z[i + 1]);
+          const vend = new THREE.Vector3(
+            sec.x[i + sRatio] || last(sec.x),
+            sec.y[i + sRatio] || last(sec.y),
+            sec.z[i + sRatio] || last(sec.z),
+          );
           const distance = vstart.distanceTo(vend);
           const position = vend.clone().add(vstart).divideScalar(2);
 
           const geometry = new THREE.CylinderGeometry(
             sec.d[i],
-            sec.d[i + 1],
+            sec.d[i + sRatio] || last(sec.d),
             distance,
-            8,
+            Math.max(4, Math.ceil(24 / sRatio)),
             1,
             false,
           );
@@ -301,13 +308,15 @@ class NeuronRenderer {
           cylinder.updateMatrix();
 
           secGeometry.merge(cylinder.geometry, cylinder.matrix);
-          // this.disposeObject(cylinder);
+          this.disposeObject(cylinder);
         }
 
-        const sectionMesh = new THREE.Mesh(secGeometry, material);
-        // TODO: measure performance improvement
+        const secBufferGeometry = new THREE.BufferGeometry().fromGeometry(secGeometry);
+        const sectionMesh = new THREE.Mesh(secBufferGeometry, material);
+        secGeometry.dispose();
+
         sectionMesh.matrixAutoUpdate = false;
-        // sectionMesh.updateMatrix();
+        sectionMesh.updateMatrix();
 
         sectionMesh.name = 'morphSegment';
         sectionMesh.userData = { neuron, sectionName, segmentIndex: 0 };
@@ -325,6 +334,7 @@ class NeuronRenderer {
   }
 
   initNmMorphology(morphs) {
+    const morphSimplificationRatio = 5;
     let color;
     let material;
 
@@ -345,22 +355,23 @@ class NeuronRenderer {
       // TODO: pregenerate materials and reuse them
       material = new THREE.MeshLambertMaterial({ color, transparent: true });
 
-      const morphSimplificationRatio = 5;
-
       sections.forEach((sectionPoints) => {
         for (let i = 0; i < sectionPoints.length - 1; i += morphSimplificationRatio) {
-          const vstart = new THREE.Vector3(sectionPoints[i][0], sectionPoints[i][1], sectionPoints[i][2]);
+          const secPts = sectionPoints;
+          const sRatio = morphSimplificationRatio;
+
+          const vstart = new THREE.Vector3(secPts[i][0], secPts[i][1], secPts[i][2]);
           const vend = new THREE.Vector3(
-            sectionPoints[i + morphSimplificationRatio] ? sectionPoints[i + morphSimplificationRatio][0] : last(sectionPoints)[0],
-            sectionPoints[i + morphSimplificationRatio] ? sectionPoints[i + morphSimplificationRatio][1] : last(sectionPoints)[1],
-            sectionPoints[i + morphSimplificationRatio] ? sectionPoints[i + morphSimplificationRatio][2] : last(sectionPoints)[2],
+            secPts[i + sRatio] ? secPts[i + sRatio][0] : last(secPts)[0],
+            secPts[i + sRatio] ? secPts[i + sRatio][1] : last(secPts)[1],
+            secPts[i + sRatio] ? secPts[i + sRatio][2] : last(secPts)[2],
           );
           const distance = vstart.distanceTo(vend);
           const position = vend.clone().add(vstart).divideScalar(2);
 
           const geometry = new THREE.CylinderGeometry(
-            sectionPoints[i][3] * 2,
-            sectionPoints[i + 1][3] * 2,
+            secPts[i][3] * 2,
+            secPts[i + 1][3] * 2,
             distance,
             3,
             1,
@@ -383,7 +394,9 @@ class NeuronRenderer {
           this.disposeObject(cylinder);
         }
 
-        const cellMorphMesh = new THREE.Mesh(cellMorphGeometry, material);
+        const cellMorphBufferGeometry = new THREE.BufferGeometry().fromGeometry(cellMorphGeometry);
+        const cellMorphMesh = new THREE.Mesh(cellMorphBufferGeometry, material);
+        cellMorphGeometry.dispose();
         cellMorphMesh.matrixAutoUpdate = false;
         this.scene.add(cellMorphMesh);
       });
