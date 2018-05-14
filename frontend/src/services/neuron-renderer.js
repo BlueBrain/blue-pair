@@ -77,29 +77,24 @@ class NeuronRenderer {
     this.scene.add(this.secMarkerObj);
 
     const segInjTexture = new THREE.TextureLoader().load('/seg-inj-texture.png');
-    segInjTexture.wrapS = THREE.RepeatWrapping;
-    segInjTexture.wrapT = THREE.RepeatWrapping;
-    segInjTexture.repeat.set(1, 3);
-
     const segRecTexture = new THREE.TextureLoader().load('/seg-rec-texture.png');
-    segRecTexture.wrapS = THREE.RepeatWrapping;
-    segRecTexture.wrapT = THREE.RepeatWrapping;
-    segRecTexture.repeat.set(1, 3);
 
     this.recMarkerMaterial = new THREE.MeshBasicMaterial({
       color: 0x00bfff,
-      opacity: 0.7,
+      opacity: 0.6,
       map: segRecTexture,
       transparent: true,
       side: THREE.DoubleSide,
+      depthWrite: false,
     });
 
     this.injMarkerMaterial = new THREE.MeshBasicMaterial({
       color: 0xffa500,
-      opacity: 0.7,
+      opacity: 0.6,
       map: segInjTexture,
       transparent: true,
       side: THREE.DoubleSide,
+      depthWrite: false,
     });
 
     this.synapseMaterial = new THREE.PointsMaterial({
@@ -396,56 +391,97 @@ class NeuronRenderer {
   }
 
   addSecMarker(config) {
-    // const [x, y, z] = store.$get('neuronPosition', config.gid - 1);
-    // const { morphology } = store.state.simulation;
+    const minSecMarkerLength = 12;
 
-    // const sec = morphology[config.gid].morph[config.sectionName];
-    // const { quaternion } = morphology[config.gid];
+    const HALF_PI = Math.PI * 0.5;
 
-    // sec.xstart.forEach((val, i) => {
-    //   const v = new THREE.Vector3(sec.xcenter[i], sec.ycenter[i], sec.zcenter[i]);
-    //   const axis = new THREE.Vector3(sec.xdirection[i], sec.ydirection[i], sec.zdirection[i]);
-    //   axis.normalize();
-    //   const rotQuat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), axis);
-    //   const length = sec.length[i];
-    //   const distance = sec.distance[i];
-    //   const scaleLength = distance / length;
-    //   const diamDelta = 2 / Math.ceil(Math.sqrt(sec.diam[i]));
-    //   const diam = sec.diam[i] + diamDelta;
-    //   const markerGeometry = new THREE.CylinderGeometry(diam, diam, length, 20, 1, true);
-    //   const material = config.type === 'recording' ? this.recMarkerMaterial : this.injMarkerMaterial;
-    //   const marker = new THREE.Mesh(markerGeometry, material.clone());
-    //   marker.name = 'sectionMarker';
-    //   marker.userData = config;
-    //   marker.scale.setY(scaleLength);
-    //   marker.setRotationFromQuaternion(rotQuat);
-    //   marker.position.copy(v);
+    const [x, y, z] = store.$get('neuronPosition', config.gid - 1);
+    const { morphology } = store.state.simulation;
 
-    //   // global position
-    //   const markerContainer = new THREE.Object3D();
-    //   markerContainer.add(marker);
-    //   const orientation = new THREE.Quaternion();
-    //   orientation.fromArray(quaternion);
-    //   markerContainer.applyQuaternion(orientation);
-    //   markerContainer.position.copy(new THREE.Vector3(x, y, z));
+    const sec = morphology[config.gid].morph[config.sectionName];
+    const { quaternion } = morphology[config.gid];
+    const secMarkerObj3d = new THREE.Object3D();
+    const secMarkerGeo = new THREE.Geometry();
 
-    //   this.secMarkerObj.add(markerContainer);
-    // });
+    let i = 0;
+    while (i + 1 < sec.x.length) {
+      const vstart = new THREE.Vector3(sec.x[i], sec.y[i], sec.z[i]);
+      const diameters = [sec.d[i]];
+
+      let vend;
+      while (!vend) {
+        const tmpEndVec = new THREE.Vector3(sec.x[i + 1], sec.y[i + 1], sec.z[i + 1]);
+
+        if (
+          vstart.distanceTo(tmpEndVec) >= minSecMarkerLength ||
+          i + 2 === sec.x.length
+        ) {
+          vend = tmpEndVec;
+        }
+
+        diameters.push(sec.d[i + 1]);
+
+        i += 1;
+      }
+
+      const d = Math.max(...diameters);
+
+      const distance = vstart.distanceTo(vend);
+      const position = vend.clone().add(vstart).divideScalar(2);
+
+      const dDelta = 2 / Math.ceil(Math.sqrt(d));
+      const secMarkerD = (d * 1.1) + dDelta;
+
+      const geometry = new THREE.CylinderGeometry(
+        secMarkerD,
+        secMarkerD,
+        distance,
+        8,
+        1,
+        true,
+      );
+
+      const orientation = new THREE.Matrix4();
+      const offsetRotation = new THREE.Matrix4();
+      orientation.lookAt(vstart, vend, new THREE.Vector3(0, 1, 0));
+      offsetRotation.makeRotationX(HALF_PI);
+      orientation.multiply(offsetRotation);
+      geometry.applyMatrix(orientation);
+
+      const cylinder = new THREE.Mesh(geometry);
+      cylinder.position.copy(position);
+      cylinder.updateMatrix();
+      secMarkerGeo.merge(cylinder.geometry, cylinder.matrix);
+    }
+
+    const material = config.type === 'recording' ? this.recMarkerMaterial : this.injMarkerMaterial;
+    const secMarkerMesh = new THREE.Mesh(secMarkerGeo, material);
+    secMarkerMesh.name = 'sectionMarker';
+    secMarkerMesh.userData = Object.assign({ skipHoverDetection: true }, config);
+    secMarkerMesh.updateMatrix();
+    secMarkerMesh.matrixAutoUpdate = false;
+    secMarkerObj3d.add(secMarkerMesh);
+
+    const cellOrientation = new THREE.Quaternion();
+    cellOrientation.fromArray(quaternion);
+    secMarkerObj3d.applyQuaternion(cellOrientation);
+    secMarkerObj3d.position.copy(new THREE.Vector3(x, y, z));
+    this.secMarkerObj.add(secMarkerObj3d);
   }
 
   removeSecMarker(segment) {
     // TODO: refactor
-    // const markersToRemove = [];
-    // this.secMarkerObj.traverse((child) => {
-    //   if (child instanceof THREE.Mesh && segment.sectionName === child.userData.sectionName) {
-    //     markersToRemove.push(child);
-    //   }
-    // });
+    const markersToRemove = [];
+    this.secMarkerObj.traverse((child) => {
+      if (child instanceof THREE.Mesh && segment.sectionName === child.userData.sectionName) {
+        markersToRemove.push(child);
+      }
+    });
 
-    // markersToRemove.forEach((mesh) => {
-    //   this.secMarkerObj.remove(mesh.parent);
-    //   this.disposeObject(mesh);
-    // });
+    markersToRemove.forEach((mesh) => {
+      this.secMarkerObj.remove(mesh.parent);
+      this.disposeObject(mesh);
+    });
   }
 
   disposeCellMorphology() {
