@@ -48,14 +48,14 @@
 
   export default {
     name: 'dygraph',
-    props: ['data', 'labels'],
+    props: ['data', 'config'],
     mounted() {
       // #traces-panel is an element from cell-config component,
       // when dygraph is being rendered in hidden block size should be supplied
       // TODO: rethink and refactor?
       const width = document.getElementById('traces-panel').clientWidth - 137;
 
-      this.graph = new Dygraph(this.$refs.graph, this.data, {
+      const config = Object.assign({
         width,
         legendFormatter,
         height: 320,
@@ -68,13 +68,15 @@
           x: { valueFormatter: v => v.toFixed(2) },
           y: { valueFormatter: v => v.toFixed(2) },
         },
-      });
+      }, this.config);
+
+      this.graph = new Dygraph(this.$refs.graph, this.data, config);
 
       store.$on('redrawGraphs', () => this.graph.resize());
     },
     watch: {
       data() {
-        this.graph.updateOptions({ file: this.data, labels: this.labels });
+        this.graph.updateOptions({ file: this.data, labels: this.config.labels });
       },
     },
     beforeDestroy() {

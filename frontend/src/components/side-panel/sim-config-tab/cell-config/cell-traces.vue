@@ -12,7 +12,7 @@
       <dygraph
         v-if="trace.chart.data.length"
         :data="trace.chart.data"
-        :labels="trace.chart.labels"
+        :config="trace.chart.config"
       />
 
       <a
@@ -42,6 +42,7 @@
     data() {
       return {
         traces: {},
+        hoveredGid: null,
       };
     },
     mounted() {
@@ -57,10 +58,20 @@
             return secNames.reduce((trace, secName) => trace.concat(data[gid].voltage[secName][i]), [timestamp]);
           });
 
+          const self = this;
+
           this.$set(this.traces, gid, {
             chart: {
               data: chartData,
-              labels: ['t'].concat(shortSecNames),
+              config: {
+                labels: ['t'].concat(shortSecNames),
+                highlightCallback(event, x, points, row, seriesName) {
+                  self.onHover(gid);
+                },
+                unhighlightCallback() {
+                  self.onHoverEnd();
+                },
+              },
             },
             download: {
               filename: `${gid}-sim-trace.csv`,
@@ -69,6 +80,18 @@
           });
         });
       });
+    },
+    methods: {
+      onHover(gid) {
+        if (!this.hoveredGid) {
+          this.hoveredGid = Number(gid);
+          store.$dispatch('simConfigGidLabelHovered', this.hoveredGid);
+        }
+      },
+      onHoverEnd() {
+        this.hoveredGid = null;
+        store.$dispatch('simConfigGidLabelUnhovered');
+      },
     },
   };
 </script>
