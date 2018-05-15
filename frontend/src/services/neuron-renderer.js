@@ -245,6 +245,7 @@ class NeuronRenderer {
   initMorphology() {
     // morphology simplification ratio
     const sRatio = 1;
+    const colorDiffRange = 1;
 
     const gids = store.state.circuit.simAddedNeurons.map(n => n.gid);
     const { morphology } = store.state.simulation;
@@ -266,8 +267,6 @@ class NeuronRenderer {
         const sectionType = sectionName.match(/\.(\w*)/)[1];
 
         const secGeometry = new THREE.Geometry();
-        let color;
-        let material;
 
         for (let i = 0; i < sec.x.length - 1; i += sRatio) {
           const vstart = new THREE.Vector3(sec.x[i], sec.y[i], sec.z[i]);
@@ -295,21 +294,22 @@ class NeuronRenderer {
           orientation.multiply(offsetRotation);
           geometry.applyMatrix(orientation);
 
-          const glColor = baseMorphColors[sectionType]
-            .brighten((cellIndex - (gids.length / 2)) / 2)
-            .desaturate((cellIndex - (gids.length / 2)) / 2)
-            .gl();
-
-          color = new THREE.Color(...glColor);
-          // TODO: pregenerate materials and reuse them
-          material = new THREE.MeshLambertMaterial({ color, transparent: true });
-          const cylinder = new THREE.Mesh(geometry, material);
+          const cylinder = new THREE.Mesh(geometry);
           cylinder.position.copy(position);
           cylinder.updateMatrix();
 
           secGeometry.merge(cylinder.geometry, cylinder.matrix);
           this.disposeObject(cylinder);
         }
+
+        const colorDiff = (((2 * colorDiffRange * cellIndex) / gids.length)) - colorDiffRange;
+        const glColor = baseMorphColors[sectionType]
+          .brighten(colorDiff)
+          .desaturate(colorDiff)
+          .gl();
+
+        const color = new THREE.Color(...glColor);
+        const material = new THREE.MeshLambertMaterial({ color, transparent: true });
 
         const secBufferGeometry = new THREE.BufferGeometry().fromGeometry(secGeometry);
         const sectionMesh = new THREE.Mesh(secBufferGeometry, material);
