@@ -468,7 +468,7 @@ class NeuronRenderer {
     }
 
     const material = config.type === 'recording' ? this.recMarkerMaterial : this.injMarkerMaterial;
-    const secMarkerMesh = new THREE.Mesh(secMarkerGeo, material);
+    const secMarkerMesh = new THREE.Mesh(secMarkerGeo, material.clone());
     secMarkerMesh.name = 'sectionMarker';
     secMarkerMesh.userData = Object.assign({ skipHoverDetection: true }, config);
     secMarkerMesh.updateMatrix();
