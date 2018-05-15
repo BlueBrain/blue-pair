@@ -68,11 +68,6 @@
           x: { valueFormatter: v => v.toFixed(2) },
           y: { valueFormatter: v => v.toFixed(2) },
         },
-        // highlightSeriesOpts: {
-        //   strokeWidth: 2,
-        //   strokeBorderWidth: 1,
-        //   highlightCircleSize: 3,
-        // },
       });
 
       store.$on('redrawGraphs', () => this.graph.resize());
