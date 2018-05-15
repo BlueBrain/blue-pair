@@ -283,7 +283,7 @@ class NeuronRenderer {
             sec.d[i],
             sec.d[i + sRatio] || last(sec.d),
             distance,
-            Math.max(4, Math.ceil(24 / sRatio)),
+            Math.max(5, Math.ceil(24 / sRatio)),
             1,
             false,
           );
@@ -449,7 +449,7 @@ class NeuronRenderer {
         secMarkerD,
         secMarkerD,
         distance,
-        8,
+        18,
         1,
         true,
       );
@@ -734,16 +734,8 @@ class NeuronRenderer {
       }
     });
 
-    if (this.synConnectionsObj) {
-      this.synConnectionsObj.traverse((child) => {
-        if (!(child instanceof THREE.Mesh)) return;
-
-        if (child.userData.gid === gid) {
-          materialsToShow.push(child.material);
-        } else {
-          materialsToHide.push(child.material);
-        }
-      });
+    if (this.synapseCloud) {
+      materialsToHide.push(this.synapseCloud.points.material);
     }
 
     this.morphCellHighlightAnimation = new TimelineLite();
@@ -766,10 +758,8 @@ class NeuronRenderer {
       if (child instanceof THREE.Mesh) materialsToShow.push(child.material);
     });
 
-    if (this.synConnectionsObj) {
-      this.synConnectionsObj.traverse((child) => {
-        if (child instanceof THREE.Mesh) materialsToShow.push(child.material);
-      });
+    if (this.synapseCloud) {
+      materialsToShow.push(this.synapseCloud.points.material);
     }
 
     this.morphCellHighlightAnimation = TweenLite.to(materialsToShow, 0.3, { opacity: 1 });
