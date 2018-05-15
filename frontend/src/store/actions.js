@@ -136,6 +136,10 @@ const actions = {
           section: segment.data.sectionName.match(constants.shortSectionNameRegex)[1],
           gid: segment.data.neuron.gid,
         },
+      }, {
+        subHeader: 'Cell:',
+        type: 'table',
+        data: pickBy(segment.data.neuron, (val, prop) => ['etype', 'mtype'].includes(prop)),
       }],
     });
   },
