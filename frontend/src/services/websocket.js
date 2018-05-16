@@ -15,6 +15,19 @@ const socketState = {
 const reconnectTimeout = 2000;
 
 
+function getSocketUrlFromConfig(conf) {
+  const { location } = window;
+
+  const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const host = get(conf, 'server.host', location.host);
+  const port = get(conf, 'server.port', '');
+
+  const socketUrl = `${protocol}//${host}:${port}/ws`;
+
+  return socketUrl;
+}
+
+
 class Ws {
   constructor() {
     this.cmdId = 0;
@@ -27,7 +40,7 @@ class Ws {
 
   send(message, data, cmdId = null) {
     switch (this.socket.readyState) {
-      case socketState.OPEN:
+      case socketState.OPEN: {
         this.socket.send(JSON.stringify({
           data,
           cmd: message,
@@ -35,12 +48,14 @@ class Ws {
           timestamp: Date.now(),
         }));
         break;
+      }
       case socketState.CONNECTING:
       case socketState.CLOSING:
       case socketState.CLOSED:
-      default:
+      default: {
         this.messageQueue.push([message, data, cmdId]);
         break;
+      }
     }
   }
 
@@ -54,7 +69,8 @@ class Ws {
   }
 
   _initWebSocket() {
-    this.socket = new WebSocket(`ws://${config.server.host}:${config.server.port}/ws`);
+    const socketUrl = getSocketUrlFromConfig(config);
+    this.socket = new WebSocket(socketUrl);
 
     this.socket.addEventListener('open', () => this._processQueue());
     this.socket.addEventListener('error', e => console.error(e));

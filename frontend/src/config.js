@@ -8,12 +8,7 @@ const devConfig = {
   },
 };
 
-const prodConfig = {
-  server: {
-    host: process.env.VUE_APP_SERVER_HOST,
-    port: process.env.VUE_APP_SERVER_PORT,
-  },
-};
+const prodConfig = {};
 
 const prodMode = process.env.NODE_ENV === 'production';
 
