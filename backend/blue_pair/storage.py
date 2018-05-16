@@ -36,7 +36,7 @@ class Storage():
         L.debug('getting cells')
         cells = cache.get('circuit:cells')
         if cells is None:
-            cells = circuit.v2.cells.get().drop('orientation', 1);
+            cells = circuit.v2.cells.get().drop(['orientation', 'synapse_class'], 1, errors='ignore');
             cache.set('circuit:cells', cells)
         L.debug('getting cells done')
         return cells
