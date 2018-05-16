@@ -278,12 +278,15 @@ const actions = {
 
     const gids = store.state.circuit.simAddedNeurons.map(n => n.gid);
 
+    const { params, stimuli, recordings } = store.state.simulation;
+
     const simConfig = {
       gids,
-      tStop: store.state.simulation.params.tStop,
-      timeStep: store.state.simulation.params.timeStep,
-      stimuli: store.state.simulation.stimuli,
-      recordings: store.state.simulation.recordings,
+      tStop: params.tStop,
+      timeStep: params.timeStep,
+      forwardSkip: params.forwardSkip,
+      stimuli,
+      recordings,
       synapses: simSynapsesByPreGid,
     };
 

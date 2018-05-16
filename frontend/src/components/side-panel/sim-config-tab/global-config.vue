@@ -2,8 +2,8 @@
 <template>
   <Card>
     <Row :gutter="24">
-      <i-col span="12">
-        <Form :label-width="120" label-position="left">
+      <i-col span="8">
+        <Form :label-width="105" label-position="left">
           <FormItem label="t_stop [ms]">
             <InputNumber
               size="small"
@@ -17,8 +17,8 @@
           </FormItem>
         </Form>
       </i-col>
-      <i-col span="12">
-        <Form :label-width="120" label-position="left">
+      <i-col span="8">
+        <Form :label-width="105" label-position="left">
           <FormItem label="time step [ms]">
             <InputNumber
               size="small"
@@ -27,6 +27,21 @@
               :step="0.005"
               v-model="config.timeStep"
               placeholder="Resolution"
+              @on-change="onConfigChange"
+            ></InputNumber>
+          </FormItem>
+        </Form>
+      </i-col>
+      <i-col span="8">
+        <Form :label-width="105" label-position="left">
+          <FormItem label="forward skip [ms]">
+            <InputNumber
+              size="small"
+              :min="0"
+              :max="5000"
+              :step="100"
+              v-model="config.forwardSkip"
+              placeholder="Forward skip"
               @on-change="onConfigChange"
             ></InputNumber>
           </FormItem>

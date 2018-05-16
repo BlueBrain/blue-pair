@@ -26,6 +26,7 @@ const state = {
     params: {
       tStop: 400,
       timeStep: 0.05,
+      forwardSkip: 5000,
     },
     synInputs: [],
     stimuli: [],

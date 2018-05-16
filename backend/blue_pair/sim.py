@@ -139,8 +139,9 @@ class Sim(object):
     def run(self):
         t_stop = self.sim_config['tStop']
         time_step = self.sim_config['timeStep']
-        L.debug('starting simulation with t_stop=%s, dt=%s', t_stop, time_step)
-        self.ssim.run(t_stop=t_stop, dt=time_step, show_progress=True)
+        forward_skip = self.sim_config['forwardSkip']
+        L.debug('starting simulation with t_stop=%s, dt=%s, forward_skip=%s', t_stop, time_step, forward_skip)
+        self.ssim.run(t_stop=t_stop, dt=time_step, show_progress=True, forward_skip_value=forward_skip)
         L.debug('simulation has been finished')
 
     def get_traces(self):
