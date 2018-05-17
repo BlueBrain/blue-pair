@@ -108,21 +108,36 @@ class Sim(object):
         sec = self._get_sec_by_name(sec_name)
         injection_type = injection_config['type']
 
+        # TODO: consistent variable naming
         if injection_type == 'step':
             L.debug('adding step current injection for %s in cell %s', sec_name, gid)
 
             start_time = injection_config['delay']
             stop_time = start_time + injection_config['duration']
             level = injection_config['current']
+
+            L.debug('delay: %s, duration: %s, amp: %s',
+                    start_time,
+                    stop_time,
+                    level)
+
             self.ssim.cells[gid].add_step(start_time, stop_time, level, section=sec)
 
         elif injection_type == 'ramp':
             L.debug('adding ramp current injection for %s in cell %s', sec_name, gid)
 
             start_time = injection_config['delay']
-            stop_time = start_time + injection_config['duration']
+            sim_duration = injection_config['duration']
+            stop_time = start_time + sim_duration
             start_level = injection_config['current']
             stop_level = injection_config['stopCurrent']
+
+            L.debug('delay: %s, duraton: %s, startAmp: %s, stopAmp: %s',
+                    start_time,
+                    sim_duration,
+                    start_level,
+                    stop_level)
+
             self.ssim.cells[gid].add_ramp(
                 start_time,
                 stop_time,
@@ -130,6 +145,27 @@ class Sim(object):
                 stop_level,
                 section=sec
             )
+
+        elif injection_type == 'pulse':
+            L.debug('adding pulse injection for cell %s', gid)
+            L.debug('delay: %s, duration: %s, amp: %s, frequency: %s, width: %s',
+                    injection_config['delay'],
+                    injection_config['duration'],
+                    injection_config['current'],
+                    injection_config['frequency'],
+                    injection_config['width'])
+
+            bglibpy_pulse_config = {
+                'Delay': injection_config['delay'],
+                'Duration': injection_config['duration'],
+                'AmpStart': injection_config['current'],
+                'Frequency': injection_config['frequency'],
+                'Width': injection_config['width']
+            }
+
+            print(bglibpy_pulse_config)
+
+            self.ssim.cells[gid].add_pulse(bglibpy_pulse_config);
 
     def generate_pre_spiketrain(self, frequency, start_offset=0):
         spike_interval = 1000 / frequency
@@ -139,7 +175,7 @@ class Sim(object):
     def run(self):
         t_stop = self.sim_config['tStop']
         time_step = self.sim_config['timeStep']
-        forward_skip = self.sim_config['forwardSkip']
+        forward_skip = self.sim_config['forwardSkip'] if self.sim_config['forwardSkip'] > 0 else None
         L.debug('starting simulation with t_stop=%s, dt=%s, forward_skip=%s', t_stop, time_step, forward_skip)
         self.ssim.run(t_stop=t_stop, dt=time_step, show_progress=True, forward_skip_value=forward_skip)
         L.debug('simulation has been finished')

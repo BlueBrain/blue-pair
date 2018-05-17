@@ -40,6 +40,7 @@
               v-for="(stimulusLabel, stimulusType) of stimulusTypes"
               :key="stimulusType"
               :value="stimulusType"
+              :disabled="stimulusType === 'pulse' && sectionType !== 'soma'"
             >
               {{ stimulusLabel }}
             </i-option>
@@ -49,125 +50,212 @@
 
     <!-- CONFIG -->
     <div>
+
       <!-- STEP CURRENT CONFIG -->
-      <Row
-        v-if="stimulus.type === 'step'"
-        :gutter="16"
-      >
-        <i-col span="8">
-          <i-form :label-width="40">
-            <FormItem label="delay:">
-              <InputNumber
-                size="small"
-                v-model="stimulus.delay"
-                :min="0"
-                :max="3000"
-                :step="100"
-                :disabled="!stimulus.sectionName"
-                @on-change="onChange"
-              >
-              </InputNumber>
-            </FormItem>
-          </i-form>
-        </i-col>
-        <i-col span="8">
-          <i-form :label-width="55">
-            <FormItem label="duration:">
-              <InputNumber
-                size="small"
-                v-model="stimulus.duration"
-                :min="0"
-                :max="3000"
-                :step="100"
-                :disabled="!stimulus.sectionName"
-                @on-change="onChange"
-              >
-              </InputNumber>
-            </FormItem>
-          </i-form>
-        </i-col>
-        <i-col span="8">
-          <i-form :label-width="30">
-            <FormItem label="amp:">
-              <!-- TODO: check max values for current -->
-              <InputNumber
-                size="small"
-                v-model="stimulus.current"
-                :min="0.1"
-                :max="10"
-                :step="0.1"
-                :disabled="!stimulus.sectionName"
-                @on-change="onChange"
-              ></InputNumber>
-            </FormItem>
-          </i-form>
-        </i-col>
-      </Row>
+      <div v-if="stimulus.type === 'step'">
+        <Row :gutter="16">
+          <i-col span="8">
+            <i-form :label-width="40">
+              <FormItem label="delay:">
+                <InputNumber
+                  size="small"
+                  v-model="stimulus.delay"
+                  :min="0"
+                  :max="3000"
+                  :step="100"
+                  :disabled="!stimulus.sectionName"
+                  @on-change="onChange"
+                >
+                </InputNumber>
+              </FormItem>
+            </i-form>
+          </i-col>
+          <i-col span="8">
+            <i-form :label-width="55">
+              <FormItem label="duration:">
+                <InputNumber
+                  size="small"
+                  v-model="stimulus.duration"
+                  :min="0"
+                  :max="3000"
+                  :step="100"
+                  :disabled="!stimulus.sectionName"
+                  @on-change="onChange"
+                >
+                </InputNumber>
+              </FormItem>
+            </i-form>
+          </i-col>
+          <i-col span="8">
+            <i-form :label-width="30">
+              <FormItem label="amp:">
+                <!-- TODO: check max values for current -->
+                <InputNumber
+                  size="small"
+                  v-model="stimulus.current"
+                  :min="0.1"
+                  :max="10"
+                  :step="0.1"
+                  :disabled="!stimulus.sectionName"
+                  @on-change="onChange"
+                ></InputNumber>
+              </FormItem>
+            </i-form>
+          </i-col>
+        </Row>
+      </div>
 
       <!-- RAMP CURRENT CONFIG -->
-      <Row
-        v-if="stimulus.type === 'ramp'"
-        :gutter="16"
-      >
-        <i-col span="6">
-          <i-form :label-width="40">
-            <FormItem label="delay:">
-              <InputNumber
-                size="small"
-                v-model="stimulus.delay"
-                :min="0"
-                :max="3000"
-                :step="100"
-                @on-change="onChange"
-              >
-              </InputNumber>
-            </FormItem>
-          </i-form>
-        </i-col>
-        <i-col span="6">
-          <i-form :label-width="55">
-            <FormItem label="duration:">
-              <InputNumber
-                size="small"
-                v-model="stimulus.duration"
-                :min="0"
-                :max="3000"
-                :step="100"
-                @on-change="onChange"
-              >
-              </InputNumber>
-            </FormItem>
-          </i-form>
-        </i-col>
-        <i-col span="6">
-          <i-form :label-width="67">
-            <FormItem label="start amp:">
-              <InputNumber
-                size="small"
-                v-model="stimulus.current"
-                :min="0.1"
-                :max="10"
-                :step="0.1"
-                @on-change="onChange"
-              ></InputNumber>
-            </FormItem>
-          </i-form>
-        </i-col>
-        <i-col span="6">
-          <i-form :label-width="67">
-            <FormItem label="stop amp:">
-              <InputNumber
-                size="small"
-                v-model="stimulus.stopCurrent"
-                :min="0.1"
-                :max="10"
-                :step="0.1"
-                @on-change="onChange"
-              ></InputNumber>
-            </FormItem>
-          </i-form>
-        </i-col>
-      </Row>
+      <div v-else-if="stimulus.type === 'ramp'">
+        <Row :gutter="16">
+          <i-col span="6">
+            <i-form :label-width="40">
+              <FormItem label="delay:">
+                <InputNumber
+                  size="small"
+                  v-model="stimulus.delay"
+                  :min="0"
+                  :max="3000"
+                  :step="100"
+                  @on-change="onChange"
+                >
+                </InputNumber>
+              </FormItem>
+            </i-form>
+          </i-col>
+          <i-col span="6">
+            <i-form :label-width="55">
+              <FormItem label="duration:">
+                <InputNumber
+                  size="small"
+                  v-model="stimulus.duration"
+                  :min="0"
+                  :max="3000"
+                  :step="100"
+                  @on-change="onChange"
+                >
+                </InputNumber>
+              </FormItem>
+            </i-form>
+          </i-col>
+          <i-col span="6">
+            <i-form :label-width="67">
+              <FormItem label="start amp:">
+                <InputNumber
+                  size="small"
+                  v-model="stimulus.current"
+                  :min="0.1"
+                  :max="10"
+                  :step="0.1"
+                  @on-change="onChange"
+                ></InputNumber>
+              </FormItem>
+            </i-form>
+          </i-col>
+          <i-col span="6">
+            <i-form :label-width="67">
+              <FormItem label="stop amp:">
+                <InputNumber
+                  size="small"
+                  v-model="stimulus.stopCurrent"
+                  :min="0.1"
+                  :max="10"
+                  :step="0.1"
+                  @on-change="onChange"
+                ></InputNumber>
+              </FormItem>
+            </i-form>
+          </i-col>
+        </Row>
+      </div>
+
+      <!-- PULSE INJECTION CONFIG -->
+      <div v-else-if="stimulus.type === 'pulse'">
+        <Row :gutter="16">
+          <i-col span="8">
+            <i-form :label-width="60">
+              <FormItem label="delay:">
+                <InputNumber
+                  size="small"
+                  v-model="stimulus.delay"
+                  :min="0"
+                  :max="3000"
+                  :step="100"
+                  :disabled="!stimulus.sectionName"
+                  @on-change="onChange"
+                >
+                </InputNumber>
+              </FormItem>
+            </i-form>
+          </i-col>
+          <i-col span="8">
+            <i-form :label-width="60">
+              <FormItem label="duration:">
+                <InputNumber
+                  size="small"
+                  v-model="stimulus.duration"
+                  :min="0"
+                  :max="3000"
+                  :step="100"
+                  :disabled="!stimulus.sectionName"
+                  @on-change="onChange"
+                >
+                </InputNumber>
+              </FormItem>
+            </i-form>
+          </i-col>
+          <i-col span="8">
+            <i-form :label-width="60">
+              <FormItem label="amp:">
+                <!-- TODO: check max values for current -->
+                <InputNumber
+                  size="small"
+                  v-model="stimulus.current"
+                  :min="0.1"
+                  :max="10"
+                  :step="0.1"
+                  :disabled="!stimulus.sectionName"
+                  @on-change="onChange"
+                ></InputNumber>
+              </FormItem>
+            </i-form>
+          </i-col>
+        </Row>
+        <Row :gutter="16">
+          <i-col span="8">
+            <i-form :label-width="60">
+              <FormItem label="frequency:">
+                <InputNumber
+                  size="small"
+                  v-model="stimulus.frequency"
+                  :min="1"
+                  :max="100"
+                  :step="1"
+                  :disabled="!stimulus.sectionName"
+                  @on-change="onChange"
+                >
+                </InputNumber>
+              </FormItem>
+            </i-form>
+          </i-col>
+          <i-col span="8">
+            <i-form :label-width="60">
+              <FormItem label="width:">
+                <InputNumber
+                  size="small"
+                  v-model="stimulus.width"
+                  :min="1"
+                  :max="50"
+                  :step="1"
+                  :disabled="!stimulus.sectionName"
+                  @on-change="onChange"
+                >
+                </InputNumber>
+              </FormItem>
+            </i-form>
+          </i-col>
+        </Row>
+      </div>
     </div>
 
   </div>
@@ -175,11 +263,15 @@
 
 
 <script>
+  import get from 'lodash/get';
+
   import store from '@/store';
+  import constants from '@/constants';
 
   const stimulusTypes = {
     step: 'Step current',
     ramp: 'Ramp current',
+    pulse: 'Pulse',
   };
 
   export default {
@@ -200,13 +292,21 @@
         this.$emit('on-close');
       },
       onSectionLabelHover(stimulus) {
-        if (this.hovered) return;
+        if (this.hovered || !stimulus.sectionName) return;
         store.$dispatch('simConfigSectionLabelHovered', stimulus.gid);
         this.hovered = true;
       },
       onSectionLabelUnhover() {
         this.hovered = false;
         store.$dispatch('simConfigSectionLabelUnhovered');
+      },
+    },
+    computed: {
+      sectionType() {
+        if (!this.stimulus.sectionName) return null;
+
+        const [, sectionType] = this.stimulus.sectionName.match(constants.sectionTypeRegexp);
+        return sectionType;
       },
     },
   };

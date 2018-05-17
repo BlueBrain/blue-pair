@@ -313,6 +313,8 @@ const actions = {
       duration: 400,
       current: 0.7,
       stopCurrent: 0.2,
+      frequency: 12,
+      width: 5,
     });
     store.$emit('addSecMarker', {
       type: 'stimulus',

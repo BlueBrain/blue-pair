@@ -100,9 +100,11 @@
           sectionName: null,
           type: 'step',
           delay: 100,
-          duration: 400,
+          duration: 200,
           current: 0.7,
           stopCurrent: 0.2,
+          frequency: 12,
+          width: 5,
         };
         this.updateWaitingSecSelection();
       },
