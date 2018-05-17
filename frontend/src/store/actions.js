@@ -332,6 +332,12 @@ const actions = {
     store.$emit('updateStimuli');
   },
 
+  updateStimulus(store, stimulus) {
+    const { stimuli } = store.state.simulation;
+    const storeStimulus = stimuli.find(s => s.sectionName === stimulus.sectionName);
+    Object.assign(storeStimulus, stimulus);
+  },
+
   addRecording(store, segment) {
     store.state.simulation.recordings.push({
       gid: segment.gid,

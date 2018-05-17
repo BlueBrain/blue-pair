@@ -22,6 +22,7 @@
             :key="stimulus.sectionName"
             class="cell-stimulus"
             v-model="stimuli[gid][stimulusIndex]"
+            @input="updateStimulus(stimulus)"
             @on-close="removeStimulus(stimulus)"
           />
         </transition>
@@ -104,6 +105,9 @@
           stopCurrent: 0.2,
         };
         this.updateWaitingSecSelection();
+      },
+      updateStimulus(stimulus) {
+        store.$dispatch('updateStimulus', stimulus);
       },
       removeTmpStimulus() {
         this.tmpStimulus = null;
