@@ -43,6 +43,9 @@
               :disabled="stimulusType === 'pulse' && sectionType !== 'soma'"
             >
               {{ stimulusLabel }}
+              <span v-if="stimulusType === 'pulse' && sectionType !== 'soma'">
+                (soma only)
+              </span>
             </i-option>
         </i-select>
       </i-col>
