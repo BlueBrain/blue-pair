@@ -51,7 +51,7 @@
           if (propType !== 'string' && propType !== 'number') return uniqueValuesByProp;
 
           const propUniqueValues = Array.from(new Set(neurons.map(n => n[propIndex])));
-          if (propUniqueValues.length > 1000) return uniqueValuesByProp;
+          if (propUniqueValues.length > 20) return uniqueValuesByProp;
 
           return Object.assign(uniqueValuesByProp, { [propName]: propUniqueValues.sort() });
         }, {});
