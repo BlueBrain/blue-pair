@@ -1,32 +1,42 @@
 
 <template>
-  <div>
-    <top-bar/>
-    <viewport-component/>
-    <side-panel/>
-    <spinner/>
-    <circuit-loading-modal />
+  <div class="app-container">
+    <div v-if="!maintenance">
+      <top-bar/>
+      <viewport-component/>
+      <side-panel/>
+      <spinner/>
+      <circuit-loading-modal />
+    </div>
+    <maintenance-page v-else/>
   </div>
 </template>
 
 
 <script>
-  import store from '@/store';
+  import config from './config';
 
   import TopBar from './components/top-bar';
   import Viewport from './components/viewport';
   import SidePanel from './components/side-panel';
   import Spinner from './components/spinner';
   import CircuitLoadingModal from './components/circuit-loading-modal.vue';
+  import MaintenancePage from './components/maintenance-page.vue';
 
   export default {
     name: 'app',
+    data() {
+      return {
+        maintenance: config.maintenance,
+      };
+    },
     components: {
       'top-bar': TopBar,
       'viewport-component': Viewport,
       'side-panel': SidePanel,
       'spinner': Spinner,
       'circuit-loading-modal': CircuitLoadingModal,
+      'maintenance-page': MaintenancePage,
     },
   };
 </script>
@@ -41,6 +51,10 @@
   body {
     height: 100%;
     overflow: auto;
+  }
+
+  .app-container {
+    height: 100%;
   }
 
   // TODO: move to separate style file

@@ -1,5 +1,7 @@
 
-const defaultConfig = {};
+const defaultConfig = {
+  maintenance: !!process.env.VUE_APP_MAINTENANCE,
+};
 
 const devConfig = {
   server: {
