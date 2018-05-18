@@ -1,8 +1,9 @@
 
 import last from 'lodash/last';
+import throttle from 'lodash/throttle';
+import get from 'lodash/get';
 import * as THREE from 'three';
 import * as chroma from 'chroma-js';
-import throttle from 'lodash/throttle';
 import { TweenLite, TimelineLite } from 'gsap';
 
 // TODO: refactor to remove store operations
@@ -75,6 +76,9 @@ class NeuronRenderer {
 
     this.secMarkerObj = new THREE.Object3D();
     this.scene.add(this.secMarkerObj);
+
+    this.cellMorphologyObj = new THREE.Object3D();
+    this.scene.add(this.cellMorphologyObj);
 
     const segInjTexture = new THREE.TextureLoader().load('/seg-inj-texture.png');
     const segRecTexture = new THREE.TextureLoader().load('/seg-rec-texture.png');
@@ -242,7 +246,7 @@ class NeuronRenderer {
     this.neuronCloud.points.visible = false;
   }
 
-  initMorphology() {
+  showMorphology() {
     // morphology simplification ratio
     const sRatio = 1;
     const colorDiffRange = 1;
@@ -250,10 +254,11 @@ class NeuronRenderer {
     const gids = store.state.circuit.simAddedNeurons.map(n => n.gid);
     const { morphology } = store.state.simulation;
 
-    this.cellMorphologyObj = new THREE.Object3D();
     // TODO: improve naming here
 
     gids.forEach((gid, cellIndex) => {
+      if (this.cellMorphologyObj.children.find(mesh => get(mesh, 'userData.gid') === gid)) return;
+
       const HALF_PI = Math.PI * 0.5;
       const sections = morphology[gid].morph;
       const { quaternion } = morphology[gid];
@@ -327,10 +332,29 @@ class NeuronRenderer {
       orientation.fromArray(quaternion);
       cellObj3D.applyQuaternion(orientation);
       cellObj3D.position.copy(new THREE.Vector3(x, y, z));
+      cellObj3D.userData.gid = gid;
       this.cellMorphologyObj.add(cellObj3D);
     });
 
-    this.scene.add(this.cellMorphologyObj);
+    this.cellMorphologyObj.visible = true;
+  }
+
+  removeCellMorphologies(filterFunction) {
+    const cellMorphObjsToRemove = [];
+    this.cellMorphologyObj.children.forEach((obj) => {
+      if (filterFunction(obj.userData)) cellMorphObjsToRemove.push(obj);
+    });
+
+    // TODO: refactor
+    cellMorphObjsToRemove.forEach((obj) => {
+      this.cellMorphologyObj.remove(obj);
+      const toRemove = obj.children.map(child => child);
+      toRemove.forEach(o => this.disposeObject(o));
+    });
+  }
+
+  hideCellMorphology() {
+    this.cellMorphologyObj.visible = false;
   }
 
   initNmMorphology(morphs) {
@@ -469,8 +493,6 @@ class NeuronRenderer {
 
     const material = config.type === 'recording' ? this.recMarkerMaterial : this.injMarkerMaterial;
     const secMarkerMesh = new THREE.Mesh(secMarkerGeo, material.clone());
-    secMarkerMesh.name = 'sectionMarker';
-    secMarkerMesh.userData = Object.assign({ skipHoverDetection: true }, config);
     secMarkerMesh.updateMatrix();
     secMarkerMesh.matrixAutoUpdate = false;
     secMarkerObj3d.add(secMarkerMesh);
@@ -479,22 +501,38 @@ class NeuronRenderer {
     cellOrientation.fromArray(quaternion);
     secMarkerObj3d.applyQuaternion(cellOrientation);
     secMarkerObj3d.position.copy(new THREE.Vector3(x, y, z));
+    secMarkerObj3d.name = 'sectionMarker';
+    secMarkerObj3d.userData = Object.assign({ skipHoverDetection: true }, config);
     this.secMarkerObj.add(secMarkerObj3d);
   }
 
-  removeSecMarker(segment) {
+  removeSecMarker(secMarkerConfig) {
     // TODO: refactor
-    const markersToRemove = [];
-    this.secMarkerObj.traverse((child) => {
-      if (child instanceof THREE.Mesh && segment.sectionName === child.userData.sectionName) {
-        markersToRemove.push(child);
-      }
+    const secMarkerObj3d = this.secMarkerObj.children.find((obj3d) => {
+      return obj3d.userData.sectionName === secMarkerConfig.sectionName &&
+        obj3d.userData.type === secMarkerConfig.type;
     });
 
-    markersToRemove.forEach((mesh) => {
-      this.secMarkerObj.remove(mesh.parent);
-      this.disposeObject(mesh);
+    this.secMarkerObj.remove(secMarkerObj3d);
+    this.disposeObject(secMarkerObj3d.children[0]);
+  }
+
+  removeSectionMarkers(filterFunction) {
+    const secMarkerConfigsToRemove = [];
+
+    this.secMarkerObj.children.forEach((child) => {
+      if (filterFunction(child.userData)) secMarkerConfigsToRemove.push(child.userData);
     });
+
+    secMarkerConfigsToRemove.forEach(secMarkerConfig => this.removeSecMarker(secMarkerConfig));
+  }
+
+  hideSectionMarkers() {
+    this.secMarkerObj.visible = false;
+  }
+
+  showSectionMarkers() {
+    this.secMarkerObj.visible = true;
   }
 
   disposeCellMorphology() {

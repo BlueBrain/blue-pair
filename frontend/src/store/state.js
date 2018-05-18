@@ -31,7 +31,6 @@ const state = {
     synInputs: [],
     stimuli: [],
     recordings: [],
-    traces: [],
   },
 };
 

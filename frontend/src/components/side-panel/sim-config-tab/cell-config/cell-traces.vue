@@ -80,6 +80,7 @@
           });
         });
       });
+      store.$on('resetTraces', () => { this.traces = {}; });
     },
     methods: {
       onHover(gid) {

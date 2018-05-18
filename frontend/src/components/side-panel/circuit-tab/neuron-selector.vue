@@ -107,7 +107,7 @@
       },
       onConfigureSimulationBtnClick() {
         this.simInit = true;
-        store.$dispatchAsync('loadMorphology');
+        store.$dispatchAsync('proceedToSimConfigBtnClicked');
       },
       onNeuronHover(gid) {
         store.$dispatch('simNeuronHovered', gid);

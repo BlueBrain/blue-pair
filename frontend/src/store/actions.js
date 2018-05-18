@@ -414,12 +414,27 @@ const actions = {
     store.$emit('updateSynapses');
   },
 
-  async loadMorphology(store) {
+  async proceedToSimConfigBtnClicked(store) {
+    const { simulation: sim } = store.state;
+
     store.$emit('updateSimCellConfig', store.state.circuit.simAddedNeurons);
     const gids = store.state.circuit.simAddedNeurons.map(n => n.gid);
 
     const cachedGids = Object.keys(store.state.simulation.morphology);
     const gidsToLoad = gids.filter(gid => !cachedGids.includes(gid));
+
+    // update cell-config: remove stimuli, recordings, synaptic inputs
+    // for the cells which are have been removed from simulation
+    sim.stimuli = sim.stimuli.filter(stimulus => gids.find(gid => gid === stimulus.gid));
+    store.$emit('updateStimuli');
+    sim.recordings = sim.recordings.filter(recording => gids.find(gid => gid === recording.gid));
+    store.$emit('updateRecordings');
+    sim.synInputs = sim.synInputs.filter(synInput => gids.find(gid => gid === synInput.gid));
+    store.$emit('updateSynInputs');
+    store.$emit('resetTraces');
+    store.$emit('removeSectionMarkers', sectionMarkerConfig => !gids.find(gid => sectionMarkerConfig.gid === gid));
+
+    store.$emit('removeCellMorphologies', cellMorph => !gids.find(gid => gid === cellMorph.gid));
 
     const morphKey = `morph:${gidsToLoad.sort().join('-')}`;
 
@@ -437,6 +452,7 @@ const actions = {
     store.$emit('updateSimCellConfig', simNeurons);
     store.$emit('setBottomPanelMode', 'simulationConfig');
     store.$emit('showCellMorphology');
+    store.$emit('showSectionMarkers');
     store.$emit('hideCircuit');
     store.$emit('setSimulationConfigTabActive');
 

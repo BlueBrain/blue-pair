@@ -38,10 +38,13 @@
       store.$on('setSomaSize', size => this.renderer.setNeuronCloudPointSize(size));
       store.$on('setSynapseSize', size => this.renderer.setMorphSynapseSize(size));
       store.$on('redrawCircuit', this.redrawNeurons.bind(this));
-      store.$on('showCellMorphology', morphObj => this.renderer.initMorphology(morphObj));
+      store.$on('showCellMorphology', morphObj => this.renderer.showMorphology(morphObj));
+      store.$on('showSectionMarkers', () => this.renderer.showSectionMarkers());
+      store.$on('removeSectionMarkers', filterFunction => this.renderer.removeSectionMarkers(filterFunction));
+      store.$on('removeCellMorphologies', filterFunction => this.renderer.removeCellMorphologies(filterFunction));
       store.$on('removeCellMorphology', () => {
-        this.renderer.disposeSecMarkers();
-        this.renderer.disposeCellMorphology();
+        this.renderer.hideCellMorphology();
+        this.renderer.hideSectionMarkers();
         this.renderer.destroySynapseCloud();
       });
       store.$on('initSynapseCloud', cloudSize => this.renderer.initSynapseCloud(cloudSize));
