@@ -495,6 +495,9 @@ class NeuronRenderer {
     const secMarkerMesh = new THREE.Mesh(secMarkerGeo, material.clone());
     secMarkerMesh.updateMatrix();
     secMarkerMesh.matrixAutoUpdate = false;
+    // TODO: remove redundancy of names and userData of Obj3D and child Meshes
+    secMarkerMesh.name = 'sectionMarker';
+    secMarkerMesh.userData = Object.assign({ skipHoverDetection: true }, config);
     secMarkerObj3d.add(secMarkerMesh);
 
     const cellOrientation = new THREE.Quaternion();
