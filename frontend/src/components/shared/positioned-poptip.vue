@@ -1,11 +1,11 @@
 
 <template>
-  <div class="pos-poptip-container" ref="container" @mouseleave="onMouseLeave()">
+  <div class="pos-poptip-container" ref="container" @mouseleave="hide">
     <Poptip
       popper-class="pos-poptip-popper"
-      trigger="hover"
+      trigger="click"
     >
-      <div class="container-inner" :class="{'hidden': containerInnerHidden}"></div>
+      <div class="container-inner" ref="clickTarget"></div>
       <div slot="content">
         <slot></slot>
       </div>
@@ -15,15 +15,9 @@
 
 
 <script>
-  // TODO: refactor
   export default {
     name: 'positioned-poptip',
     props: ['position'],
-    data() {
-      return {
-        containerInnerHidden: true,
-      };
-    },
     computed: {
       currentPosition() {
         return this.position;
@@ -31,17 +25,22 @@
     },
     watch: {
       currentPosition() {
-        this.$refs.container.style.top = `${this.position.y - 2}px`;
-        this.$refs.container.style.left = `${this.position.x}px`;
+        this.$refs.container.style.top = `${this.position.y - 1}px`;
+        this.$refs.container.style.left = `${this.position.x - 4}px`;
 
-        // Changing layout here with display: none
-        // to force FireFox to dispatch mouseenter and mouseover events on Poptip element
-        this.containerInnerHidden = false;
+        this.show();
       },
     },
     methods: {
-      onMouseLeave() {
-        this.containerInnerHidden = true;
+      hide() {
+        this.simMouseClick(this.$refs.container);
+      },
+      show() {
+        this.simMouseClick(this.$refs.clickTarget);
+      },
+      simMouseClick(element) {
+        const evt = new CustomEvent('click', { bubbles: true });
+        setTimeout(() => element.dispatchEvent(evt), 0);
       },
     },
   };
@@ -51,9 +50,8 @@
 <style lang="scss">
   .pos-poptip-container {
     position: fixed;
-    // initial position is out of the screen
-    top: -20px;
-    left: -20px;
+    top: -200px;
+    left: -200px;
 
     .ivu-poptip {
       line-height: 1px;
@@ -72,19 +70,9 @@
     }
   }
 
-  .container-inner, .pos-poptip-container {
-    height: 1px;
-    width: 1px;
-  }
-
   .container-inner {
-    position: absolute;
-    left: 0;
-    top: 0;
-  }
-
-  .hidden {
-    display: none;
+    height: 2px;
+    width: 8px;
   }
 </style>
 
