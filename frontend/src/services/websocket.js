@@ -98,7 +98,7 @@ class Ws {
   _processQueue() {
     let queueLength = this.messageQueue.length;
     while (queueLength--) {
-      const message = this.messageQueue.unshift();
+      const message = this.messageQueue.shift();
       this.send(...message);
     }
   }
