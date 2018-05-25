@@ -127,24 +127,24 @@ const actions = {
     store.$emit('hideHoverObjectInfo');
   },
 
-  morphSegmentHovered(store, segment) {
+  morphSectionHovered(store, section) {
     store.$emit('showHoverObjectInfo', {
       header: 'Section',
       items: [{
         type: 'table',
         data: {
-          section: segment.data.sectionName.match(constants.shortSectionNameRegex)[1],
-          gid: segment.data.neuron.gid,
+          section: section.data.name,
+          gid: section.data.neuron.gid,
         },
       }, {
         subHeader: 'Cell:',
         type: 'table',
-        data: pickBy(segment.data.neuron, (val, prop) => ['etype', 'mtype'].includes(prop)),
+        data: pickBy(section.data.neuron, (val, prop) => ['etype', 'mtype'].includes(prop)),
       }],
     });
   },
 
-  morphSegmentHoverEnded(store) {
+  morphSectionHoverEnded(store) {
     store.$emit('hideHoverObjectInfo');
   },
 
@@ -203,12 +203,12 @@ const actions = {
     store.state.simulation.waitingSecSelection = val;
   },
 
-  morphSegmentClicked(store, context) {
-    const segment = context.data;
+  morphSectionClicked(store, context) {
+    const section = context.data;
 
-    if (!store.state.simulation.waitingSecSelection) store.$emit('showMorphSegmentPoptip', context);
+    if (!store.state.simulation.waitingSecSelection) store.$emit('showMorphSectionPoptip', context);
 
-    store.$emit('morphSegmentSelected', segment);
+    store.$emit('morphSectionSelected', section);
   },
 
   paletteKeyHover(store, paletteKey) {
@@ -304,10 +304,11 @@ const actions = {
     store.$emit('setBottomPanelMode', 'cellSelection');
   },
 
-  addStimulus(store, segment) {
+  addStimulus(store, section) {
     store.state.simulation.stimuli.push({
-      gid: segment.gid,
-      sectionName: segment.sectionName,
+      gid: section.gid,
+      sectionName: section.name,
+      sectionType: section.type,
       type: 'step',
       delay: 100,
       duration: 400,
@@ -318,8 +319,9 @@ const actions = {
     });
     store.$emit('addSecMarker', {
       type: 'stimulus',
-      gid: segment.gid,
-      sectionName: segment.sectionName,
+      gid: section.gid,
+      sectionName: section.name,
+      sectionType: section.type,
     });
     store.$emit('updateStimuli');
   },
@@ -340,16 +342,14 @@ const actions = {
     Object.assign(storeStimulus, stimulus);
   },
 
-  addRecording(store, segment) {
-    store.state.simulation.recordings.push({
-      gid: segment.gid,
-      sectionName: segment.sectionName,
-    });
-    store.$emit('addSecMarker', {
-      type: 'recording',
-      gid: segment.gid,
-      sectionName: segment.sectionName,
-    });
+  addRecording(store, section) {
+    const recording = {
+      gid: section.gid,
+      sectionName: section.name,
+      sectionType: section.type,
+    };
+    store.state.simulation.recordings.push(recording);
+    store.$emit('addSecMarker', Object.assign({ type: 'recording' }, recording));
     store.$emit('updateRecordings');
   },
 
@@ -420,8 +420,35 @@ const actions = {
     store.$emit('updateSimCellConfig', store.state.circuit.simAddedNeurons);
     const gids = store.state.circuit.simAddedNeurons.map(n => n.gid);
 
-    const cachedGids = Object.keys(store.state.simulation.morphology);
+    // TODO: remove after neuroM and NEURON section id mapping is fixed completely
+    // const morph = await socket.request('get_cell_neuron_morphology', gids);
+    // Object.assign(store.state.simulation.neuronMorphology, morph.cells);
+    // store.$emit('showNeuronMorphology');
+
+    await Promise.all(gids.map(async (gid) => {
+      if (store.state.simulation.morphology[gid]) return;
+
+      const cellMorph = await storage.getItem(`morph:${gid}`);
+      if (cellMorph) store.state.simulation.morphology[gid] = cellMorph;
+    }));
+
+    const cachedGids = Object.keys(store.state.simulation.morphology).map(gid => parseInt(gid, 10));
+
     const gidsToLoad = gids.filter(gid => !cachedGids.includes(gid));
+    if (gidsToLoad.length) {
+      const morph = await socket.request('get_cell_morphology', gidsToLoad);
+      Object.entries(morph.cells).forEach(([, sections]) => {
+        let i;
+        let currentType;
+        sections.forEach((section) => {
+          i = section.type === currentType ? i + 1 : 0;
+          currentType = section.type;
+          section.name = `${section.type}[${i}]`;
+        });
+      });
+      Object.assign(store.state.simulation.morphology, morph.cells);
+      gidsToLoad.forEach(gid => storage.setItem(`morph:${gid}`, morph.cells[gid]));
+    }
 
     // update cell-config: remove stimuli, recordings, synaptic inputs
     // for the cells which are have been removed from simulation
@@ -435,18 +462,6 @@ const actions = {
     store.$emit('removeSectionMarkers', sectionMarkerConfig => !gids.find(gid => sectionMarkerConfig.gid === gid));
 
     store.$emit('removeCellMorphologies', cellMorph => !gids.find(gid => gid === cellMorph.gid));
-
-    const morphKey = `morph:${gidsToLoad.sort().join('-')}`;
-
-    // TODO: add cache with TTL to clear memory and localstorage in a long run
-    let morphObj = await storage.getItem(morphKey);
-    if (!morphObj) {
-      store.$emit('setStatus', { message: 'Getting cell morphologies' });
-      morphObj = await socket.request('get_cell_morphology', gidsToLoad);
-      storage.setItem(morphKey, morphObj);
-    }
-
-    Object.assign(store.state.simulation.morphology, morphObj.cells);
 
     const simNeurons = cloneDeep(store.state.circuit.simAddedNeurons);
     store.$emit('updateSimCellConfig', simNeurons);
@@ -495,8 +510,6 @@ const actions = {
     store.$emit('initSynapseCloud', synapses.length);
     store.$emit('synInputsCtrl:init');
     store.$emit('setStatus', { message: 'Ready' });
-
-    // socket.send('get_cell_nm_morphology', gidsToLoad);
   },
 };
 

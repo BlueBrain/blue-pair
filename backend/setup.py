@@ -13,6 +13,7 @@ setup(
     author_email='bbp-ou-nse@groupes.epfl.ch',
 
     install_requires=[
+        'futures',
         'tornado',
         'redis',
         'hiredis',

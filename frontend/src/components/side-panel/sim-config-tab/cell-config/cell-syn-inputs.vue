@@ -75,10 +75,10 @@
         this.synInputsByGid = groupBy(store.$get('synInputs'), synInput => synInput.gid);
       });
       store.$on('addSynInput', gid => this.addSynInput(gid));
-      store.$on('morphSegmentSelected', (segment) => {
+      store.$on('morphSectionSelected', (section) => {
         if (!this.tmpSynInput) return;
 
-        store.$dispatch('addSynInput', segment.neuron.gid);
+        store.$dispatch('addSynInput', section.neuron.gid);
         this.tmpSynInput = null;
         this.updateWaitingSecSelection();
       });

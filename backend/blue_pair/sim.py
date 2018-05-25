@@ -98,14 +98,14 @@ class Sim(object):
         sec_name = recording['sectionName']
         L.debug('adding recording section for %s in cell %s', sec_name, gid)
 
-        sec = self._get_sec_by_name(sec_name)
+        sec = self._get_sec_by_name(gid, sec_name)
         self.ssim.cells[gid].add_voltage_recording(sec, .5)
         self.recording_list.append((gid, sec))
 
     def _add_current_injection(self, injection_config):
         gid = injection_config['gid']
         sec_name = injection_config['sectionName']
-        sec = self._get_sec_by_name(sec_name)
+        sec = self._get_sec_by_name(gid, sec_name)
         injection_type = injection_config['type']
 
         # TODO: consistent variable naming
@@ -190,5 +190,6 @@ class Sim(object):
             traces[gid]['time'] = self.ssim.cells[gid].get_time()
         return traces
 
-    def _get_sec_by_name(self, sec_name):
-        return [sec for sec in bglibpy.neuron.h.allsec() if sec.name() == sec_name][0]
+    def _get_sec_by_name(self, gid, sec_name):
+        sec_full_name = '%s.%s' % (self.ssim.cells[gid].cell.hname(), sec_name)
+        return [sec for sec in bglibpy.neuron.h.allsec() if sec.name() == sec_full_name][0]

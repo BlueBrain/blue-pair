@@ -39,12 +39,12 @@ const getters = {
     return clone(store.state.simulation.recordings);
   },
 
-  isStimulusPresent(store, segment) {
-    return some(store.state.simulation.stimuli, s => s.sectionName === segment.sectionName);
+  isStimulusPresent(store, section) {
+    return some(store.state.simulation.stimuli, s => s.sectionName === section.name);
   },
 
-  isRecordingPresent(store, segment) {
-    return some(store.state.simulation.recordings, r => r.sectionName === segment.sectionName);
+  isRecordingPresent(store, section) {
+    return some(store.state.simulation.recordings, r => r.sectionName === section.name);
   },
 };
 

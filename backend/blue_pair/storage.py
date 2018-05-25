@@ -30,6 +30,13 @@ L.debug('creating cache client')
 cache = RedisClient()
 L.debug('cache client has been created')
 
+SEC_SHORT_TYPE_DICT = {
+    'soma': 'soma',
+    'basal_dendrite': 'dend',
+    'apical_dendrite': 'apic',
+    'axon': 'axon'
+}
+
 
 class Storage():
     def get_circuit_cells(self):
@@ -90,8 +97,8 @@ class Storage():
             'connection_properties': props_str
         }
 
-    def get_cell_morphology(self, gids):
-        L.debug('getting cell morph for %s', gids)
+    def get_cell_neuron_morphology(self, gids):
+        L.debug('getting cell neuron morph for %s', gids)
         cells = {}
         not_cached_gids = []
         for gid in gids:
@@ -107,23 +114,29 @@ class Storage():
             for (gid, morph_dict) in not_cached_cells:
                 cells[gid] = morph_dict
                 cache.set('cell:morph:{}'.format(gid), cells[gid])
-        L.debug('getting cell morph for %s done', gids)
+        L.debug('getting cell neuron morph for %s done', gids)
         return {'cells': cells}
 
-    def get_cell_nm_morphology(self, gids):
-        L.debug('getting axon cell morph from neurom for %s', gids)
+    def get_cell_morphology(self, gids):
+        L.debug('getting cell morph for %s', gids)
         cells = {}
         for gid in gids:
             cell_morph = cache.get('cell:morph:{}'.format(gid))
             if cell_morph is None:
                 cell = circuit.v2.morph.get(gid, transform=True)
-                morphology = {
-                    'axon': [section.points for section in cell.sections if section.type.name == 'axon']
-                }
+                morphology = [
+                    {
+                        'points': [point[:4] for point in section.points],
+                        'id': section.id,
+                        'type': SEC_SHORT_TYPE_DICT[section.type.name]
+                    }
+                    for section in cell.sections]
+
                 cache.set('cell:morph:{}'.format(gid), morphology)
                 cells[gid] = morphology
-        L.debug('getting axon cell morph from neurom for %s done', gids)
+        L.debug('getting cell morph for %s done', gids)
         return {'cells': cells}
+
 
 def get_cell_morphology_mp(mp_queue, gids):
     L.debug('creating bglibpy SSim object')

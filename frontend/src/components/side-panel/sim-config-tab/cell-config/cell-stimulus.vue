@@ -10,12 +10,12 @@
       @mouseover="onSectionLabelHover(stimulus)"
       @mouseleave="onSectionLabelUnhover()"
     >
-      Sec: {{ stimulus.sectionName || '---' | prettySectionName }}
+      Sec: {{ stimulus.sectionName || '---' }}
       <span
         class="cta-title ml-6"
         v-if="!stimulus.sectionName"
       >
-        Click on a segment in 3d viewer to make a selection
+        Click on a section in 3d viewer to make a selection
       </span>
     </p>
 
@@ -40,10 +40,10 @@
               v-for="(stimulusLabel, stimulusType) of stimulusTypes"
               :key="stimulusType"
               :value="stimulusType"
-              :disabled="stimulusType === 'pulse' && sectionType !== 'soma'"
+              :disabled="stimulusType === 'pulse' && stimulus.sectionType !== 'soma'"
             >
               {{ stimulusLabel }}
-              <span v-if="stimulusType === 'pulse' && sectionType !== 'soma'">
+              <span v-if="stimulusType === 'pulse' && stimulus.sectionType !== 'soma'">
                 (soma only)
               </span>
             </i-option>
@@ -269,7 +269,6 @@
   import get from 'lodash/get';
 
   import store from '@/store';
-  import constants from '@/constants';
 
   const stimulusTypes = {
     step: 'Step current',
@@ -302,14 +301,6 @@
       onSectionLabelUnhover() {
         this.hovered = false;
         store.$dispatch('simConfigSectionLabelUnhovered');
-      },
-    },
-    computed: {
-      sectionType() {
-        if (!this.stimulus.sectionName) return null;
-
-        const [, sectionType] = this.stimulus.sectionName.match(constants.sectionTypeRegexp);
-        return sectionType;
       },
     },
   };

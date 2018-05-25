@@ -23,6 +23,7 @@ const state = {
     synapses: [],
     waitingSecSelection: false,
     morphology: {},
+    neuronMorphology: {},
     params: {
       tStop: 400,
       timeStep: 0.05,

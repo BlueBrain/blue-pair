@@ -2,7 +2,7 @@
 <template>
   <div id="container">
     <canvas :id="canvasId"></canvas>
-    <morph-segment-poptip/>
+    <morph-section-poptip/>
     <bottom-panel/>
   </div>
 </template>
@@ -12,7 +12,7 @@
   import store from '@/store';
   import NeuronRenderer from '@/services/neuron-renderer';
   import BottomPanel from './viewport/bottom-panel.vue';
-  import MorphSegmentPoptip from './viewport/morph-segment-poptip.vue';
+  import MorphSectionPoptip from './viewport/morph-section-poptip.vue';
 
   export default {
     name: 'viewport-component',
@@ -23,7 +23,7 @@
     },
     components: {
       'bottom-panel': BottomPanel,
-      'morph-segment-poptip': MorphSegmentPoptip,
+      'morph-section-poptip': MorphSectionPoptip,
     },
     mounted() {
       const canvas = document.getElementById(this.canvasId);
@@ -38,7 +38,11 @@
       store.$on('setSomaSize', size => this.renderer.setNeuronCloudPointSize(size));
       store.$on('setSynapseSize', size => this.renderer.setMorphSynapseSize(size));
       store.$on('redrawCircuit', this.redrawNeurons.bind(this));
-      store.$on('showCellMorphology', morphObj => this.renderer.showMorphology(morphObj));
+      store.$on('showCellMorphology', () => this.renderer.showMorphology());
+
+      // TODO: remove after neuroM and NEURON section id mapping is fixed completely
+      store.$on('showNeuronMorphology', () => this.renderer.showNeuronMorphology());
+
       store.$on('showSectionMarkers', () => this.renderer.showSectionMarkers());
       store.$on('removeSectionMarkers', filterFunction => this.renderer.removeSectionMarkers(filterFunction));
       store.$on('removeCellMorphologies', filterFunction => this.renderer.removeCellMorphologies(filterFunction));
@@ -61,8 +65,6 @@
 
       store.$on('addSecMarker', config => this.renderer.addSecMarker(config));
       store.$on('removeSecMarker', config => this.renderer.removeSecMarker(config));
-
-      store.$on('ws:cell_nm_morphology', morphData => this.renderer.initNmMorphology(morphData.cells));
     },
     methods: {
       onHover(obj) {
@@ -76,8 +78,8 @@
           store.$dispatch('synapseHovered', obj.synapseIndex);
           break;
         }
-        case 'morphSegment': {
-          store.$dispatch('morphSegmentHovered', obj);
+        case 'morphSection': {
+          store.$dispatch('morphSectionHovered', obj);
           break;
         }
         default: {
@@ -96,8 +98,8 @@
           store.$dispatch('synapseHoverEnded', obj.synapseIndex);
           break;
         }
-        case 'morphSegment': {
-          store.$dispatch('morphSegmentHoverEnded', obj);
+        case 'morphSection': {
+          store.$dispatch('morphSectionHoverEnded', obj);
           break;
         }
         default: {
@@ -112,8 +114,8 @@
           store.$dispatch('neuronClicked', neuron);
           break;
         }
-        case 'morphSegment': {
-          store.$dispatch('morphSegmentClicked', obj);
+        case 'morphSection': {
+          store.$dispatch('morphSectionClicked', obj);
           break;
         }
         default: {

@@ -27,7 +27,7 @@
             @mouseover="onSectionLabelHover(recording)"
             @mouseleave="onSectionLabelUnhover()"
           >
-            {{ recording.sectionName  || '---' | shortSectionName }}
+            {{ recording.sectionName  || '---' }}
           </span>
         </Tag>
       </div>
@@ -47,7 +47,7 @@
             GID: ---, sec: ---
           </Tag>
           <span class="cta-title ml-6">
-            Click on a segment in 3d viewer to make a selection
+            Click on a section in 3d viewer to make a selection
           </span>
         </div>
         <i-button
@@ -115,11 +115,11 @@
         this.recordings = groupBy(store.$get('recordings'), recording => recording.gid);
         // this.uncollapsePanel(PANEL.recordings);
       });
-      store.$on('morphSegmentSelected', (segment) => {
-        if (this.tmpRecording && !store.$get('isRecordingPresent', segment)) {
+      store.$on('morphSectionSelected', (section) => {
+        if (this.tmpRecording && !store.$get('isRecordingPresent', section)) {
           store.$dispatch('addRecording', {
-            gid: segment.neuron.gid,
-            sectionName: segment.sectionName,
+            gid: section.neuron.gid,
+            name: section.name,
           });
           this.removeTmpRecording();
         }

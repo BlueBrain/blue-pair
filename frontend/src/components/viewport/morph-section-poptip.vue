@@ -4,7 +4,7 @@
 
     <div
       class="mb-6"
-      v-if="sectionType === 'soma'"
+      v-if="section && section.type === 'soma'"
     >
       <i-button
         type="default"
@@ -48,10 +48,8 @@
 
   import PositionedPoptip from '@/components/shared/positioned-poptip.vue';
 
-  const sectionTypeRegexp = /\.(\w*)/;
-
   export default {
-    name: 'morph-segment-poptip',
+    name: 'morph-section-poptip',
     components: {
       'positioned-poptip': PositionedPoptip,
     },
@@ -61,8 +59,7 @@
           x: -20,
           y: -20,
         },
-        segment: null,
-        sectionType: null,
+        section: null,
         btn: {
           recording: { disabled: false },
           stimulus: { disabled: false },
@@ -70,37 +67,36 @@
       };
     },
     mounted() {
-      store.$on('showMorphSegmentPoptip', (context) => {
+      store.$on('showMorphSectionPoptip', (context) => {
         this.position = context.clickPosition;
 
-        this.segment = {
+        this.section = {
           gid: context.data.neuron.gid,
-          sectionName: context.data.sectionName,
+          name: context.data.name,
+          type: context.data.type,
         };
-
-        this.sectionType = context.data.sectionName.match(sectionTypeRegexp)[1];
 
         this.updateBtnStatus();
       });
     },
     methods: {
       onStimulusAdd() {
-        store.$dispatch('addStimulus', this.segment);
+        store.$dispatch('addStimulus', this.section);
         this.updateBtnStatus();
       },
       onRecordingAdd() {
-        store.$dispatch('addRecording', this.segment);
+        store.$dispatch('addRecording', this.section);
         this.updateBtnStatus();
       },
       onSynInputAdd() {
-        store.$dispatch('addSynInput', this.segment.gid);
+        store.$dispatch('addSynInput', this.section.gid);
       },
       updateBtnStatus() {
         const { recordings, stimuli } = store.state.simulation;
-        const { sectionName } = this.segment;
+        const { name, gid } = this.section;
 
-        this.btn.recording.disabled = some(recordings, r => r.sectionName === sectionName);
-        this.btn.stimulus.disabled = some(stimuli, s => s.sectionName === sectionName);
+        this.btn.recording.disabled = some(recordings, r => r.sectionName === name && r.gid === gid);
+        this.btn.stimulus.disabled = some(stimuli, s => s.sectionName === name && s.gid === gid);
       },
     },
   };

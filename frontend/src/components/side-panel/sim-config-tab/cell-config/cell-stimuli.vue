@@ -80,11 +80,12 @@
         // this.uncollapsePanel(PANEL.stimuli);
       });
 
-      store.$on('morphSegmentSelected', (segment) => {
-        if (this.tmpStimulus && !store.$get('isStimulusPresent', segment)) {
+      store.$on('morphSectionSelected', (section) => {
+        if (this.tmpStimulus && !store.$get('isStimulusPresent', section)) {
           store.$dispatch('addStimulus', {
-            gid: segment.neuron.gid,
-            sectionName: segment.sectionName,
+            gid: section.neuron.gid,
+            name: section.name,
+            type: section.type,
           });
           this.removeTmpStimulus();
         }
