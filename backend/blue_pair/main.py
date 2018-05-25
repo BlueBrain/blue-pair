@@ -37,6 +37,7 @@ class WSHandler(tornado.websocket.WebSocketHandler):
         L.debug('websocket client has been connected')
         return True
 
+    @tornado.web.asynchronous
     def on_message(self, msg):
         msg = json.loads(msg)
         L.debug('got ws message: %s', msg)
@@ -54,13 +55,27 @@ class WSHandler(tornado.websocket.WebSocketHandler):
             }
             self.send_message('circuit_cell_info', circuit_info)
 
-            current_index = 0
-            chunk_size = int(cell_count / 100)
-            while current_index < cell_count:
-                cell_data_chunk = cells[current_index : current_index + chunk_size]
-                L.debug('sending circuit cell data chunk for cells %s:%s to the client', current_index, current_index + chunk_size)
-                self.send_message('circuit_cells_data', cell_data_chunk.values)
-                current_index = current_index + chunk_size
+            def generate_cell_chunks():
+                current_index = 0
+                chunk_size = int(cell_count / 100)
+                while current_index < cell_count:
+                    cell_data_chunk = cells[current_index : current_index + chunk_size]
+                    L.debug('cell data chunk for cells %s:%s is ready to be sent', current_index, current_index + chunk_size)
+                    yield cell_data_chunk
+                    current_index = current_index + chunk_size
+
+            cell_chunks_it = generate_cell_chunks()
+
+            def send():
+                try:
+                    cell_chunk = cell_chunks_it.next()
+                except StopIteration:
+                    cell_chunk = None
+                if cell_chunk is not None:
+                    self.send_message('circuit_cells_data', cell_chunk.values)
+                    tornado.ioloop.IOLoop.instance().add_callback(send)
+
+            tornado.ioloop.IOLoop.instance().add_callback(send)
 
         elif cmd == 'get_cell_connectome':
             gid = msg['data']
