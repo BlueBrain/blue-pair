@@ -14,7 +14,7 @@
         <br>
         <div class="text-right">
           <p>
-            NSE team
+            Brain Simulation Platform team
           </p>
         </div>
       </Card>
