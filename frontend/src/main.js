@@ -5,10 +5,8 @@ import Vue from 'vue';
 import iView from 'iview';
 
 import App from './App.vue';
-import filters from './filters';
 
 Vue.use(iView);
-filters.init();
 
 Vue.config.productionTip = true;
 

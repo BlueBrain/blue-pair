@@ -1,20 +1,11 @@
 
 import os
 import logging
-import time
-
-from multiprocessing import Process, Queue
-from itertools import combinations
 
 import bluepy
-import pandas as pd
-import numpy as np
-import bglibpy
 
 from bluepy.v2.enums import Synapse
 
-from blue_pair.cell import Cell
-from voxcell.quaternion import matrices_to_quaternions
 from blue_pair.redis_client import RedisClient
 
 L = logging.getLogger(__name__)
@@ -97,26 +88,6 @@ class Storage():
             'connection_properties': props_str
         }
 
-    def get_cell_neuron_morphology(self, gids):
-        L.debug('getting cell neuron morph for %s', gids)
-        cells = {}
-        not_cached_gids = []
-        for gid in gids:
-            cell_morph = cache.get('cell:morph:{}'.format(gid))
-            if cell_morph is None:
-                not_cached_gids.append(gid)
-        if len(not_cached_gids) > 0:
-            mp_queue = Queue()
-            mp_process = Process(target=get_cell_morphology_mp, args=(mp_queue, not_cached_gids))
-            mp_process.start()
-            not_cached_cells = mp_queue.get()
-            mp_process.join()
-            for (gid, morph_dict) in not_cached_cells:
-                cells[gid] = morph_dict
-                cache.set('cell:morph:{}'.format(gid), cells[gid])
-        L.debug('getting cell neuron morph for %s done', gids)
-        return {'cells': cells}
-
     def get_cell_morphology(self, gids):
         L.debug('getting cell morph for %s', gids)
         cells = {}
@@ -136,22 +107,3 @@ class Storage():
                 cells[gid] = morphology
         L.debug('getting cell morph for %s done', gids)
         return {'cells': cells}
-
-
-def get_cell_morphology_mp(mp_queue, gids):
-    L.debug('creating bglibpy SSim object')
-    ssim = bglibpy.SSim(CIRCUIT_PATH)
-    L.debug('instantiating ssim gids: %s', gids)
-    ssim.instantiate_gids(sorted(gids))
-    L.debug('getting cell morphologies')
-    morphologies = []
-    for gid in gids:
-        cell = Cell(ssim, gid)
-        morphologies.append((
-            gid,
-            {
-                'morph': cell.get_cell_morph(),
-                'quaternion': matrices_to_quaternions(circuit.v2.cells.get(gid)['orientation'])
-            }
-        ))
-    mp_queue.put(morphologies)

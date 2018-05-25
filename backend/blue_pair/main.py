@@ -101,14 +101,6 @@ class WSHandler(tornado.websocket.WebSocketHandler):
             L.debug('sending cell morphology to the client')
             self.send_message('cell_morphology', cell_nm_morph)
 
-        elif cmd == 'get_cell_neuron_morphology':
-            gids = msg['data']
-            cell_nm_morph = STORAGE.get_cell_neuron_morphology(gids)
-            cell_nm_morph['cmdid'] = cmdid
-
-            L.debug('sending cell neuron morphology to the client')
-            self.send_message('cell_neuron_morphology', cell_nm_morph)
-
         elif cmd == 'get_sim_traces':
             self.send_message('backend_ready')
             def p(traces):

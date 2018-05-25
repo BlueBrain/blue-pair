@@ -39,10 +39,6 @@
       store.$on('setSynapseSize', size => this.renderer.setMorphSynapseSize(size));
       store.$on('redrawCircuit', this.redrawNeurons.bind(this));
       store.$on('showCellMorphology', () => this.renderer.showMorphology());
-
-      // TODO: remove after neuroM and NEURON section id mapping is fixed completely
-      store.$on('showNeuronMorphology', () => this.renderer.showNeuronMorphology());
-
       store.$on('showSectionMarkers', () => this.renderer.showSectionMarkers());
       store.$on('removeSectionMarkers', filterFunction => this.renderer.removeSectionMarkers(filterFunction));
       store.$on('removeCellMorphologies', filterFunction => this.renderer.removeCellMorphologies(filterFunction));

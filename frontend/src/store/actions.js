@@ -3,12 +3,10 @@ import cloneDeep from 'lodash/cloneDeep';
 import remove from 'lodash/remove';
 import pickBy from 'lodash/pickBy';
 import pick from 'lodash/pick';
-import head from 'lodash/head';
 import groupBy from 'lodash/groupBy';
 
 import socket from '@/services/websocket';
 import storage from '@/services/storage';
-import constants from './../constants';
 
 // TODO: prefix events with target component's names
 
@@ -419,11 +417,6 @@ const actions = {
 
     store.$emit('updateSimCellConfig', store.state.circuit.simAddedNeurons);
     const gids = store.state.circuit.simAddedNeurons.map(n => n.gid);
-
-    // TODO: remove after neuroM and NEURON section id mapping is fixed completely
-    // const morph = await socket.request('get_cell_neuron_morphology', gids);
-    // Object.assign(store.state.simulation.neuronMorphology, morph.cells);
-    // store.$emit('showNeuronMorphology');
 
     await Promise.all(gids.map(async (gid) => {
       if (store.state.simulation.morphology[gid]) return;
