@@ -9,6 +9,7 @@ import { TweenLite, TimelineLite } from 'gsap';
 // TODO: refactor to remove store operations
 // and move them to vue viewport component
 import store from '@/store';
+import eachAsync from './../tools/each-async';
 
 
 // TODO: consider to use trackball ctrl instead
@@ -275,7 +276,7 @@ class NeuronRenderer {
     const { morphology } = store.state.simulation;
 
     gids.forEach((gid, cellIndex) => {
-      // if (this.cellMorphologyObj.children.find(cell => get(cell, 'userData.gid') === gid)) return;
+      if (this.cellMorphologyObj.children.find(cell => get(cell, 'userData.gid') === gid)) return;
 
       const neuronIndex = gid - 1;
       const neuron = store.$get('neuron', neuronIndex);
@@ -283,12 +284,58 @@ class NeuronRenderer {
       const cellMorphObj3D = new THREE.Object3D();
       cellMorphObj3D.userData.gid = gid;
 
-      sections.forEach((section) => {
-        if (section.type === 'axon') return;
+      eachAsync(sections, (section) => {
+        const pts = section.points;
+
+        const colorDiff = (((2 * colorDiffRange * cellIndex) / gids.length)) - colorDiffRange;
+        const glColor = baseMorphColors[section.type]
+          .brighten(colorDiff)
+          .desaturate(colorDiff)
+          .gl();
+
+        const color = new THREE.Color(...glColor);
+        const secMaterial = new THREE.MeshLambertMaterial({ color, transparent: true });
 
         const secMorphGeometry = new THREE.Geometry();
 
-        const pts = section.points;
+        if (section.type === 'soma') {
+          let position;
+          let radius;
+          if (pts.length === 1) {
+            position = new THREE.Vector3().fromArray(pts[0]);
+            radius = pts[0][3];
+          } else if (pts.length === 3) {
+            position = new THREE.Vector3().fromArray(pts[0]);
+            const secondPt = new THREE.Vector3().fromArray(pts[1]);
+            const thirdPt = new THREE.Vector3().fromArray(pts[2]);
+            radius = (position.distanceTo(secondPt) + position.distanceTo(thirdPt)) / 2;
+          } else {
+            position = pts
+              .reduce((vec, pt) => vec.add(new THREE.Vector3().fromArray(pt)), new THREE.Vector3())
+              .divideScalar(pts.length);
+
+            // radius = pts.reduce((distance, pt) => distance + position.distanceTo(new THREE.Vector3().fromArray(pt)), 0) / pts.length;
+            radius = Math.max(...pts.map(pt => position.distanceTo(new THREE.Vector3().fromArray(pt))));
+          }
+
+          const somaBufferedGeometry = new THREE.SphereBufferGeometry(radius, 14, 14);
+          const somaMesh = new THREE.Mesh(somaBufferedGeometry, secMaterial);
+          somaMesh.position.copy(position);
+          somaMesh.updateMatrix();
+
+          somaMesh.name = 'morphSection';
+          somaMesh.userData = {
+            neuron,
+            type: section.type,
+            id: section.id,
+            name: section.name,
+          };
+          somaMesh.matrixAutoUpdate = false;
+
+          cellMorphObj3D.add(somaMesh);
+
+          return;
+        }
 
         for (let i = 0; i < pts.length - 1; i += sRatio) {
           const vstart = new THREE.Vector3(pts[i][0], pts[i][1], pts[i][2]);
@@ -327,17 +374,8 @@ class NeuronRenderer {
           this.disposeObject(cylinder);
         }
 
-        const colorDiff = (((2 * colorDiffRange * cellIndex) / gids.length)) - colorDiffRange;
-        const glColor = baseMorphColors[section.type]
-          .brighten(colorDiff)
-          .desaturate(colorDiff)
-          .gl();
-
-        const color = new THREE.Color(...glColor);
-        const material = new THREE.MeshLambertMaterial({ color, transparent: true });
-
         const secMorphBufferGeometry = new THREE.BufferGeometry().fromGeometry(secMorphGeometry);
-        const secMorphMesh = new THREE.Mesh(secMorphBufferGeometry, material);
+        const secMorphMesh = new THREE.Mesh(secMorphBufferGeometry, secMaterial);
         secMorphGeometry.dispose();
 
         secMorphMesh.name = 'morphSection';
@@ -350,7 +388,7 @@ class NeuronRenderer {
         secMorphMesh.matrixAutoUpdate = false;
 
         cellMorphObj3D.add(secMorphMesh);
-      });
+      }, section => section.type !== 'axon');
 
       this.cellMorphologyObj.add(cellMorphObj3D);
     });
