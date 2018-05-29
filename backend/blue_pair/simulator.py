@@ -2,14 +2,11 @@
 import os
 import logging
 
-from multiprocessing import Queue, Process
-
 import bglibpy
 import numpy as np
 
 global custom_progress_cb
 def default_progress_cb():
-    print('default cb')
     pass
 
 custom_progress_cb = default_progress_cb
@@ -29,28 +26,7 @@ L.setLevel(logging.DEBUG if os.getenv('DEBUG', False) else logging.INFO)
 CIRCUIT_PATH = os.environ['CIRCUIT_PATH']
 
 
-
-def get_sim_traces(sim_config, progress_cb):
-    mp_queue = Queue()
-    mp_process = Process(target=get_sim_traces_mp, args=(mp_queue, sim_config, progress_cb))
-    mp_process.start()
-    traces = mp_queue.get()
-    mp_process.join()
-    return traces
-
-
-def get_sim_traces_mp(mp_queue, sim_config, progress_cb):
-    def progress():
-        progress_cb(sim.get_traces())
-
-    sim = Sim(sim_config, progress)
-    sim.run()
-    traces = sim.get_traces()
-    # TODO: add progress
-    mp_queue.put(traces)
-
-
-class Sim(object):
+class Simulator(object):
     def __init__(self, sim_config, progress_cb):
         L.debug('creating simulation')
 
@@ -60,6 +36,7 @@ class Sim(object):
         self.sim_config = sim_config
         self.recording_list = []
         self.gids = sorted(sim_config['gids'])
+        self.current_trace_index = 0
 
         custom_progress_cb = progress_cb
 
@@ -176,19 +153,26 @@ class Sim(object):
         t_stop = self.sim_config['tStop']
         time_step = self.sim_config['timeStep']
         forward_skip = self.sim_config['forwardSkip'] if self.sim_config['forwardSkip'] > 0 else None
-        L.debug('starting simulation with t_stop=%s, dt=%s, forward_skip=%s', t_stop, time_step, forward_skip)
+        L.debug('starting simulation run with t_stop=%s, dt=%s, forward_skip=%s', t_stop, time_step, forward_skip)
         self.ssim.run(t_stop=t_stop, dt=time_step, show_progress=True, forward_skip_value=forward_skip)
-        L.debug('simulation has been finished')
+        L.debug('simulation run has been finished')
 
-    def get_traces(self):
-        L.debug('getting traces from simulation result')
-        traces = {}
+    def get_trace_diff(self):
+        index = self.current_trace_index
+        time_vec = self.ssim.cells[self.recording_list[0][0]].get_time()
+        trace_diff= {
+            'time': time_vec[index:],
+            'voltage': {}
+        }
         for gid, sec in self.recording_list:
-            if gid not in traces:
-                traces[gid] = {'voltage': {}}
-            traces[gid]['voltage'][sec.name()] = self.ssim.cells[gid].get_voltage_recording(sec, .5)
-            traces[gid]['time'] = self.ssim.cells[gid].get_time()
-        return traces
+            if gid not in trace_diff['voltage']:
+                trace_diff['voltage'][gid] = {}
+            voltage_vec = self.ssim.cells[gid].get_voltage_recording(sec, .5)
+            trace_diff['voltage'][gid][sec.name()] = voltage_vec[index:]
+
+        self.current_trace_index = len(time_vec)
+
+        return trace_diff
 
     def _get_sec_by_name(self, gid, sec_name):
         sec_full_name = '%s.%s' % (self.ssim.cells[gid].cell.hname(), sec_name)

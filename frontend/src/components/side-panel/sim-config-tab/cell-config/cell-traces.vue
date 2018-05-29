@@ -29,6 +29,7 @@
 
 
 <script>
+  import get from 'lodash/get';
   import store from '@/store';
   import Dygraph from '@/components/shared/dygraph.vue';
   import GidLabel from '@/components/shared/gid-label.vue';
@@ -49,14 +50,18 @@
       store.$on('ws:simulation_result', (data) => {
         // TODO: this handler should be on sim-config-tab component level
         // TODO: refactor
-        const traceGids = Object.keys(data);
-        traceGids.forEach((gid) => {
-          const secNames = Object.keys(data[gid].voltage);
+        if (!data.time.length) return;
+
+        const gids = Object.keys(data.voltage);
+        gids.forEach((gid) => {
+          const secNames = Object.keys(data.voltage[gid]);
           const shortSecNames = secNames.map(secName => secName.match(/\.(.*)/)[1]);
 
-          const chartData = data[gid].time.map((timestamp, i) => {
-            return secNames.reduce((trace, secName) => trace.concat(data[gid].voltage[secName][i]), [timestamp]);
+          const chartDataDiff = data.time.map((timestamp, i) => {
+            return secNames.reduce((trace, secName) => trace.concat(data.voltage[gid][secName][i]), [timestamp]);
           });
+
+          const chartData = get(this.traces, `${gid}.chart.data`, []).concat(chartDataDiff);
 
           const self = this;
 

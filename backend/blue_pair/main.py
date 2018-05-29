@@ -24,12 +24,13 @@ while not os.path.isfile(circuit_path):
 
 from blue_pair.storage import Storage
 from blue_pair.utils import NumpyAwareJSONEncoder
-from blue_pair.sim import get_sim_traces
-
+from blue_pair.sim_manager import SimManager
 
 L.debug('creating storage instance')
 STORAGE = Storage()
 L.debug('storage instance has been created')
+
+SIM_MANAGER = SimManager()
 
 
 class WSHandler(tornado.websocket.WebSocketHandler):
@@ -73,9 +74,9 @@ class WSHandler(tornado.websocket.WebSocketHandler):
                     cell_chunk = None
                 if cell_chunk is not None:
                     self.send_message('circuit_cells_data', cell_chunk.values)
-                    tornado.ioloop.IOLoop.instance().add_callback(send)
+                    tornado.ioloop.IOLoop.current().add_callback(send)
 
-            tornado.ioloop.IOLoop.instance().add_callback(send)
+            tornado.ioloop.IOLoop.current().add_callback(send)
 
         elif cmd == 'get_cell_connectome':
             gid = msg['data']
@@ -102,15 +103,14 @@ class WSHandler(tornado.websocket.WebSocketHandler):
             self.send_message('cell_morphology', cell_nm_morph)
 
         elif cmd == 'get_sim_traces':
-            self.send_message('backend_ready')
-            def p(traces):
-                self.send_message('simulation_result', traces)
-
-            sim_config = msg['data']
-            traces = get_sim_traces(sim_config, p)
-
-            L.debug('sending simulation traces to the client')
-            self.send_message('simulation_result', traces)
+            simulator_config = msg['data']
+            socket = self
+            IOLoop = tornado.ioloop.IOLoop.current()
+            def send_traces(traces):
+                socket.send_message('simulation_result', traces)
+            def cb(traces):
+                IOLoop.add_callback(send_traces, traces)
+            SIM_MANAGER.create_sim(simulator_config, cb)
 
     def send_message(self, cmd, data=None):
         payload = json.dumps({'cmd': cmd, 'data': data},
