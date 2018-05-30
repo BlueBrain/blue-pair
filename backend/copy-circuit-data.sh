@@ -163,6 +163,13 @@ echo '### Path:' "$target_pod:$morphology_path"/ascii
 oc rsh $target_pod mkdir -p "$morphology_path"/ascii
 echo '### Done'
 
+echo
+echo '####################################################################################################'
+echo '### Create MorphologyPath/v1 folder'
+echo '### Path:' "$target_pod:$morphology_path"/v1
+oc rsh $target_pod mkdir -p "$morphology_path"/v1
+echo '### Done'
+
 
 echo
 echo '####################################################################################################'
@@ -182,6 +189,11 @@ do
         --progress \
         --ignore-existing \
         "$morphology_path"/ascii/"$morphology".asc "$target_pod:$morphology_path"/ascii/"$morphology".asc
+    rsync \
+        -vLh \
+        --progress \
+        --ignore-existing \
+        "$morphology_path"/v1/"$morphology".h5 "$target_pod:$morphology_path"/v1/"$morphology".h5
 done < tmp/circuit-morphology-list.txt
 echo '### Done'
 
