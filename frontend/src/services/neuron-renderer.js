@@ -197,11 +197,10 @@ class NeuronRenderer {
   }
 
   destroySynapseCloud() {
-    this.scene.remove(this.synapseCloud.points);
-    this.synapseCloud.points.traverse((child) => {
-      if (child instanceof THREE.Mesh) this.disposeObject(child);
-    });
+    if (!this.synapseCloud) return;
 
+    this.scene.remove(this.synapseCloud.points);
+    this.disposeObject(this.synapseCloud.points);
     this.synapseCloud = null;
   }
 
@@ -268,7 +267,7 @@ class NeuronRenderer {
   }
 
   showMorphology() {
-    const sRatio = 1;
+    const sRatio = 2;
     const colorDiffRange = 1;
 
     const gids = store.state.circuit.simAddedNeurons.map(n => n.gid);
@@ -295,6 +294,7 @@ class NeuronRenderer {
 
         const color = new THREE.Color(...glColor);
         const secMaterial = new THREE.MeshLambertMaterial({ color, transparent: true });
+        secMaterial.side = THREE.DoubleSide;
 
         const secMorphGeometry = new THREE.Geometry();
 
@@ -356,7 +356,7 @@ class NeuronRenderer {
             distance,
             Math.max(5, Math.ceil(24 / sRatio)),
             1,
-            false,
+            true,
           );
 
           const orientation = new THREE.Matrix4();
@@ -407,6 +407,44 @@ class NeuronRenderer {
 
     const secMarkerObj3d = new THREE.Object3D();
     const secMarkerGeo = new THREE.Geometry();
+
+    // TODO: move to separate function
+    if (config.sectionType === 'soma') {
+      let position;
+      let radius;
+      if (pts.length === 1) {
+        position = new THREE.Vector3().fromArray(pts[0]);
+        radius = pts[0][3];
+      } else if (pts.length === 3) {
+        position = new THREE.Vector3().fromArray(pts[0]);
+        const secondPt = new THREE.Vector3().fromArray(pts[1]);
+        const thirdPt = new THREE.Vector3().fromArray(pts[2]);
+        radius = (position.distanceTo(secondPt) + position.distanceTo(thirdPt)) / 2;
+      } else {
+        position = pts
+          .reduce((vec, pt) => vec.add(new THREE.Vector3().fromArray(pt)), new THREE.Vector3())
+          .divideScalar(pts.length);
+
+        radius = Math.max(...pts.map(pt => position.distanceTo(new THREE.Vector3().fromArray(pt))));
+      }
+
+      const material = config.type === 'recording' ? this.recMarkerMaterial : this.injMarkerMaterial;
+      const somaBufferedGeometry = new THREE.SphereBufferGeometry(radius * 1.05, 14, 14);
+      const somaMesh = new THREE.Mesh(somaBufferedGeometry, material);
+      somaMesh.position.copy(position);
+      somaMesh.updateMatrix();
+      somaMesh.matrixAutoUpdate = false;
+
+      somaMesh.name = 'sectionMarker';
+      somaMesh.userData = Object.assign({ skipHoverDetection: true }, config);
+
+      secMarkerObj3d.add(somaMesh);
+      secMarkerObj3d.name = 'sectionMarker';
+      secMarkerObj3d.userData = Object.assign({ skipHoverDetection: true }, config);
+
+      this.secMarkerObj.add(secMarkerObj3d);
+      return;
+    }
 
     let i = 0;
     while (i + 1 < pts.length) {
