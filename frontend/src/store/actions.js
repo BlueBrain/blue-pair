@@ -288,7 +288,7 @@ const actions = {
       synapses: simSynapsesByPreGid,
     };
 
-    socket.send('get_sim_traces', simConfig);
+    socket.send('run_simulation', simConfig);
   },
 
   updateGlobalSimParams(store, params) {
