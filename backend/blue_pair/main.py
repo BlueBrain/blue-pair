@@ -3,12 +3,15 @@ import os
 import time
 import json
 import logging
+import sys
+import signal
 
 import tornado.ioloop
 import tornado.web
 import tornado.websocket
 
 from tornado.log import enable_pretty_logging
+from blue_pair.sim_manager import SimStatus
 
 
 enable_pretty_logging()
@@ -31,6 +34,15 @@ STORAGE = Storage()
 L.debug('storage instance has been created')
 
 SIM_MANAGER = SimManager()
+SIM_STATUS = SimStatus()
+
+def on_terminate(signal, frame):
+    L.debug('received shutdown signal')
+    SIM_MANAGER.terminate()
+    tornado.ioloop.IOLoop.current().stop()
+
+signal.signal(signal.SIGINT, on_terminate)
+signal.signal(signal.SIGTERM, on_terminate)
 
 
 class WSHandler(tornado.websocket.WebSocketHandler):
@@ -102,20 +114,29 @@ class WSHandler(tornado.websocket.WebSocketHandler):
             L.debug('sending cell morphology to the client')
             self.send_message('cell_morphology', cell_nm_morph)
 
-        elif cmd == 'get_sim_traces':
+        elif cmd == 'run_simulation':
             simulator_config = msg['data']
             socket = self
             IOLoop = tornado.ioloop.IOLoop.current()
-            def send_traces(traces):
-                socket.send_message('simulation_result', traces)
-            def cb(traces):
-                IOLoop.add_callback(send_traces, traces)
-            SIM_MANAGER.create_sim(simulator_config, cb)
+            def send_sim_data(sim_data):
+                if sim_data.status == SIM_STATUS.INIT:
+                    socket.send_message('simulation_initialized')
+                elif sim_data.status == SIM_STATUS.FINISH:
+                    socket.send_message('simulation_ended')
+                else:
+                    socket.send_message('simulation_result', sim_data.data)
+            def cb(sim_data):
+                IOLoop.add_callback(send_sim_data, sim_data)
+            self.sim_id = SIM_MANAGER.create_sim(simulator_config, cb)
 
     def send_message(self, cmd, data=None):
         payload = json.dumps({'cmd': cmd, 'data': data},
                              cls=NumpyAwareJSONEncoder)
         self.write_message(payload)
+
+    def on_close(self):
+        if self.sim_id is not None:
+            SIM_MANAGER.cancel_sim(self.sim_id)
 
 
 if __name__ == '__main__':

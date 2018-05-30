@@ -20,11 +20,33 @@ class Sim(object):
         self.id = None
 
 
+class SimData(object):
+    def __init__(self, sim_status, data=None):
+        self.status = sim_status
+        self.data = data
+
+
+class SimStatus(object):
+    def __init__(self):
+        self.INIT = 1
+        self.RUN = 3
+        self.FINISH = 4
+
+        # artificial statuses to pass to sim watcher thread
+        # to terminate it with running simulation
+        # in case of app shutdown
+        self.TERMINATE = 6
+
+
+STATUS = SimStatus()
+
+
 class SimManager(object):
     def __init__(self):
         self._sims = []
         self._current_sim = None
         self.next_sim_id = 0
+        # TODO: switch to using Pipe as faster alternative
         self._result_queue = Queue()
         self.queueLength = 0
         self._watcher_thread = None
@@ -44,45 +66,76 @@ class SimManager(object):
             self._start_sim()
         else:
             self._sims.append(sim)
-            self.queueLength = len(self._sims + 1)
+            self.queueLength = len(self._sims) + 1
 
         return sim_id
 
     def cancel_sim(self, sim_id):
-        if (self._current_sim.id == sim_id):
+        if self._current_sim.id == sim_id:
+            L.debug('cancelling current simulation')
+            os.kill(self._sim_proc.pid, signal.SIGINT)
+            self._sim_proc.join()
+            self._run_next()
+
+    def _run_next(self):
+        if len(self._sims) > 0:
+            L.debug('proceeding with simulations from the queue')
+            self._current_sim = self._sims.pop(0)
+            self._start_sim()
+        else:
+            L.debug('no simulations in the queue')
+            self._current_sim = None
+
+    def terminate(self):
+        if self._current_sim is not None:
+            L.debug('terminating sim process')
+            self._sim_proc.terminate()
+        sim_data = SimData(STATUS.TERMINATE)
+        self._result_queue.put(sim_data)
 
     def _start_sim_result_watcher(self):
         def watcher():
-            def get_queue_traces():
-                return self._result_queue.get()
             while True:
-                result = get_queue_traces()
-                if result is not None:
-                    self._current_sim.cb(result)
-                else:
+                sim_data = self._result_queue.get()
+                self._current_sim.cb(sim_data)
+
+
+                if sim_data.status == STATUS.TERMINATE:
+                    L.debug('terminating sim result watcher thread')
+                    break
+
+                elif sim_data.status == STATUS.FINISH:
                     L.debug('waiting for simulator process to terminate')
                     self._sim_proc.join()
                     L.debug('simulator process has been terminated')
-                    if len(self._sims) > 0:
-                        L.debug('proceeding with simulations from the queue')
-                        self._current_sim = self._sims.pop(0)
-                        self._start_sim()
-                    else:
-                        L.debug('no simulations in the queue')
-                        self._current_sim = None
+                    self._run_next()
 
         self._watcher_thread = threading.Thread(target=watcher)
         self._watcher_thread.start()
 
     def _start_sim(self):
         def simulation_runner(result_queue, sim_config):
+            def on_sigint(signal, frame):
+                sys.exit(0)
+
+            signal.signal(signal.SIGINT, on_sigint)
+
             def on_progress():
                 trace_diff = simulator.get_trace_diff()
-                result_queue.put(trace_diff)
+                sim_data = SimData(STATUS.RUN, trace_diff)
+
+                result_queue.put(sim_data)
                 time.sleep(0.001)
+
+            sim_init = SimData(STATUS.INIT)
+            result_queue.put(sim_init)
+
             simulator = Simulator(sim_config, on_progress)
             simulator.run()
-            result_queue.put(None)
+
+            sim_finish = SimData(STATUS.FINISH)
+            result_queue.put(sim_finish)
         self._sim_proc = Process(target=simulation_runner, args=(self._result_queue, self._current_sim.config))
         self._sim_proc.start()
         L.debug('simulator process has been started')
+
