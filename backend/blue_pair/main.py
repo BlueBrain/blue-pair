@@ -56,6 +56,7 @@ class WSHandler(tornado.websocket.WebSocketHandler):
         L.debug('got ws message: %s', msg)
         cmd = msg['cmd']
         cmdid = msg['cmdid']
+        self.sim_id = None
 
         if cmd == 'get_circuit_cells':
             cells = STORAGE.get_circuit_cells()
@@ -123,6 +124,7 @@ class WSHandler(tornado.websocket.WebSocketHandler):
                     socket.send_message('simulation_initialized')
                 elif sim_data.status == SIM_STATUS.FINISH:
                     socket.send_message('simulation_ended')
+                    socket.sim_id = None
                 else:
                     socket.send_message('simulation_result', sim_data.data)
             def cb(sim_data):
