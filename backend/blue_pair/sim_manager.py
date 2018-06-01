@@ -61,24 +61,26 @@ class SimManager(object):
         sim = Sim(simulator_config, cb)
         sim.id = sim_id
 
+        self._sims.append(sim)
+
         if self._current_sim is None:
-            self._current_sim = sim
-            self._start_sim()
-        else:
-            self._sims.append(sim)
-            self.queueLength = len(self._sims) + 1
+            self._run_next()
 
         return sim_id
 
     def cancel_sim(self, sim_id):
-        if self._current_sim.id == sim_id:
+        if self._current_sim and self._current_sim.id == sim_id:
             L.debug('cancelling current simulation')
             os.kill(self._sim_proc.pid, signal.SIGINT)
-            self._sim_proc.join()
-            self._run_next()
+        else:
+            sim_index = self._sims.index(filter(lambda s: s.id == sim_id, self._sims)[0])
+            L.debug('cancelling simulation id: %s, with index: %s', sim_id, sim_index)
+            self._sims.pop(sim_index)
 
     def _run_next(self):
-        if len(self._sims) > 0:
+        self.queueLength = len(self._sims)
+
+        if self.queueLength > 0:
             L.debug('proceeding with simulations from the queue')
             self._current_sim = self._sims.pop(0)
             self._start_sim()
@@ -97,8 +99,9 @@ class SimManager(object):
         def watcher():
             while True:
                 sim_data = self._result_queue.get()
-                self._current_sim.cb(sim_data)
 
+                if self._current_sim:
+                    self._current_sim.cb(sim_data)
 
                 if sim_data.status == STATUS.TERMINATE:
                     L.debug('terminating sim result watcher thread')
@@ -116,6 +119,8 @@ class SimManager(object):
     def _start_sim(self):
         def simulation_runner(result_queue, sim_config):
             def on_sigint(signal, frame):
+                sim_finish = SimData(STATUS.FINISH)
+                result_queue.put(sim_finish)
                 sys.exit(0)
 
             signal.signal(signal.SIGINT, on_sigint)

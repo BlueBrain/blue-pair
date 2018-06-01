@@ -54,12 +54,20 @@
     <Row>
       <i-col span="6" offset="18">
         <i-button
+          v-if="!simRunning"
           long
           size="small"
           type="primary"
-          :loading="loading"
           @click="onRunSimBtnClick"
         >Run Simulation</i-button>
+        <i-button
+          v-else
+          long
+          size="small"
+          type="warning"
+          :loading="loading"
+          @click="onCancelSimBtnClick"
+        >Cancel Simulation</i-button>
       </i-col>
     </Row>
 
@@ -76,6 +84,7 @@
       return {
         config: store.state.simulation.params,
         loading: false,
+        simRunning: false,
       };
     },
     methods: {
@@ -83,12 +92,20 @@
         store.$dispatch('updateGlobalSimParams', this.config);
       },
       onRunSimBtnClick() {
-        this.loading = true;
+        this.simRunning = true;
         store.$dispatch('runSim');
+      },
+      onCancelSimBtnClick() {
+        this.loading = true;
+        store.$dispatch('cancelSim');
       },
     },
     mounted() {
       store.$on('ws:simulation_result', () => { this.loading = false; });
+      store.$on('ws:simulation_finished', () => {
+        this.loading = false;
+        this.simRunning = false;
+      });
     },
   };
 </script>

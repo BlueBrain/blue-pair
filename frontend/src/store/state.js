@@ -17,6 +17,7 @@ const state = {
     },
   },
   simulation: {
+    running: false,
     synapseSize: 5,
     synapsePropIndex: {},
     synapseProps: [],

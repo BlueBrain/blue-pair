@@ -46,6 +46,9 @@ signal.signal(signal.SIGTERM, on_terminate)
 
 
 class WSHandler(tornado.websocket.WebSocketHandler):
+    sim_id = None
+    closed = False
+
     def check_origin(self, origin):
         L.debug('websocket client has been connected')
         return True
@@ -56,7 +59,6 @@ class WSHandler(tornado.websocket.WebSocketHandler):
         L.debug('got ws message: %s', msg)
         cmd = msg['cmd']
         cmdid = msg['cmdid']
-        self.sim_id = None
 
         if cmd == 'get_circuit_cells':
             cells = STORAGE.get_circuit_cells()
@@ -123,7 +125,7 @@ class WSHandler(tornado.websocket.WebSocketHandler):
                 if sim_data.status == SIM_STATUS.INIT:
                     socket.send_message('simulation_initialized')
                 elif sim_data.status == SIM_STATUS.FINISH:
-                    socket.send_message('simulation_ended')
+                    socket.send_message('simulation_finished')
                     socket.sim_id = None
                 else:
                     socket.send_message('simulation_result', sim_data.data)
@@ -131,12 +133,19 @@ class WSHandler(tornado.websocket.WebSocketHandler):
                 IOLoop.add_callback(send_sim_data, sim_data)
             self.sim_id = SIM_MANAGER.create_sim(simulator_config, cb)
 
+        elif cmd == 'cancel_simulation':
+            if self.sim_id is not None:
+                SIM_MANAGER.cancel_sim(self.sim_id)
+                self.sim_id = None
+
     def send_message(self, cmd, data=None):
-        payload = json.dumps({'cmd': cmd, 'data': data},
-                             cls=NumpyAwareJSONEncoder)
-        self.write_message(payload)
+        if not self.closed:
+            payload = json.dumps({'cmd': cmd, 'data': data},
+                                 cls=NumpyAwareJSONEncoder)
+            self.write_message(payload)
 
     def on_close(self):
+        self.closed = True
         if self.sim_id is not None:
             SIM_MANAGER.cancel_sim(self.sim_id)
 

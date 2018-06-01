@@ -240,6 +240,10 @@ const actions = {
     const { synapses, synInputs } = store.state.simulation;
     const { neurons, neuronPropIndex } = store.state.circuit;
 
+    const { simulation } = store.state;
+    simulation.running = true;
+    store.$once('ws:simulation_finished', () => { simulation.running = false; });
+
     const simSynapsesByPreGid = synInputs.reduce((synConfig, synInput) => {
       const syns = synapses.filter((syn) => {
         if (synInput.preSynCellProp === 'gid') {
@@ -266,6 +270,7 @@ const actions = {
 
     store.$emit('setStatus', { message: 'Runnig simulation' });
     store.$emit('showOnlyTracesPanel');
+    store.$emit('resetTraces');
     store.$dispatch('showGlobalSpinner', 'Waiting for simulation backend to be ready...');
 
     store.$once('ws:backend_ready', () => {
@@ -291,6 +296,10 @@ const actions = {
     socket.send('run_simulation', simConfig);
   },
 
+  cancelSim() {
+    socket.send('cancel_simulation');
+  },
+
   updateGlobalSimParams(store, params) {
     Object.assign(store.state.simulation.params, params);
   },
@@ -300,6 +309,9 @@ const actions = {
     store.$emit('showCircuit');
     store.$emit('removeCellMorphology');
     store.$emit('setBottomPanelMode', 'cellSelection');
+
+    const { simulation } = store.state;
+    if (simulation.running) store.$dispatch('cancelSim');
   },
 
   addStimulus(store, section) {
