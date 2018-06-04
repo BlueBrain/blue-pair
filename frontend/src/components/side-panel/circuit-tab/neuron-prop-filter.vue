@@ -240,7 +240,7 @@
             .includes(value);
         });
       },
-      valueFilterMethod(value, option) {
+      valueFilterMethod(value = '', option) {
         return option.toString().toUpperCase().includes(value.toString().toUpperCase());
       },
       updateGlobalFilterIndex() {

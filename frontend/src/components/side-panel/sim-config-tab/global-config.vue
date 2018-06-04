@@ -52,7 +52,10 @@
     <br>
 
     <Row>
-      <i-col span="6" offset="18">
+      <i-col span="18">
+        <sim-progress/>
+      </i-col>
+      <i-col span="6">
         <i-button
           v-if="!simRunning"
           long
@@ -77,9 +80,13 @@
 
 <script>
   import store from '@/store';
+  import SimProgress from './global-config/sim-progress.vue';
 
   export default {
     name: 'global-config',
+    components: {
+      'sim-progress': SimProgress,
+    },
     data() {
       return {
         config: store.state.simulation.params,
