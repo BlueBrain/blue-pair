@@ -14,9 +14,9 @@ L.setLevel(logging.DEBUG if os.getenv('DEBUG', False) else logging.INFO)
 
 
 class Sim(object):
-    def __init__(self, config, cb):
+    def __init__(self, config, callback):
         self.config = config
-        self.cb = cb
+        self.data_callback = callback
         self.id = None
 
 
@@ -55,17 +55,20 @@ class SimManager(object):
 
         self._start_sim_result_watcher()
 
-    def create_sim(self, simulator_config, cb):
+    def create_sim(self, simulator_config, callback):
         sim_id = self.next_sim_id
         self.next_sim_id += 1
 
-        sim = Sim(simulator_config, cb)
+        sim = Sim(simulator_config, callback)
         sim.id = sim_id
 
         self._sims.append(sim)
 
         if self._current_sim is None:
             self._run_next()
+        else:
+            sim_queue_data = SimData(STATUS.QUEUE, len(self._sims) - 1)
+            sim.data_callback(sim_queue_data)
 
         return sim_id
 
@@ -76,7 +79,8 @@ class SimManager(object):
         else:
             sim_index = self._sims.index(filter(lambda s: s.id == sim_id, self._sims)[0])
             L.debug('cancelling simulation id: %s, with index: %s', sim_id, sim_index)
-            self._sims.pop(sim_index)
+            sim = self._sims.pop(sim_index)
+            sim.data_callback(SimData(STATUS.FINISH))
 
     def _run_next(self):
         self.queueLength = len(self._sims)
@@ -84,7 +88,7 @@ class SimManager(object):
         L.debug('sending sim queue positions')
         for index, sim in enumerate(self._sims):
             sim_data = SimData(STATUS.QUEUE, index)
-            sim.cb(sim_data)
+            sim.data_callback(sim_data)
 
         if self.queueLength > 0:
             L.debug('proceeding with simulations from the queue')
@@ -107,7 +111,7 @@ class SimManager(object):
                 sim_data = self._result_queue.get()
 
                 if self._current_sim:
-                    self._current_sim.cb(sim_data)
+                    self._current_sim.data_callback(sim_data)
 
                 if sim_data.status == STATUS.TERMINATE:
                     L.debug('terminating sim result watcher thread')

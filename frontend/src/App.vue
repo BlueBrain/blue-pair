@@ -102,4 +102,15 @@
     color: #888888;
     margin-bottom: 12px;
   }
+
+  .center-modal {
+    display: flex;
+    justify-content: center;
+    align-content: center;
+    align-items: center;
+
+    .ivu-modal {
+      top: 0;
+    }
+  }
 </style>

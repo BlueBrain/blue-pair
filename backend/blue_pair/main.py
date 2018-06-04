@@ -125,9 +125,9 @@ class WSHandler(tornado.websocket.WebSocketHandler):
                 if sim_data.status == SIM_STATUS.QUEUE:
                     socket.send_message('simulation_queued', sim_data.data)
                 elif sim_data.status == SIM_STATUS.INIT:
-                    socket.send_message('simulation_initialized')
+                    socket.send_message('simulation_init')
                 elif sim_data.status == SIM_STATUS.FINISH:
-                    socket.send_message('simulation_finished')
+                    socket.send_message('simulation_finish')
                     socket.sim_id = None
                 else:
                     socket.send_message('simulation_result', sim_data.data)

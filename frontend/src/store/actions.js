@@ -242,7 +242,7 @@ const actions = {
 
     const { simulation } = store.state;
     simulation.running = true;
-    store.$once('ws:simulation_finished', () => { simulation.running = false; });
+    store.$once('ws:simulation_finish', () => { simulation.running = false; });
 
     const simSynapsesByPreGid = synInputs.reduce((synConfig, synInput) => {
       const syns = synapses.filter((syn) => {
@@ -271,13 +271,6 @@ const actions = {
     store.$emit('setStatus', { message: 'Runnig simulation' });
     store.$emit('showOnlyTracesPanel');
     store.$emit('resetTraces');
-    store.$dispatch('showGlobalSpinner', 'Waiting for simulation backend to be ready...');
-
-    store.$once('ws:backend_ready', () => {
-      store.$dispatch('showGlobalSpinner', 'Initializing simulation...');
-    });
-
-    store.$once('ws:simulation_result', () => store.$dispatch('hideGlobalSpinner'));
 
     const gids = store.state.circuit.simAddedNeurons.map(n => n.gid);
 
