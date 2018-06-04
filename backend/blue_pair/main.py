@@ -122,7 +122,9 @@ class WSHandler(tornado.websocket.WebSocketHandler):
             socket = self
             IOLoop = tornado.ioloop.IOLoop.current()
             def send_sim_data(sim_data):
-                if sim_data.status == SIM_STATUS.INIT:
+                if sim_data.status == SIM_STATUS.QUEUE:
+                    socket.send_message('simulation_queued', sim_data.data)
+                elif sim_data.status == SIM_STATUS.INIT:
                     socket.send_message('simulation_initialized')
                 elif sim_data.status == SIM_STATUS.FINISH:
                     socket.send_message('simulation_finished')

@@ -28,14 +28,15 @@ class SimData(object):
 
 class SimStatus(object):
     def __init__(self):
+        self.QUEUE = 0
         self.INIT = 1
-        self.RUN = 3
-        self.FINISH = 4
+        self.RUN = 2
+        self.FINISH = 3
 
         # artificial statuses to pass to sim watcher thread
         # to terminate it with running simulation
         # in case of app shutdown
-        self.TERMINATE = 6
+        self.TERMINATE = 4
 
 
 STATUS = SimStatus()
@@ -80,6 +81,11 @@ class SimManager(object):
     def _run_next(self):
         self.queueLength = len(self._sims)
 
+        L.debug('sending sim queue positions')
+        for index, sim in enumerate(self._sims):
+            sim_data = SimData(STATUS.QUEUE, index)
+            sim.cb(sim_data)
+
         if self.queueLength > 0:
             L.debug('proceeding with simulations from the queue')
             self._current_sim = self._sims.pop(0)
@@ -110,6 +116,8 @@ class SimManager(object):
                 elif sim_data.status == STATUS.FINISH:
                     L.debug('waiting for simulator process to terminate')
                     self._sim_proc.join()
+                    self._sim_proc = None
+                    self._current_sim = None
                     L.debug('simulator process has been terminated')
                     self._run_next()
 
