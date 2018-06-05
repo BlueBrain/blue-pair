@@ -106,6 +106,17 @@
         store.$dispatch('updateGlobalSimParams', this.config);
       },
       onRunSimBtnClick() {
+        const { recordings } = store.state.simulation;
+        if (!recordings.length) {
+          this.$Modal.warning({
+            title: 'No recordings found',
+            content: 'Please add at least one recording in order to run simulation.',
+            okText: 'OK',
+            closable: true,
+          });
+          return;
+        }
+
         this.simRunning = true;
         this.simInitModalVisible = true;
         store.$dispatchAsync('runSim');
