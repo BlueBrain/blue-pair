@@ -5,10 +5,14 @@ import pickBy from 'lodash/pickBy';
 import pick from 'lodash/pick';
 import groupBy from 'lodash/groupBy';
 
+import isEqualBy from '@/tools/is-equal-by.js';
+
 import socket from '@/services/websocket';
 import storage from '@/services/storage';
 
 // TODO: prefix events with target component's names
+
+const recAndInjCompareKeys = ['sectionName', 'gid'];
 
 
 const actions = {
@@ -330,7 +334,7 @@ const actions = {
   },
 
   removeStimulus(store, stimulus) {
-    remove(store.state.simulation.stimuli, s => s.sectionName === stimulus.sectionName);
+    remove(store.state.simulation.stimuli, s => isEqualBy(s, stimulus, recAndInjCompareKeys));
     store.$emit('removeSecMarker', {
       type: 'stimulus',
       gid: stimulus.gid,
@@ -341,7 +345,7 @@ const actions = {
 
   updateStimulus(store, stimulus) {
     const { stimuli } = store.state.simulation;
-    const storeStimulus = stimuli.find(s => s.sectionName === stimulus.sectionName);
+    const storeStimulus = stimuli.find(s => isEqualBy(s, stimulus, recAndInjCompareKeys));
     Object.assign(storeStimulus, stimulus);
   },
 
@@ -357,7 +361,7 @@ const actions = {
   },
 
   removeRecording(store, recording) {
-    remove(store.state.simulation.recordings, r => r.sectionName === recording.sectionName);
+    remove(store.state.simulation.recordings, r => isEqualBy(r, recording, recAndInjCompareKeys));
     store.$emit('removeSecMarker', {
       type: 'recording',
       gid: recording.gid,
