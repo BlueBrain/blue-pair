@@ -124,6 +124,10 @@
 
         this.updateWaitingSecSelection();
       },
+      removeTmpSynInput() {
+        this.tmpSynInput = null;
+        this.updateWaitingSecSelection();
+      },
       removeSynInput(synInput) {
         store.$dispatch('removeSynInput', synInput);
       },
