@@ -5,13 +5,22 @@
     :class="{'disabled': !synInput.gid}"
   >
     <p class="mb-6">
-      Synapses visible:
+      <span :class="{'text-grey': !synInput.valid}">
+        Synapses visible:
+      </span>
       <i-switch
         size="small"
         v-model="synInput.synapsesVisible"
+        :disabled="!synInput.valid"
         @on-change="emitSynInputChange"
       >
       </i-switch>
+      <small
+        class="ml-6 syn-cta"
+        v-if="!synInput.gid"
+      >
+        Select gid by clicking on post-synaptic cell
+      </small>
     </p>
 
     <div
@@ -25,6 +34,7 @@
       <i-col span="8">
         <i-select
           v-model="synInput.preSynCellProp"
+          :class="{'select-invalid': synInput.gid && !synInput.preSynCellProp}"
           :disabled="!synInput.gid"
           :transfer="true"
           size="small"
@@ -42,6 +52,7 @@
         <!-- TODO: use v-model when this bug is fixed: https://github.com/iview/iview/issues/2489 -->
         <AutoComplete
           :value="synInput.preSynCellPropVal"
+          :class="{'autocomplete-invalid': synInput.gid && !preSynCellPropValValid}"
           :disabled="!synInput.gid"
           :data="preSynCellPropValues"
           :filter-method="valueFilterMethod"
@@ -99,7 +110,8 @@
       updateValidity() {
         this.synInput.valid = this.synInput.gid &&
           this.synInput.preSynCellProp &&
-          this.synInput.preSynCellPropVal;
+          this.synInput.preSynCellPropVal &&
+          this.preSynCellPropValValid;
       },
       updateFilters() {
         const { synInputs } = store.state.simulation;
@@ -124,6 +136,11 @@
         if (!value) return true;
 
         return option.toString().toUpperCase().includes(value.toString().toUpperCase());
+      },
+    },
+    computed: {
+      preSynCellPropValValid() {
+        return this.preSynCellPropValues.includes(this.synInput.preSynCellPropVal);
       },
     },
   };
@@ -157,5 +174,15 @@
     &:hover {
       opacity: 1;
     }
+  }
+
+  .text-grey {
+    color: #888888;
+  }
+
+  .syn-cta {
+    font-weight: normal;
+    font-size: 12px;
+    color: #333333;
   }
 </style>

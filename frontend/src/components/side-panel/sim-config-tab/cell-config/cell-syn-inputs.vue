@@ -28,7 +28,7 @@
     </div>
 
     <cell-syn-input
-      class="syn-input-container"
+      class="syn-input-container mt-6"
       v-if="tmpSynInput"
       v-model="tmpSynInput"
       :filter-set="filterSet"
