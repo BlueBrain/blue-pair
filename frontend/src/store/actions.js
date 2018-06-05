@@ -331,6 +331,7 @@ const actions = {
       sectionType: section.type,
     });
     store.$emit('updateStimuli');
+    store.$emit('openCellConfigPanel', 'stimuli');
   },
 
   removeStimulus(store, stimulus) {
@@ -358,6 +359,7 @@ const actions = {
     store.state.simulation.recordings.push(recording);
     store.$emit('addSecMarker', Object.assign({ type: 'recording' }, recording));
     store.$emit('updateRecordings');
+    store.$emit('openCellConfigPanel', 'recordings');
   },
 
   removeRecording(store, recording) {

@@ -86,6 +86,7 @@
         this.collapseAllPanels();
         this.uncollapsePanel('traces');
       });
+      store.$on('openCellConfigPanel', (panelName) => { this.collapsePanel[panelName] = [0]; });
     },
     methods: {
       collapseAllPanels() {
