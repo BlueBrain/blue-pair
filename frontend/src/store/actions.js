@@ -387,6 +387,7 @@ const actions = {
     store.state.simulation.synInputs.push(synInput);
     store.$emit('updateSynInputs');
     store.$dispatch('updateSynapseStates');
+    store.$emit('openCellConfigPanel', 'synInputs');
   },
 
   removeSynInput(store, synInput) {

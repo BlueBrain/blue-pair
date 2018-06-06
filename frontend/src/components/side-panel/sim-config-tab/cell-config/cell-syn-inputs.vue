@@ -17,13 +17,15 @@
         v-for="(synInput, index) in synInputs"
         :key="synInput.id"
       >
-        <cell-syn-input
-          class="syn-input-container"
-          v-model="synInputs[index]"
-          :filter-set="filterSet"
-          @on-close="removeSynInput(synInput)"
-          @input="onSynInputChange(synInput)"
-        />
+        <transition appear name="fade">
+          <cell-syn-input
+            class="syn-input-container"
+            v-model="synInputs[index]"
+            :filter-set="filterSet"
+            @on-close="removeSynInput(synInput)"
+            @input="onSynInputChange(synInput)"
+          />
+        </transition>
       </div>
     </div>
 

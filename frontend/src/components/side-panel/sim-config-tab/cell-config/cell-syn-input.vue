@@ -15,12 +15,12 @@
         @on-change="emitSynInputChange"
       >
       </i-switch>
-      <small
-        class="ml-6 syn-cta"
+      <span
+        class="cta-title ml-6"
         v-if="!synInput.gid"
       >
-        Select gid by clicking on post-synaptic cell
-      </small>
+        Click on a cell in 3d viewer to select post-synaptic cell
+      </span>
     </p>
 
     <div
@@ -32,35 +32,54 @@
 
     <Row :gutter="6">
       <i-col span="8">
-        <i-select
-          v-model="synInput.preSynCellProp"
-          :class="{'select-invalid': synInput.gid && !synInput.preSynCellProp}"
-          :disabled="!synInput.gid"
+        <Tooltip
+          class="tooltip-block"
+          content="Please select pre-synaptic cell property"
+          placement="top"
           :transfer="true"
-          size="small"
-          placeholder="Prop"
-          @on-change="onPreSynCellPropChange"
+          :always="propInputPoptipVisible"
+          :disabled="!propInputPoptipVisible"
         >
-          <i-option
-            v-for="prop in preSynCellProps"
-            :value="prop"
-            :key="prop"
-          >{{ prop }}</i-option>
-        </i-select>
+          <i-select
+            v-model="synInput.preSynCellProp"
+            :disabled="!synInput.gid"
+            :transfer="true"
+            size="small"
+            placeholder="Prop"
+            @on-change="onPreSynCellPropChange"
+            @on-open-change="onPropOpenChange"
+          >
+            <i-option
+              v-for="prop in preSynCellProps"
+              :value="prop"
+              :key="prop"
+            >{{ prop }}</i-option>
+          </i-select>
+        </Tooltip>
       </i-col>
       <i-col span="12">
         <!-- TODO: use v-model when this bug is fixed: https://github.com/iview/iview/issues/2489 -->
-        <AutoComplete
-          :value="synInput.preSynCellPropVal"
-          :class="{'autocomplete-invalid': synInput.gid && !preSynCellPropValValid}"
-          :disabled="!synInput.gid"
-          :data="preSynCellPropValues"
-          :filter-method="valueFilterMethod"
+        <Tooltip
+          class="tooltip-block"
+          content="Please select value"
+          placement="top"
           :transfer="true"
-          size="small"
-          placeholder="Value"
-          @on-change="onPreSynCellPropValueChange"
-        ></AutoComplete>
+          :disabled="!propValueInputPoptipVisible"
+          :always="propValueInputPoptipVisible"
+        >
+          <AutoComplete
+            :value="synInput.preSynCellPropVal"
+            :disabled="!synInput.gid"
+            :data="preSynCellPropValues"
+            :filter-method="valueFilterMethod"
+            :transfer="true"
+            size="small"
+            placeholder="Value"
+            @on-change="onPreSynCellPropValueChange"
+            @on-focus="onValueOpenChange(true)"
+            @on-blur="onValueOpenChange(false)"
+          ></AutoComplete>
+        </Tooltip>
       </i-col>
       <i-col span="4">
         <InputNumber
@@ -90,6 +109,8 @@
         synInput: this.value,
         preSynCellProps: [],
         preSynCellPropValues: [],
+        propInputOpened: false,
+        valueInputOpened: false,
       };
     },
     mounted() {
@@ -137,10 +158,28 @@
 
         return option.toString().toUpperCase().includes(value.toString().toUpperCase());
       },
+      onPropOpenChange(opened) {
+        this.propInputOpened = opened;
+      },
+      onValueOpenChange(opened) {
+        this.valueInputOpened = opened;
+      },
     },
     computed: {
       preSynCellPropValValid() {
         return this.preSynCellPropValues.includes(this.synInput.preSynCellPropVal);
+      },
+      propInputPoptipVisible() {
+        return this.synInput.gid &&
+          !this.synInput.preSynCellProp &&
+          !this.propInputOpened;
+      },
+      propValueInputPoptipVisible() {
+        return this.synInput.gid &&
+          !this.propInputPoptipVisible &&
+          !this.propInputOpened &&
+          !this.preSynCellPropValValid &&
+          !this.valueInputOpened;
       },
     },
   };
@@ -178,11 +217,5 @@
 
   .text-grey {
     color: #888888;
-  }
-
-  .syn-cta {
-    font-weight: normal;
-    font-size: 12px;
-    color: #333333;
   }
 </style>

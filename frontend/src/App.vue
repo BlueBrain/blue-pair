@@ -43,8 +43,6 @@
 
 
 <style lang="scss">
-  $color-red: #ed3f14;
-
   html {
     overflow: hidden;
     height: 100%;
@@ -105,18 +103,6 @@
     margin-bottom: 12px;
   }
 
-  .select-invalid {
-    .ivu-select-selection {
-      border-color: $color-red;
-    }
-  }
-
-  .autocomplete-invalid {
-    .ivu-input {
-      border-color: $color-red;
-    }
-  }
-
   .center-modal {
     display: flex;
     justify-content: center;
@@ -126,5 +112,9 @@
     .ivu-modal {
       top: 0;
     }
+  }
+
+  .tooltip-block, .tooltip-block>.ivu-tooltip-rel {
+    display: block;
   }
 </style>
