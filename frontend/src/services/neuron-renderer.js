@@ -1,8 +1,18 @@
 
-import last from 'lodash/last';
 import throttle from 'lodash/throttle';
 import get from 'lodash/get';
-import * as THREE from 'three';
+
+import {
+  Color, TextureLoader, WebGLRenderer, Scene, Fog, AmbientLight, PointLight, Vector2,
+  Raycaster, PerspectiveCamera, Object3D, BufferAttribute, BufferGeometry, MeshBasicMaterial,
+  PointsMaterial, DoubleSide, VertexColors, Geometry, Points, Vector3, MeshLambertMaterial,
+  SphereBufferGeometry, CylinderGeometry, Mesh, LineSegments, LineBasicMaterial, EdgesGeometry,
+  Matrix4,
+} from 'three';
+
+// TODO: consider to use trackball ctrl instead
+import OrbitControls from 'orbit-controls-es6';
+
 import * as chroma from 'chroma-js';
 import { TweenLite, TimelineLite } from 'gsap';
 
@@ -10,10 +20,8 @@ import { TweenLite, TimelineLite } from 'gsap';
 // and move them to vue viewport component
 import store from '@/store';
 import eachAsync from './../tools/each-async';
+import utils from './../tools/neuron-renderer-utils';
 
-
-// TODO: consider to use trackball ctrl instead
-const OrbitControls = require('three-orbit-controls')(THREE);
 
 const FOG_COLOR = 0xffffff;
 const NEAR = 1;
@@ -24,8 +32,10 @@ const BACKGROUND_COLOR = 0xfefdfb;
 // TODO: make it possible to switch bg color
 // const BACKGROUND_COLOR = 0x272821;
 const HOVER_BOX_COLOR = 0xffdf00;
-const hoverNeuronColor = new THREE.Color(0xf26d21).toArray();
-const hoverSynapseColor = new THREE.Color(0xf26d21).toArray();
+const hoverNeuronColor = new Color(0xf26d21).toArray();
+const hoverSynapseColor = new Color(0xf26d21).toArray();
+
+const colorDiffRange = 1;
 
 const HALF_PI = Math.PI * 0.5;
 
@@ -37,13 +47,13 @@ const baseMorphColors = {
   myelin: chroma('#F5F5F5'),
 };
 
-const neuronTexture = new THREE.TextureLoader().load('/neuron-texture.png');
-const synapseTexture = new THREE.TextureLoader().load('/neuron-texture.png');
+const neuronTexture = new TextureLoader().load('/neuron-texture.png');
+const synapseTexture = new TextureLoader().load('/neuron-texture.png');
 
 
 class NeuronRenderer {
   constructor(canvas, config) {
-    this.renderer = new THREE.WebGLRenderer({
+    this.renderer = new WebGLRenderer({
       canvas,
       antialias: true,
       alpha: true,
@@ -54,19 +64,19 @@ class NeuronRenderer {
     this.renderer.setSize(clientWidth, clientHeight);
     this.renderer.setPixelRatio(window.devicePixelRatio || 1);
 
-    this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color(BACKGROUND_COLOR);
-    this.scene.fog = new THREE.Fog(FOG_COLOR, NEAR, FAR);
-    this.scene.add(new THREE.AmbientLight(AMBIENT_LIGHT_COLOR));
+    this.scene = new Scene();
+    this.scene.background = new Color(BACKGROUND_COLOR);
+    this.scene.fog = new Fog(FOG_COLOR, NEAR, FAR);
+    this.scene.add(new AmbientLight(AMBIENT_LIGHT_COLOR));
 
-    this.mouseGl = new THREE.Vector2();
-    this.mouseNative = new THREE.Vector2();
+    this.mouseGl = new Vector2();
+    this.mouseNative = new Vector2();
 
-    this.raycaster = new THREE.Raycaster();
+    this.raycaster = new Raycaster();
 
-    this.camera = new THREE.PerspectiveCamera(45, clientWidth / clientHeight, 1, 100000);
+    this.camera = new PerspectiveCamera(45, clientWidth / clientHeight, 1, 100000);
     this.scene.add(this.camera);
-    this.camera.add(new THREE.PointLight(CAMERA_LIGHT_COLOR, 0.9));
+    this.camera.add(new PointLight(CAMERA_LIGHT_COLOR, 0.9));
 
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
     this.controls.enableDamping = true;
@@ -77,35 +87,35 @@ class NeuronRenderer {
     this.highlightedNeuron = null;
     this.mousePressed = false;
 
-    this.secMarkerObj = new THREE.Object3D();
+    this.secMarkerObj = new Object3D();
     this.scene.add(this.secMarkerObj);
 
-    this.cellMorphologyObj = new THREE.Object3D();
+    this.cellMorphologyObj = new Object3D();
     this.scene.add(this.cellMorphologyObj);
 
-    const segInjTexture = new THREE.TextureLoader().load('/seg-inj-texture.png');
-    const segRecTexture = new THREE.TextureLoader().load('/seg-rec-texture.png');
+    const segInjTexture = new TextureLoader().load('/seg-inj-texture.png');
+    const segRecTexture = new TextureLoader().load('/seg-rec-texture.png');
 
-    this.recMarkerMaterial = new THREE.MeshBasicMaterial({
+    this.recMarkerMaterial = new MeshBasicMaterial({
       color: 0x00bfff,
       opacity: 0.6,
       map: segRecTexture,
       transparent: true,
-      side: THREE.DoubleSide,
+      side: DoubleSide,
       depthWrite: false,
     });
 
-    this.injMarkerMaterial = new THREE.MeshBasicMaterial({
+    this.injMarkerMaterial = new MeshBasicMaterial({
       color: 0xffa500,
       opacity: 0.6,
       map: segInjTexture,
       transparent: true,
-      side: THREE.DoubleSide,
+      side: DoubleSide,
       depthWrite: false,
     });
 
-    this.synapseMaterial = new THREE.PointsMaterial({
-      vertexColors: THREE.VertexColors,
+    this.synapseMaterial = new PointsMaterial({
+      vertexColors: VertexColors,
       size: store.state.simulation.synapseSize,
       opacity: 0.85,
       transparent: true,
@@ -128,18 +138,18 @@ class NeuronRenderer {
     const alphaBuffer = new Float32Array(cloudSize).fill(0.8);
 
     this.neuronCloud = {
-      positionBufferAttr: new THREE.BufferAttribute(positionBuffer, 3),
-      colorBufferAttr: new THREE.BufferAttribute(colorBuffer, 3),
-      alphaBufferAttr: new THREE.BufferAttribute(alphaBuffer, 1),
+      positionBufferAttr: new BufferAttribute(positionBuffer, 3),
+      colorBufferAttr: new BufferAttribute(colorBuffer, 3),
+      alphaBufferAttr: new BufferAttribute(alphaBuffer, 1),
     };
 
-    const geometry = new THREE.BufferGeometry();
+    const geometry = new BufferGeometry();
     geometry.addAttribute('position', this.neuronCloud.positionBufferAttr);
     geometry.addAttribute('color', this.neuronCloud.colorBufferAttr);
     geometry.addAttribute('alpha', this.neuronCloud.alphaBufferAttr);
 
-    const material = new THREE.PointsMaterial({
-      vertexColors: THREE.VertexColors,
+    const material = new PointsMaterial({
+      vertexColors: VertexColors,
       size: store.state.circuit.somaSize,
       opacity: 0.85,
       transparent: true,
@@ -148,7 +158,7 @@ class NeuronRenderer {
       map: neuronTexture,
     });
 
-    this.neuronCloud.points = new THREE.Points(geometry, material);
+    this.neuronCloud.points = new Points(geometry, material);
 
     // TODO: measure performance improvement
     this.neuronCloud.points.matrixAutoUpdate = false;
@@ -158,15 +168,15 @@ class NeuronRenderer {
     this.neuronCloud.points.frustumCulled = false;
     this.scene.add(this.neuronCloud.points);
 
-    const highlightedNeuronGeometry = new THREE.Geometry();
-    const highlightedNeuronMaterial = new THREE.PointsMaterial({
+    const highlightedNeuronGeometry = new Geometry();
+    const highlightedNeuronMaterial = new PointsMaterial({
       size: 0,
       transparent: true,
       opacity: 0,
       map: neuronTexture,
     });
-    highlightedNeuronGeometry.vertices.push(new THREE.Vector3(0, 0, 0));
-    this.highlightedNeuron = new THREE.Points(
+    highlightedNeuronGeometry.vertices.push(new Vector3(0, 0, 0));
+    this.highlightedNeuron = new Points(
       highlightedNeuronGeometry,
       highlightedNeuronMaterial,
     );
@@ -180,17 +190,17 @@ class NeuronRenderer {
     const alphaBuffer = new Float32Array(cloudSize).fill(0.8);
 
     this.synapseCloud = {
-      positionBufferAttr: new THREE.BufferAttribute(positionBuffer, 3),
-      colorBufferAttr: new THREE.BufferAttribute(colorBuffer, 3),
-      alphaBufferAttr: new THREE.BufferAttribute(alphaBuffer, 1),
+      positionBufferAttr: new BufferAttribute(positionBuffer, 3),
+      colorBufferAttr: new BufferAttribute(colorBuffer, 3),
+      alphaBufferAttr: new BufferAttribute(alphaBuffer, 1),
     };
 
-    const geometry = new THREE.BufferGeometry();
+    const geometry = new BufferGeometry();
     geometry.addAttribute('position', this.synapseCloud.positionBufferAttr);
     geometry.addAttribute('color', this.synapseCloud.colorBufferAttr);
     geometry.addAttribute('alpha', this.synapseCloud.alphaBufferAttr);
 
-    this.synapseCloud.points = new THREE.Points(geometry, this.synapseMaterial);
+    this.synapseCloud.points = new Points(geometry, this.synapseMaterial);
     this.synapseCloud.points.name = 'synapseCloud';
     this.synapseCloud.points.frustumCulled = false;
     this.scene.add(this.synapseCloud.points);
@@ -200,7 +210,7 @@ class NeuronRenderer {
     if (!this.synapseCloud) return;
 
     this.scene.remove(this.synapseCloud.points);
-    this.disposeObject(this.synapseCloud.points);
+    utils.disposeMesh(this.synapseCloud.points);
     this.synapseCloud = null;
   }
 
@@ -258,7 +268,7 @@ class NeuronRenderer {
     cellMorphObjsToRemove.forEach((obj) => {
       this.cellMorphologyObj.remove(obj);
       const toRemove = obj.children.map(child => child);
-      toRemove.forEach(o => this.disposeObject(o));
+      toRemove.forEach(o => utils.disposeMesh(o));
     });
   }
 
@@ -266,10 +276,7 @@ class NeuronRenderer {
     this.cellMorphologyObj.visible = false;
   }
 
-  showMorphology() {
-    const sRatio = 2;
-    const colorDiffRange = 1;
-
+  showMorphology(renderAxon = false) {
     const gids = store.state.circuit.simAddedNeurons.map(n => n.gid);
 
     const { morphology } = store.state.simulation;
@@ -280,7 +287,7 @@ class NeuronRenderer {
       const neuronIndex = gid - 1;
       const neuron = store.$get('neuron', neuronIndex);
       const sections = morphology[gid];
-      const cellMorphObj3D = new THREE.Object3D();
+      const cellMorphObj3D = new Object3D();
       cellMorphObj3D.userData.gid = gid;
 
       eachAsync(sections, (section) => {
@@ -292,103 +299,25 @@ class NeuronRenderer {
           .desaturate(colorDiff)
           .gl();
 
-        const color = new THREE.Color(...glColor);
-        const secMaterial = new THREE.MeshLambertMaterial({ color, transparent: true });
-        secMaterial.side = THREE.DoubleSide;
+        const color = new Color(...glColor);
+        const secMaterial = new MeshLambertMaterial({ color, transparent: true });
+        secMaterial.side = DoubleSide;
 
-        const secMorphGeometry = new THREE.Geometry();
 
-        if (section.type === 'soma') {
-          let position;
-          let radius;
-          if (pts.length === 1) {
-            position = new THREE.Vector3().fromArray(pts[0]);
-            radius = pts[0][3];
-          } else if (pts.length === 3) {
-            position = new THREE.Vector3().fromArray(pts[0]);
-            const secondPt = new THREE.Vector3().fromArray(pts[1]);
-            const thirdPt = new THREE.Vector3().fromArray(pts[2]);
-            radius = (position.distanceTo(secondPt) + position.distanceTo(thirdPt)) / 2;
-          } else {
-            position = pts
-              .reduce((vec, pt) => vec.add(new THREE.Vector3().fromArray(pt)), new THREE.Vector3())
-              .divideScalar(pts.length);
+        const secMesh = section.type === 'soma' ?
+          utils.createSomaMeshFromPoints(pts, secMaterial) :
+          utils.createSecMeshFromPoints(pts, secMaterial);
 
-            // radius = pts.reduce((distance, pt) => distance + position.distanceTo(new THREE.Vector3().fromArray(pt)), 0) / pts.length;
-            radius = Math.max(...pts.map(pt => position.distanceTo(new THREE.Vector3().fromArray(pt))));
-          }
-
-          const somaBufferedGeometry = new THREE.SphereBufferGeometry(radius, 14, 14);
-          const somaMesh = new THREE.Mesh(somaBufferedGeometry, secMaterial);
-          somaMesh.position.copy(position);
-          somaMesh.updateMatrix();
-
-          somaMesh.name = 'morphSection';
-          somaMesh.userData = {
-            neuron,
-            type: section.type,
-            id: section.id,
-            name: section.name,
-          };
-          somaMesh.matrixAutoUpdate = false;
-
-          cellMorphObj3D.add(somaMesh);
-
-          return;
-        }
-
-        for (let i = 0; i < pts.length - 1; i += sRatio) {
-          const vstart = new THREE.Vector3(pts[i][0], pts[i][1], pts[i][2]);
-          const vend = new THREE.Vector3(
-            pts[i + sRatio] ? pts[i + sRatio][0] : last(pts)[0],
-            pts[i + sRatio] ? pts[i + sRatio][1] : last(pts)[1],
-            pts[i + sRatio] ? pts[i + sRatio][2] : last(pts)[2],
-          );
-          const distance = vstart.distanceTo(vend);
-          const position = vend.clone().add(vstart).divideScalar(2);
-
-          const dStart = pts[i][3] * 2;
-          const dEnd = (pts[i + sRatio] ? pts[i + sRatio][3] : last(pts)[3]) * 2;
-
-          const geometry = new THREE.CylinderGeometry(
-            dStart || 6,
-            dEnd || 6,
-            distance,
-            Math.max(5, Math.ceil(24 / sRatio)),
-            1,
-            true,
-          );
-
-          const orientation = new THREE.Matrix4();
-          const offsetRotation = new THREE.Matrix4();
-          orientation.lookAt(vstart, vend, new THREE.Vector3(0, 1, 0));
-          offsetRotation.makeRotationX(HALF_PI);
-          orientation.multiply(offsetRotation);
-          geometry.applyMatrix(orientation);
-
-          const cylinder = new THREE.Mesh(geometry);
-          cylinder.position.copy(position);
-          cylinder.updateMatrix();
-
-          secMorphGeometry.merge(cylinder.geometry, cylinder.matrix);
-          this.disposeObject(cylinder);
-        }
-
-        const secMorphBufferGeometry = new THREE.BufferGeometry().fromGeometry(secMorphGeometry);
-        const secMorphMesh = new THREE.Mesh(secMorphBufferGeometry, secMaterial);
-        secMorphGeometry.dispose();
-
-        secMorphMesh.name = 'morphSection';
-        secMorphMesh.userData = {
+        secMesh.name = 'morphSection';
+        secMesh.userData = {
           neuron,
           type: section.type,
           id: section.id,
           name: section.name,
         };
-        secMorphMesh.matrixAutoUpdate = false;
 
-        cellMorphObj3D.add(secMorphMesh);
-      }, section => section.type !== 'axon');
+        cellMorphObj3D.add(secMesh);
+      }, section => renderAxon || section.type !== 'axon');
 
       this.cellMorphologyObj.add(cellMorphObj3D);
     });
@@ -405,32 +334,16 @@ class NeuronRenderer {
       .find(sec => config.sectionName === sec.name)
       .points;
 
-    const secMarkerObj3d = new THREE.Object3D();
-    const secMarkerGeo = new THREE.Geometry();
+    const secMarkerObj3d = new Object3D();
+    const secMarkerGeo = new Geometry();
 
-    // TODO: move to separate function
     if (config.sectionType === 'soma') {
-      let position;
-      let radius;
-      if (pts.length === 1) {
-        position = new THREE.Vector3().fromArray(pts[0]);
-        radius = pts[0][3];
-      } else if (pts.length === 3) {
-        position = new THREE.Vector3().fromArray(pts[0]);
-        const secondPt = new THREE.Vector3().fromArray(pts[1]);
-        const thirdPt = new THREE.Vector3().fromArray(pts[2]);
-        radius = (position.distanceTo(secondPt) + position.distanceTo(thirdPt)) / 2;
-      } else {
-        position = pts
-          .reduce((vec, pt) => vec.add(new THREE.Vector3().fromArray(pt)), new THREE.Vector3())
-          .divideScalar(pts.length);
-
-        radius = Math.max(...pts.map(pt => position.distanceTo(new THREE.Vector3().fromArray(pt))));
-      }
+      const position = utils.getSomaPositionFromPoints(pts);
+      const radius = utils.getSomaRadiusFromPoints(pts);
 
       const material = config.type === 'recording' ? this.recMarkerMaterial : this.injMarkerMaterial;
-      const somaBufferedGeometry = new THREE.SphereBufferGeometry(radius * 1.05, 14, 14);
-      const somaMesh = new THREE.Mesh(somaBufferedGeometry, material);
+      const somaBufferedGeometry = new SphereBufferGeometry(radius * 1.05, 14, 14);
+      const somaMesh = new Mesh(somaBufferedGeometry, material);
       somaMesh.position.copy(position);
       somaMesh.updateMatrix();
       somaMesh.matrixAutoUpdate = false;
@@ -448,12 +361,12 @@ class NeuronRenderer {
 
     let i = 0;
     while (i + 1 < pts.length) {
-      const vstart = new THREE.Vector3(pts[i][0], pts[i][1], pts[i][2]);
+      const vstart = new Vector3(pts[i][0], pts[i][1], pts[i][2]);
       const diameters = [pts[i][3]];
 
       let vend;
       while (!vend) {
-        const tmpEndVec = new THREE.Vector3(pts[i + 1][0], pts[i + 1][1], pts[i + 1][2]);
+        const tmpEndVec = new Vector3(pts[i + 1][0], pts[i + 1][1], pts[i + 1][2]);
 
         if (
           vstart.distanceTo(tmpEndVec) >= minSecMarkerLength ||
@@ -475,7 +388,7 @@ class NeuronRenderer {
       const dDelta = 3 / Math.ceil(Math.sqrt(d));
       const secMarkerD = (d * 1.2) + dDelta;
 
-      const geometry = new THREE.CylinderGeometry(
+      const geometry = new CylinderGeometry(
         secMarkerD,
         secMarkerD,
         distance,
@@ -484,21 +397,21 @@ class NeuronRenderer {
         true,
       );
 
-      const orientation = new THREE.Matrix4();
-      const offsetRotation = new THREE.Matrix4();
-      orientation.lookAt(vstart, vend, new THREE.Vector3(0, 1, 0));
+      const orientation = new Matrix4();
+      const offsetRotation = new Matrix4();
+      orientation.lookAt(vstart, vend, new Vector3(0, 1, 0));
       offsetRotation.makeRotationX(HALF_PI);
       orientation.multiply(offsetRotation);
       geometry.applyMatrix(orientation);
 
-      const cylinder = new THREE.Mesh(geometry);
+      const cylinder = new Mesh(geometry);
       cylinder.position.copy(position);
       cylinder.updateMatrix();
       secMarkerGeo.merge(cylinder.geometry, cylinder.matrix);
     }
 
     const material = config.type === 'recording' ? this.recMarkerMaterial : this.injMarkerMaterial;
-    const secMarkerMesh = new THREE.Mesh(secMarkerGeo, material.clone());
+    const secMarkerMesh = new Mesh(secMarkerGeo, material.clone());
     secMarkerMesh.updateMatrix();
     secMarkerMesh.matrixAutoUpdate = false;
     // TODO: remove redundancy of names and userData of Obj3D and child Meshes
@@ -519,7 +432,7 @@ class NeuronRenderer {
     });
 
     this.secMarkerObj.remove(secMarkerObj3d);
-    this.disposeObject(secMarkerObj3d.children[0]);
+    utils.disposeMesh(secMarkerObj3d.children[0]);
   }
 
   removeSectionMarkers(filterFunction) {
@@ -543,7 +456,7 @@ class NeuronRenderer {
   disposeCellMorphology() {
     this.scene.remove(this.cellMorphologyObj);
     this.cellMorphologyObj.traverse((child) => {
-      if (child instanceof THREE.Mesh) this.disposeObject(child);
+      if (child instanceof Mesh) utils.disposeMesh(child);
     });
 
     this.cellMorphologyObj = null;
@@ -552,10 +465,10 @@ class NeuronRenderer {
   disposeSecMarkers() {
     this.scene.remove(this.secMarkerObj);
     this.secMarkerObj.traverse((child) => {
-      if (child instanceof THREE.Mesh) this.disposeObject(child);
+      if (child instanceof Mesh) utils.disposeMesh(child);
     });
 
-    this.secMarkerObj = new THREE.Object3D();
+    this.secMarkerObj = new Object3D();
     this.scene.add(this.secMarkerObj);
   }
 
@@ -720,12 +633,12 @@ class NeuronRenderer {
   }
 
   onMorphSectionHover(mesh) {
-    const geometry = new THREE.EdgesGeometry(mesh.object.geometry);
-    const material = new THREE.LineBasicMaterial({
+    const geometry = new EdgesGeometry(mesh.object.geometry);
+    const material = new LineBasicMaterial({
       color: HOVER_BOX_COLOR,
       linewidth: 2,
     });
-    this.hoverBox = new THREE.LineSegments(geometry, material);
+    this.hoverBox = new LineSegments(geometry, material);
 
     mesh.object.getWorldPosition(this.hoverBox.position);
     mesh.object.getWorldQuaternion(this.hoverBox.rotation);
@@ -741,7 +654,7 @@ class NeuronRenderer {
 
   onMorphSectionHoverEnd(mesh) {
     this.scene.remove(this.hoverBox);
-    this.disposeObject(this.hoverBox);
+    utils.disposeMesh(this.hoverBox);
     this.hoverBox = null;
 
     this.onHoverEndExternalHandler({
@@ -758,7 +671,7 @@ class NeuronRenderer {
 
     // TODO: refactor to avoid repetitions
     this.cellMorphologyObj.traverse((child) => {
-      if (!(child instanceof THREE.Mesh)) return;
+      if (!(child instanceof Mesh)) return;
 
       if (child.userData.neuron.gid === gid) {
         materialsToShow.push(child.material);
@@ -768,7 +681,7 @@ class NeuronRenderer {
     });
 
     this.secMarkerObj.traverse((child) => {
-      if (!(child instanceof THREE.Mesh)) return;
+      if (!(child instanceof Mesh)) return;
 
       if (child.userData.gid === gid) {
         materialsToShow.push(child.material);
@@ -792,13 +705,13 @@ class NeuronRenderer {
 
     const materialsToShow = [];
     this.cellMorphologyObj.traverse((child) => {
-      if (!(child instanceof THREE.Mesh)) return;
+      if (!(child instanceof Mesh)) return;
 
       materialsToShow.push(child.material);
     });
 
     this.secMarkerObj.traverse((child) => {
-      if (child instanceof THREE.Mesh) materialsToShow.push(child.material);
+      if (child instanceof Mesh) materialsToShow.push(child.material);
     });
 
     if (this.synapseCloud) {
@@ -813,14 +726,14 @@ class NeuronRenderer {
 
     const neuronIndex = gid - 1;
 
-    this.highlightedNeuron.material.color = new THREE.Color(
+    this.highlightedNeuron.material.color = new Color(
       // TODO: obtain color from store getter?
       this.neuronCloud.colorBufferAttr.getX(neuronIndex),
       this.neuronCloud.colorBufferAttr.getY(neuronIndex),
       this.neuronCloud.colorBufferAttr.getZ(neuronIndex),
     );
 
-    const position = new THREE.Vector3(...store.$get('neuronPosition', neuronIndex));
+    const position = new Vector3(...store.$get('neuronPosition', neuronIndex));
     this.highlightedNeuron.geometry.vertices[0] = position;
 
     this.neuronHighlightAnimation = new TimelineLite();
@@ -848,11 +761,6 @@ class NeuronRenderer {
       this.highlightedNeuron.geometry.verticesNeedUpdate = true;
       this.highlightedNeuron.geometry.colorsNeedUpdate = true;
     });
-  }
-
-  disposeObject(obj) {
-    obj.geometry.dispose();
-    obj.material.dispose();
   }
 
   onResize() {
