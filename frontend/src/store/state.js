@@ -30,6 +30,9 @@ const state = {
       timeStep: 0.05,
       forwardSkip: 5000,
     },
+    view: {
+      axonsVisible: false,
+    },
     synInputs: [],
     stimuli: [],
     recordings: [],

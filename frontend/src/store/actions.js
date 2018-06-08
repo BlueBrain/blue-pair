@@ -205,8 +205,31 @@ const actions = {
     store.state.simulation.waitingSecSelection = val;
   },
 
+  morphRenderFinished(store) {
+    store.$emit('setShowAxonBtnActive');
+  },
+
+  showAxons(store) {
+    store.$emit('showAxons');
+    store.state.simulation.view.axonsVisible = true;
+  },
+
+  hideAxons(store) {
+    store.$emit('hideAxons');
+    store.state.simulation.view.axonsVisible = false;
+  },
+
+  showAxonsFinished(store) {
+    store.$emit('setShowAxonBtnActive');
+  },
+
+  hideAxonsFinished(store) {
+    store.$emit('setShowAxonBtnActive');
+  },
+
   morphSectionClicked(store, context) {
     const section = context.data;
+    if (section.type === 'axon') return;
 
     if (!store.state.simulation.waitingSecSelection) store.$emit('showMorphSectionPoptip', context);
 

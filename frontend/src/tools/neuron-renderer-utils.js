@@ -1,8 +1,29 @@
 
-import { Mesh, Vector3, Geometry, BufferGeometry, SphereBufferGeometry, CylinderGeometry, Matrix4 } from 'three';
+import {
+  Mesh,
+  Vector3,
+  Geometry,
+  BufferGeometry,
+  SphereBufferGeometry,
+  CylinderGeometry,
+  Matrix4,
+  MeshLambertMaterial,
+  Color,
+  DoubleSide,
+} from 'three';
+
 import last from 'lodash/last';
+import * as chroma from 'chroma-js';
 
 const HALF_PI = Math.PI * 0.5;
+
+const baseMorphColors = {
+  soma: chroma('#A9A9A9'),
+  axon: chroma('#0080FF'),
+  apic: chroma('#C184C1'),
+  dend: chroma('#FF0033'),
+  myelin: chroma('#F5F5F5'),
+};
 
 
 function disposeMesh(obj) {
@@ -109,10 +130,28 @@ function createSomaMeshFromPoints(pts, material) {
   return mesh;
 }
 
+function generateSecMaterialMap(colorDiff) {
+  const materialMap = Object.entries(baseMorphColors).reduce((map, [secType, chromaColor]) => {
+    const glColor = chromaColor
+      .brighten(colorDiff)
+      .desaturate(colorDiff)
+      .gl();
+
+    const color = new Color(...glColor);
+    const material = new MeshLambertMaterial({ color, transparent: true });
+    material.side = DoubleSide;
+
+    return Object.assign(map, { [secType]: material });
+  }, {});
+
+  return materialMap;
+}
+
 export default {
   createSecMeshFromPoints,
   disposeMesh,
   createSomaMeshFromPoints,
   getSomaPositionFromPoints,
   getSomaRadiusFromPoints,
+  generateSecMaterialMap,
 };

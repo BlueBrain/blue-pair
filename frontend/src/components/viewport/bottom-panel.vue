@@ -14,6 +14,9 @@
     <transition name="fade">
       <div class="sim-panel" v-if="mode === 'simulationConfig'">
         <syn-color-palette/>
+        <div class="axon-visibility-ctrl">
+          <axon-visibility-ctrl/>
+        </div>
         <div class="synapse-size-ctrl">
           <synapse-size-ctrl/>
         </div>
@@ -34,6 +37,7 @@
   import SomaSizeCtrl from './bottom-panel/soma-size-ctrl.vue';
   import SynapseSizeCtrl from './bottom-panel/synapse-size-ctrl.vue';
   import HoverObjectInfo from './bottom-panel/hover-object-info.vue';
+  import AxonVisibilityCtrl from './bottom-panel/axon-visibility-ctrl.vue';
 
   // Simulation config components
   import SynColorPalette from './bottom-panel/syn-color-palette.vue';
@@ -45,6 +49,7 @@
       'syn-color-palette': SynColorPalette,
       'synapse-size-ctrl': SynapseSizeCtrl,
       'hover-object-info': HoverObjectInfo,
+      'axon-visibility-ctrl': AxonVisibilityCtrl,
     },
     data() {
       return {
@@ -75,6 +80,12 @@
       position: absolute;
       left: 12px;
       top: -224px;
+    }
+
+    .axon-visibility-ctrl {
+      position: absolute;
+      right: 16px;
+      top: 16px;
     }
   }
 </style>

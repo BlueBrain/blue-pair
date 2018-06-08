@@ -73,6 +73,7 @@
     },
     mounted() {
       store.$on('synInputsCtrl:init', () => this.init());
+      store.$on('synInputCtrl:loading', () => { this.loading = true; });
       store.$on('updateSynInputs', () => {
         this.synInputsByGid = groupBy(store.$get('synInputs'), synInput => synInput.gid);
       });

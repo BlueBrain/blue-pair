@@ -1,6 +1,7 @@
 
 import throttle from 'lodash/throttle';
 import get from 'lodash/get';
+import difference from 'lodash/difference';
 
 import {
   Color, TextureLoader, WebGLRenderer, Scene, Fog, AmbientLight, PointLight, Vector2,
@@ -13,7 +14,6 @@ import {
 // TODO: consider to use trackball ctrl instead
 import OrbitControls from 'orbit-controls-es6';
 
-import * as chroma from 'chroma-js';
 import { TweenLite, TimelineLite } from 'gsap';
 
 // TODO: refactor to remove store operations
@@ -32,23 +32,27 @@ const BACKGROUND_COLOR = 0xfefdfb;
 // TODO: make it possible to switch bg color
 // const BACKGROUND_COLOR = 0x272821;
 const HOVER_BOX_COLOR = 0xffdf00;
-const hoverNeuronColor = new Color(0xf26d21).toArray();
-const hoverSynapseColor = new Color(0xf26d21).toArray();
+const EXC_SYN_GL_COLOR = new Color(0xfc1501).toArray();
+const INH_SYN_GL_COLOR = new Color(0x0080ff).toArray();
+const HOVERED_NEURON_GL_COLOR = new Color(0xf26d21).toArray();
+const HOVERED_SYN_GL_COLOR = new Color(0xf26d21).toArray();
 
-const colorDiffRange = 1;
+const ALL_SEC_TYPES = [
+  'axon',
+  'soma',
+  'axon',
+  'apic',
+  'dend',
+  'myelin',
+];
 
+const COLOR_DIFF_RANGE = 1;
 const HALF_PI = Math.PI * 0.5;
-
-const baseMorphColors = {
-  soma: chroma('#A9A9A9'),
-  axon: chroma('#0080FF'),
-  apic: chroma('#C184C1'),
-  dend: chroma('#FF0033'),
-  myelin: chroma('#F5F5F5'),
-};
 
 const neuronTexture = new TextureLoader().load('/neuron-texture.png');
 const synapseTexture = new TextureLoader().load('/neuron-texture.png');
+
+const defaultSecRenderFilter = t => store.state.simulation.view.axonsVisible || t !== 'axon';
 
 
 class NeuronRenderer {
@@ -239,7 +243,7 @@ class NeuronRenderer {
 
       const position = [synapse.postXCenter, synapse.postYCenter, synapse.postZCenter];
 
-      const color = synapse.type >= 100 ? [1, 0, 0] : [0, 0, 1];
+      const color = synapse.type >= 100 ? EXC_SYN_GL_COLOR : INH_SYN_GL_COLOR;
 
       positionBufferAttr.setXYZ(neuronIndex, ...position);
       colorBufferAttr.setXYZ(neuronIndex, ...color);
@@ -276,37 +280,44 @@ class NeuronRenderer {
     this.cellMorphologyObj.visible = false;
   }
 
-  showMorphology(renderAxon = false) {
+  showMorphology(secTypes = ALL_SEC_TYPES.filter(defaultSecRenderFilter)) {
     const gids = store.state.circuit.simAddedNeurons.map(n => n.gid);
 
     const { morphology } = store.state.simulation;
 
+    const addSecOperations = [];
+
     gids.forEach((gid, cellIndex) => {
-      if (this.cellMorphologyObj.children.find(cell => get(cell, 'userData.gid') === gid)) return;
+      let cellObj3d = this.cellMorphologyObj.children.find(cell => get(cell, 'userData.gid') === gid);
+
+      if (!cellObj3d) {
+        cellObj3d = new Object3D();
+        cellObj3d.userData = {
+          gid,
+          secTypes: [],
+        };
+        this.cellMorphologyObj.add(cellObj3d);
+      }
+
+      const secTypesToAdd = difference(secTypes, cellObj3d.userData.secTypes);
+      if (!secTypesToAdd.length) return;
+
+      cellObj3d.userData.secTypes.push(...secTypesToAdd);
 
       const neuronIndex = gid - 1;
       const neuron = store.$get('neuron', neuronIndex);
       const sections = morphology[gid];
-      const cellMorphObj3D = new Object3D();
-      cellMorphObj3D.userData.gid = gid;
 
-      eachAsync(sections, (section) => {
+      const colorDiff = (((2 * COLOR_DIFF_RANGE * cellIndex) / gids.length)) - COLOR_DIFF_RANGE;
+
+      const materialMap = utils.generateSecMaterialMap(colorDiff);
+
+      const addSecOperation = eachAsync(sections, (section) => {
         const pts = section.points;
 
-        const colorDiff = (((2 * colorDiffRange * cellIndex) / gids.length)) - colorDiffRange;
-        const glColor = baseMorphColors[section.type]
-          .brighten(colorDiff)
-          .desaturate(colorDiff)
-          .gl();
-
-        const color = new Color(...glColor);
-        const secMaterial = new MeshLambertMaterial({ color, transparent: true });
-        secMaterial.side = DoubleSide;
-
-
         const secMesh = section.type === 'soma' ?
-          utils.createSomaMeshFromPoints(pts, secMaterial) :
-          utils.createSecMeshFromPoints(pts, secMaterial);
+          utils.createSomaMeshFromPoints(pts, materialMap[section.type].clone()) :
+          utils.createSecMeshFromPoints(pts, materialMap[section.type].clone());
 
         secMesh.name = 'morphSection';
         secMesh.userData = {
@@ -316,13 +327,60 @@ class NeuronRenderer {
           name: section.name,
         };
 
-        cellMorphObj3D.add(secMesh);
-      }, section => renderAxon || section.type !== 'axon');
+        cellObj3d.add(secMesh);
+      }, sec => secTypesToAdd.includes(sec.type));
 
-      this.cellMorphologyObj.add(cellMorphObj3D);
+      addSecOperations.push(addSecOperation);
     });
 
+    Promise.all(addSecOperations).then(() => store.$dispatch('morphRenderFinished'));
+
     this.cellMorphologyObj.visible = true;
+  }
+
+  showAxons() {
+    const axonsAdded = this.cellMorphologyObj.children
+      .every(cellMesh => cellMesh.userData.secTypes.includes('axon'));
+
+    if (!axonsAdded) {
+      this.showMorphology(['axon']);
+      return;
+    }
+
+    const materialsToAnimate = [];
+    this.cellMorphologyObj.traverse((obj) => {
+      if (obj instanceof Mesh && get(obj, 'userData.type') === 'axon') {
+        materialsToAnimate.push(obj.material);
+      }
+    });
+
+    materialsToAnimate.forEach((m) => { m.visible = true; });
+
+    const onAnimationEnd = () => {
+      store.$dispatch('showAxonsFinished');
+    };
+
+    TweenLite
+      .to(materialsToAnimate, 0.3, { opacity: 1 })
+      .eventCallback('onComplete', onAnimationEnd);
+  }
+
+  hideAxons() {
+    const materialsToAnimate = [];
+    this.cellMorphologyObj.traverse((obj) => {
+      if (obj instanceof Mesh && get(obj, 'userData.type') === 'axon') {
+        materialsToAnimate.push(obj.material);
+      }
+    });
+
+    const onAnimationEnd = () => {
+      materialsToAnimate.forEach((m) => { m.visible = false; });
+      store.$dispatch('hideAxonsFinished');
+    };
+
+    TweenLite
+      .to(materialsToAnimate, 0.3, { opacity: 0 })
+      .eventCallback('onComplete', onAnimationEnd);
   }
 
   addSecMarker(config) {
@@ -590,7 +648,7 @@ class NeuronRenderer {
       this.neuronCloud.colorBufferAttr.getY(neuronIndex),
       this.neuronCloud.colorBufferAttr.getZ(neuronIndex),
     ];
-    this.neuronCloud.colorBufferAttr.setXYZ(neuronIndex, ...hoverNeuronColor);
+    this.neuronCloud.colorBufferAttr.setXYZ(neuronIndex, ...HOVERED_NEURON_GL_COLOR);
     this.neuronCloud.points.geometry.attributes.color.needsUpdate = true;
   }
 
@@ -617,7 +675,7 @@ class NeuronRenderer {
       this.synapseCloud.colorBufferAttr.getY(synapseIndex),
       this.synapseCloud.colorBufferAttr.getZ(synapseIndex),
     ];
-    this.synapseCloud.colorBufferAttr.setXYZ(synapseIndex, ...hoverSynapseColor);
+    this.synapseCloud.colorBufferAttr.setXYZ(synapseIndex, ...HOVERED_SYN_GL_COLOR);
     this.synapseCloud.points.geometry.attributes.color.needsUpdate = true;
   }
 

@@ -53,6 +53,9 @@
       store.$on('hideCircuit', () => this.renderer.hideNeuronCloud());
       store.$on('showCircuit', () => this.renderer.showNeuronCloud());
 
+      store.$on('showAxons', () => this.renderer.showAxons());
+      store.$on('hideAxons', () => this.renderer.hideAxons());
+
       store.$on('highlightMorphCell', gid => this.renderer.highlightMorphCell(gid));
       store.$on('unhighlightMorphCell', () => this.renderer.unhighlightMorphCell());
 
