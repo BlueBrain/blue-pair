@@ -28,8 +28,8 @@
     data() {
       return {
         colorPalette: {
-          EXC: '#ff0000',
-          INH: '#1020ff',
+          EXC: '#fc1501',
+          INH: '#0080ff',
         },
       };
     },
