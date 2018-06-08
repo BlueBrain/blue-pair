@@ -2,27 +2,50 @@
 <template>
   <div>
     <div
-      class="trace-container"
+      class="trace-group-container"
       v-for="(trace, gid) of traces"
       :key="gid"
     >
 
       <gid-label :gid="gid"/>
 
-      <dygraph
-        v-if="trace.chart.data.length"
-        :data="trace.chart.data"
-        :config="trace.chart.config"
-      />
-
-      <a
-        class="trace-download"
-        :download="trace.download.filename"
-        :href="trace.download.hrefData"
+      <div
+        v-if="trace.voltage && trace.voltage.chart.data.length"
+        class="mt-12 trace-container"
       >
-        <Icon type="android-download" size="24"></Icon>
-      </a>
+        <p>Voltage recordings:</p>
+        <dygraph
+          class="mt-6"
+          :data="trace.voltage.chart.data"
+          :config="trace.voltage.chart.config"
+        />
+        <a
+          class="trace-download"
+          :download="trace.voltage.download.filename"
+          :href="trace.voltage.download.hrefData"
+        >
+          <Icon type="android-download" size="24"></Icon>
+        </a>
+      </div>
 
+      <div
+        v-if="trace.current && trace.current.chart.data.length"
+        class="mt-12 trace-container"
+      >
+        <p>Current recordings:</p>
+        <dygraph
+          class="mt-6"
+          :data="trace.current.chart.data"
+          :config="trace.current.chart.config"
+        />
+        <a
+          class="trace-download"
+          :download="trace.current.download.filename"
+          :href="trace.current.download.hrefData"
+        >
+          <Icon type="android-download" size="24"></Icon>
+        </a>
+      </div>
     </div>
   </div>
 </template>
@@ -49,45 +72,58 @@
     mounted() {
       store.$on('ws:simulation_result', (data) => {
         // TODO: this handler should be on sim-config-tab component level
-        // TODO: refactor
         if (!data.time.length) return;
 
-        const gids = Object.keys(data.voltage);
-        gids.forEach((gid) => {
-          const secNames = Object.keys(data.voltage[gid]);
-          const shortSecNames = secNames.map(secName => secName.match(/\.(.*)/)[1]);
-
-          const chartDataDiff = data.time.map((timestamp, i) => {
-            return secNames.reduce((trace, secName) => trace.concat(data.voltage[gid][secName][i]), [timestamp]);
-          });
-
-          const chartData = get(this.traces, `${gid}.chart.data`, []).concat(chartDataDiff);
-
-          const self = this;
-
-          this.$set(this.traces, gid, {
-            chart: {
-              data: chartData,
-              config: {
-                labels: ['t'].concat(shortSecNames),
-                highlightCallback(event, x, points, row, seriesName) {
-                  self.onHover(gid);
-                },
-                unhighlightCallback() {
-                  self.onHoverEnd();
-                },
-              },
-            },
-            download: {
-              filename: `${gid}-sim-trace.csv`,
-              hrefData: `data:text/plain;base64,${btoa(chartData.join('\n'))}`,
-            },
-          });
-        });
+        this.handleRawChartDataChunk(data, 'voltage');
+        this.handleRawChartDataChunk(data, 'current');
       });
       store.$on('resetTraces', () => { this.traces = {}; });
     },
     methods: {
+      getChartData(traceData, traceType, gid) {
+        const secNames = Object.keys(traceData[traceType][gid]);
+        const cellTrace = traceData[traceType][gid];
+
+        const chartDataDiff = traceData.time.map((t, i) => {
+          return secNames.reduce((trace, secName) => trace.concat(cellTrace[secName][i]), [t]);
+        });
+
+        return get(this.traces, `${gid}.${traceType}.chart.data`, []).concat(chartDataDiff);
+      },
+      getShortSectionNames(traceData, traceType, gid) {
+        const secNames = Object.keys(traceData[traceType][gid]);
+        return secNames.map(secName => secName.match(/\.(.*)/)[1]);
+      },
+      handleRawChartDataChunk(rawChartDataChunk, chartType) {
+        const gids = Object.keys(rawChartDataChunk[chartType]);
+        gids.forEach((gid) => {
+          const chartData = this.getChartData(rawChartDataChunk, chartType, gid);
+
+          const self = this;
+          const defaultChartConfig = {
+            highlightCallback(event, x, points, row, seriesName) { self.onHover(gid); },
+            unhighlightCallback() { self.onHoverEnd(); },
+          };
+
+          const chartConfig = Object.assign({
+            labels: ['t'].concat(this.getShortSectionNames(rawChartDataChunk, chartType, gid)),
+          }, defaultChartConfig);
+
+          if (chartType === 'current') chartConfig.colors = ['#ff6600'];
+
+          if (!this.traces[gid]) this.$set(this.traces, gid, {});
+          this.$set(this.traces[gid], chartType, {
+            chart: {
+              data: chartData,
+              config: chartConfig,
+            },
+            download: {
+              filename: `${gid}-sim-${chartType}-trace.csv`,
+              hrefData: `data:text/plain;base64,${btoa(chartData.join('\n'))}`,
+            },
+          });
+        });
+      },
       onHover(gid) {
         if (!this.hoveredGid) {
           this.hoveredGid = Number(gid);
@@ -104,13 +140,17 @@
 
 
 <style lang="scss" scoped>
-  .trace-container {
+  .trace-group-container {
     position: relative;
     margin-bottom: 24px;
 
     &:last-child {
       margin-bottom: 0;
     }
+  }
+
+  .trace-container {
+    position: relative;
   }
 
   .trace-download {

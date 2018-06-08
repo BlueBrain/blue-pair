@@ -62,7 +62,9 @@
         labels: this.labels,
         labelsSeparateLines: true,
         labelsDiv: this.$refs.labelContainer,
+        animatedZooms: true,
         xlabel: 'time [ms]',
+        xLabelHeight: 14,
         ylabel: 'voltage [mV]',
         axes: {
           x: { valueFormatter: v => v.toFixed(2) },

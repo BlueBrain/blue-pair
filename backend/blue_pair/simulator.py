@@ -34,7 +34,8 @@ class Simulator(object):
 
         self.net_connections = []
         self.sim_config = sim_config
-        self.recording_list = []
+        self.v_rec_list = []
+        self.i_rec_list = []
         self.gids = sorted(sim_config['gids'])
         self.current_trace_index = 0
 
@@ -50,12 +51,15 @@ class Simulator(object):
             self._add_recording_section(recording)
 
         for stimulus in sim_config['stimuli']:
-            self._add_current_injection(stimulus)
+            self._add_stimulus(stimulus)
 
         for pre_gid in sim_config['synapses']:
-            pre_spiketrain_frequency = sim_config['synapses'][pre_gid]['spikeFrequency']
-            L.debug('generating pre_spiketrain for pre_gid %s with frequency %s Hz', pre_gid, pre_spiketrain_frequency)
-            pre_spiketrain = self.generate_pre_spiketrain(pre_spiketrain_frequency)
+            syn_input_config = sim_config['synapses'][pre_gid]
+            L.debug('generating pre_spiketrain for pre_gid %s with frequency %s Hz',
+                    pre_gid,
+                    syn_input_config['spikeFrequency'])
+
+            pre_spiketrain = self.generate_pre_spiketrain(syn_input_config)
             L.debug('generated pre_spiketrain: %s', pre_spiketrain)
 
             synapse_description_list = sim_config['synapses'][pre_gid]['synapses']
@@ -77,21 +81,21 @@ class Simulator(object):
 
         sec = self._get_sec_by_name(gid, sec_name)
         self.ssim.cells[gid].add_voltage_recording(sec, .5)
-        self.recording_list.append((gid, sec))
+        self.v_rec_list.append((gid, sec))
 
-    def _add_current_injection(self, injection_config):
-        gid = injection_config['gid']
-        sec_name = injection_config['sectionName']
+    def _add_stimulus(self, stimulus_config):
+        gid = stimulus_config['gid']
+        sec_name = stimulus_config['sectionName']
         sec = self._get_sec_by_name(gid, sec_name)
-        injection_type = injection_config['type']
+        stimulus_type = stimulus_config['type']
 
         # TODO: consistent variable naming
-        if injection_type == 'step':
+        if stimulus_type == 'step':
             L.debug('adding step current injection for %s in cell %s', sec_name, gid)
 
-            start_time = injection_config['delay']
-            stop_time = start_time + injection_config['duration']
-            level = injection_config['current']
+            start_time = stimulus_config['delay']
+            stop_time = start_time + stimulus_config['duration']
+            level = stimulus_config['current']
 
             L.debug('delay: %s, duration: %s, amp: %s',
                     start_time,
@@ -100,14 +104,14 @@ class Simulator(object):
 
             self.ssim.cells[gid].add_step(start_time, stop_time, level, section=sec)
 
-        elif injection_type == 'ramp':
+        elif stimulus_type == 'ramp':
             L.debug('adding ramp current injection for %s in cell %s', sec_name, gid)
 
-            start_time = injection_config['delay']
-            sim_duration = injection_config['duration']
+            start_time = stimulus_config['delay']
+            sim_duration = stimulus_config['duration']
             stop_time = start_time + sim_duration
-            start_level = injection_config['current']
-            stop_level = injection_config['stopCurrent']
+            start_level = stimulus_config['current']
+            stop_level = stimulus_config['stopCurrent']
 
             L.debug('delay: %s, duraton: %s, startAmp: %s, stopAmp: %s',
                     start_time,
@@ -123,31 +127,53 @@ class Simulator(object):
                 section=sec
             )
 
-        elif injection_type == 'pulse':
+        elif stimulus_type == 'pulse':
             L.debug('adding pulse injection for cell %s', gid)
             L.debug('delay: %s, duration: %s, amp: %s, frequency: %s, width: %s',
-                    injection_config['delay'],
-                    injection_config['duration'],
-                    injection_config['current'],
-                    injection_config['frequency'],
-                    injection_config['width'])
+                    stimulus_config['delay'],
+                    stimulus_config['duration'],
+                    stimulus_config['current'],
+                    stimulus_config['frequency'],
+                    stimulus_config['width'])
 
             bglibpy_pulse_config = {
-                'Delay': injection_config['delay'],
-                'Duration': injection_config['duration'],
-                'AmpStart': injection_config['current'],
-                'Frequency': injection_config['frequency'],
-                'Width': injection_config['width']
+                'Delay': stimulus_config['delay'],
+                'Duration': stimulus_config['duration'],
+                'AmpStart': stimulus_config['current'],
+                'Frequency': stimulus_config['frequency'],
+                'Width': stimulus_config['width']
             }
 
-            print(bglibpy_pulse_config)
+            self.ssim.cells[gid].add_pulse(bglibpy_pulse_config)
 
-            self.ssim.cells[gid].add_pulse(bglibpy_pulse_config);
+        elif stimulus_type == 'vclamp':
+            duration = stimulus_config['duration']
+            voltage_level = stimulus_config['voltage']
+            series_resistance = stimulus_config['seriesResistance']
 
-    def generate_pre_spiketrain(self, frequency, start_offset=0):
+            L.debug('adding voltage clamp for cell %s', gid)
+            L.debug('duration: %s, voltage level: %s', duration, voltage_level)
+
+            vclamp = bglibpy.neuron.h.SEClamp(0.5, sec=sec)
+            vclamp.amp1 = voltage_level
+            vclamp.dur1 = duration
+            vclamp.dur2 = 0
+            vclamp.dur3 = 0
+            vclamp.rs = series_resistance
+
+            current_vec = bglibpy.neuron.h.Vector()
+            current_vec.record(vclamp._ref_i)
+
+            self.i_rec_list.append(((gid, sec, vclamp, current_vec)))
+
+    def generate_pre_spiketrain(self, syn_input_config):
+        frequency = syn_input_config['spikeFrequency']
+        duration = syn_input_config['duration']
+        delay = syn_input_config['delay']
+
         spike_interval = 1000 / frequency
-        spiketrain_size = int(round(float(self.sim_config['tStop']) / 1000 * frequency))
-        return np.cumsum(np.random.poisson(spike_interval, spiketrain_size)) + start_offset
+        spiketrain_size = int(round(float(duration) / 1000 * frequency))
+        return np.cumsum(np.random.poisson(spike_interval, spiketrain_size)) + delay
 
     def run(self):
         t_stop = self.sim_config['tStop']
@@ -159,16 +185,22 @@ class Simulator(object):
 
     def get_trace_diff(self):
         index = self.current_trace_index
-        time_vec = self.ssim.cells[self.recording_list[0][0]].get_time()
+        time_vec = self.ssim.cells[self.v_rec_list[0][0]].get_time()
         trace_diff= {
             'time': time_vec[index:],
-            'voltage': {}
+            'voltage': {},
+            'current': {}
         }
-        for gid, sec in self.recording_list:
+        for gid, sec in self.v_rec_list:
             if gid not in trace_diff['voltage']:
                 trace_diff['voltage'][gid] = {}
             voltage_vec = self.ssim.cells[gid].get_voltage_recording(sec, .5)
             trace_diff['voltage'][gid][sec.name()] = voltage_vec[index:]
+
+        for gid, sec, vclamp, current_vec in self.i_rec_list:
+            if gid not in trace_diff['current']:
+                trace_diff['current'][gid] = {}
+            trace_diff['current'][gid][sec.name()] = current_vec.to_python()[index:]
 
         self.current_trace_index = len(time_vec)
 

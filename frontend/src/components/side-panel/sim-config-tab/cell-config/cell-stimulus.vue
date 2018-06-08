@@ -26,12 +26,12 @@
       <Icon type="ios-close-empty"></Icon>
     </div>
 
-    <!-- CURRENT INJECTION TYPE -->
+    <!-- STIMULUS TYPE -->
     <Row :gutter="12" class="stimulus-type-container">
       <i-col span="12">
         <i-select
           size="small"
-          placeholder="Current injection type"
+          placeholder="Stimulus type"
           v-model="stimulus.type"
           :disabled="!stimulus.sectionName"
           @on-change="onChange"
@@ -40,10 +40,12 @@
               v-for="(stimulusLabel, stimulusType) of stimulusTypes"
               :key="stimulusType"
               :value="stimulusType"
-              :disabled="stimulusType === 'pulse' && stimulus.sectionType !== 'soma'"
+              :disabled="stimulus.sectionType !== 'soma' && somaOnlyStimuli.includes(stimulusType)"
             >
               {{ stimulusLabel }}
-              <span v-if="stimulusType === 'pulse' && stimulus.sectionType !== 'soma'">
+              <span
+                v-if="stimulus.sectionType !== 'soma' && somaOnlyStimuli.includes(stimulusType)"
+              >
                 (soma only)
               </span>
             </i-option>
@@ -259,6 +261,59 @@
           </i-col>
         </Row>
       </div>
+
+      <!-- VOLTAGE CLAMP CONFIG -->
+      <div v-else-if="stimulus.type === 'vclamp'">
+        <Row :gutter="16">
+          <i-col span="8">
+            <i-form :label-width="55">
+              <FormItem label="duration:">
+                <InputNumber
+                  size="small"
+                  v-model="stimulus.duration"
+                  :min="0"
+                  :max="3000"
+                  :step="100"
+                  :disabled="!stimulus.sectionName"
+                  @on-change="onChange"
+                >
+                </InputNumber>
+              </FormItem>
+            </i-form>
+          </i-col>
+          <i-col span="8">
+            <i-form :label-width="55">
+              <FormItem label="voltage:">
+                <!-- TODO: check max values for voltage -->
+                <InputNumber
+                  size="small"
+                  v-model="stimulus.voltage"
+                  :min="-100"
+                  :max="30"
+                  :step="0.1"
+                  :disabled="!stimulus.sectionName"
+                  @on-change="onChange"
+                ></InputNumber>
+              </FormItem>
+            </i-form>
+          </i-col>
+          <i-col span="8">
+            <i-form :label-width="40">
+              <FormItem label="rs:">
+                <InputNumber
+                  size="small"
+                  v-model="stimulus.seriesResistance"
+                  :min="0.001"
+                  :max="1"
+                  :step="0.001"
+                  :disabled="!stimulus.sectionName"
+                  @on-change="onChange"
+                ></InputNumber>
+              </FormItem>
+            </i-form>
+          </i-col>
+        </Row>
+      </div>
     </div>
 
   </div>
@@ -266,15 +321,16 @@
 
 
 <script>
-  import get from 'lodash/get';
-
   import store from '@/store';
 
   const stimulusTypes = {
     step: 'Step current',
     ramp: 'Ramp current',
-    pulse: 'Pulse',
+    pulse: 'Pulse current',
+    vclamp: 'Voltage clamp',
   };
+
+  const somaOnlyStimuli = ['pulse', 'vclamp'];
 
   export default {
     name: 'cell-stimulus',
@@ -282,6 +338,7 @@
     data() {
       return {
         stimulusTypes,
+        somaOnlyStimuli,
         stimulus: Object.assign({}, this.value),
         hovered: false,
       };
@@ -291,7 +348,7 @@
         this.$emit('input', this.stimulus);
       },
       onClose() {
-        this.$emit('on-close');
+        this.$emit('on-close', this.stimulus);
       },
       onSectionLabelHover(stimulus) {
         if (this.hovered || !stimulus.sectionName) return;

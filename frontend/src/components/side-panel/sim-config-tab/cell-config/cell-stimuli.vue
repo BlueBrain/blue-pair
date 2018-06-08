@@ -22,8 +22,8 @@
             :key="stimulus.sectionName"
             class="cell-stimulus"
             v-model="stimuli[gid][stimulusIndex]"
-            @input="updateStimulus(stimulus)"
-            @on-close="removeStimulus(stimulus)"
+            @input="updateStimulus"
+            @on-close="removeStimulus"
           />
         </transition>
       </div>
@@ -103,7 +103,9 @@
           delay: 100,
           duration: 200,
           current: 0.7,
+          voltage: -70,
           stopCurrent: 0.2,
+          seriesResistance: 0.01,
           frequency: 12,
           width: 5,
         };

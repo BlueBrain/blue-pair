@@ -343,9 +343,11 @@ const actions = {
       sectionType: section.type,
       type: 'step',
       delay: 100,
-      duration: 400,
+      duration: 200,
       current: 0.7,
+      voltage: -70,
       stopCurrent: 0.2,
+      seriesResistance: 0.01,
       frequency: 12,
       width: 5,
     });
