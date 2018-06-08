@@ -21,6 +21,7 @@ const state = {
     synapseSize: 5,
     synapsePropIndex: {},
     synapseProps: [],
+    synByGid: {},
     synapses: [],
     waitingSecSelection: false,
     morphology: {},

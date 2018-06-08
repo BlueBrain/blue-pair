@@ -476,17 +476,56 @@ const actions = {
     store.$emit('hideCircuit');
     store.$emit('setSimulationConfigTabActive');
 
-    store.$emit('setStatus', { message: 'Getting synapses' });
-    const synConnectionsRaw = await socket.request('get_syn_connections', gids);
-    const synapseProps = synConnectionsRaw.connection_properties;
-    store.state.simulation.synapseProps = synapseProps;
+    store.$dispatch('initSynapses');
+  },
 
+  async initSynapses(store) {
+    store.$emit('setStatus', { message: 'Getting synapses' });
+
+    const gids = store.state.circuit.simAddedNeurons.map(n => n.gid);
+
+    // remove synapses for gids that are no longer used from memory
+    Object.keys(store.state.simulation.synByGid).forEach((gid) => {
+      if (!gids.includes(gid)) delete store.state.simulation.synByGid[gid];
+    });
+
+    if (!store.state.simulation.synapseProps.length) {
+      const synapseProps = await storage.getItem('synapseProps');
+      store.state.simulation.synapseProps = synapseProps || [];
+    }
+
+    await Promise.all(gids.map(async (gid) => {
+      if (store.state.simulation.synByGid[gid]) return;
+
+      const synapses = await storage.getItem(`syn:${gid}`);
+      if (synapses) store.state.simulation.synByGid[gid] = synapses;
+    }));
+
+    const synGidsToLoad = gids.filter(gid => !store.state.simulation.synByGid[gid]);
+    if (synGidsToLoad.length) {
+      store.$emit('synInputCtrl:loading');
+      const synConnectionsRaw = await socket.request('get_syn_connections', synGidsToLoad);
+      const synapseProps = synConnectionsRaw.connection_properties;
+
+      if (!store.state.simulation.synapseProps.length) {
+        store.state.simulation.synapseProps = synapseProps;
+        storage.setItem('synapseProps', synapseProps);
+      }
+
+      const loadedSynByGid = synConnectionsRaw.connections;
+      Object.entries(loadedSynByGid).forEach(([gid, synapses]) => {
+        storage.setItem(`syn:${gid}`, synapses);
+      });
+      Object.assign(store.state.simulation.synByGid, loadedSynByGid);
+    }
+
+    const { synapseProps, synByGid } = store.state.simulation;
+
+    // TODO: regenerate propIndex only if needed
     const synapsePropIndex = synapseProps
       .reduce((propIndexObj, propName, propIndex) => Object.assign(propIndexObj, {
         [propName]: propIndex,
       }), {});
-
-    const synapsesByGid = synConnectionsRaw.connections;
 
     /**
      * @description Transform list of synapse values indexed by gid:
@@ -501,7 +540,7 @@ const actions = {
      * ]
      */
     const synapses = gids.reduce((allSynapses, gid) => {
-      const extendedSynapses = synapsesByGid[gid].map((synVals, synIndex) => {
+      const extendedSynapses = synByGid[gid].map((synVals, synIndex) => {
         const synObject = synapseProps.reduce((synObj, synProp) => Object.assign(synObj, {
           [synProp]: synVals[synapsePropIndex[synProp]],
         }), {});
@@ -513,6 +552,7 @@ const actions = {
     store.state.simulation.synapses = synapses;
 
     store.$emit('initSynapseCloud', synapses.length);
+    store.$dispatch('updateSynapseStates');
     store.$emit('synInputsCtrl:init');
     store.$emit('setStatus', { message: 'Ready' });
   },
