@@ -30,8 +30,8 @@
       <Icon type="ios-close-empty"></Icon>
     </div>
 
-    <Row :gutter="6">
-      <i-col span="8">
+    <Row :gutter="6" class="mt-6">
+      <i-col span="12">
         <Tooltip
           class="tooltip-block"
           content="Please select pre-synaptic cell property"
@@ -81,17 +81,53 @@
           ></AutoComplete>
         </Tooltip>
       </i-col>
-      <i-col span="4">
-        <InputNumber
-          v-model="synInput.spikeFrequency"
-          :disabled="!synInput.gid"
-          :min="0.5"
-          :max="40"
-          :step="0.5"
-          size="small"
-          placeholder="f, Hz"
-          @on-change="emitSynInputChange"
-        ></InputNumber>
+    </Row>
+    <Row :gutter="16" class="mt-6">
+      <i-col span="8">
+        <i-form :label-width="40">
+          <FormItem label="delay:">
+            <InputNumber
+              size="small"
+              v-model="synInput.delay"
+              :min="0"
+              :max="3000"
+              :step="100"
+              :disabled="!synInput.gid"
+              @on-change="emitSynInputChange"
+            ></InputNumber>
+          </FormItem>
+        </i-form>
+      </i-col>
+      <i-col span="8">
+        <i-form :label-width="55">
+          <FormItem label="duration:">
+            <InputNumber
+              size="small"
+              v-model="synInput.duration"
+              :min="50"
+              :max="3000"
+              :step="100"
+              :disabled="!synInput.gid"
+              @on-change="emitSynInputChange"
+            ></InputNumber>
+          </FormItem>
+        </i-form>
+      </i-col>
+      <i-col span="8">
+        <i-form :label-width="65">
+          <FormItem label="frequency:">
+            <InputNumber
+              v-model="synInput.spikeFrequency"
+              :disabled="!synInput.gid"
+              :min="0.5"
+              :max="40"
+              :step="0.5"
+              size="small"
+              placeholder="f, Hz"
+              @on-change="emitSynInputChange"
+            ></InputNumber>
+          </FormItem>
+        </i-form>
       </i-col>
     </Row>
   </div>
@@ -217,5 +253,13 @@
 
   .text-grey {
     color: #888888;
+  }
+
+  .ivu-input-number {
+    width: 100%;
+  }
+
+  .ivu-form-item {
+    margin-bottom: 0;
   }
 </style>

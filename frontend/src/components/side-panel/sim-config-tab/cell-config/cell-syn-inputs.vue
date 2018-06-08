@@ -123,6 +123,8 @@
           preSynCellProp: null,
           preSynCellPropVal: null,
           spikeFrequency: 10,
+          duration: 200,
+          delay: 100,
         };
 
         this.updateWaitingSecSelection();
