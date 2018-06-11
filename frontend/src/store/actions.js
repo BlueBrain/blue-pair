@@ -61,6 +61,7 @@ const actions = {
     store.state.circuit.connectionFilterIndex = new Array(neuronsCount).fill(true);
 
     store.$emit('initNeuronColor');
+    store.$emit('updateColorPalette');
     store.$emit('initNeuronPropFilter');
     store.$emit('circuitLoaded');
     store.$emit('hideCircuitLoadingModal');
