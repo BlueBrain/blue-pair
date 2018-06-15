@@ -5,7 +5,7 @@ import difference from 'lodash/difference';
 
 import {
   Color, TextureLoader, WebGLRenderer, Scene, Fog, AmbientLight, PointLight, Vector2,
-  Raycaster, PerspectiveCamera, Object3D, BufferAttribute, BufferGeometry, MeshBasicMaterial,
+  Raycaster, PerspectiveCamera, Object3D, BufferAttribute, BufferGeometry,
   PointsMaterial, DoubleSide, VertexColors, Geometry, Points, Vector3, MeshLambertMaterial,
   SphereBufferGeometry, CylinderGeometry, Mesh, LineSegments, LineBasicMaterial, EdgesGeometry,
   Matrix4,
@@ -27,7 +27,7 @@ const FOG_COLOR = 0xffffff;
 const NEAR = 1;
 const FAR = 50000;
 const AMBIENT_LIGHT_COLOR = 0x555555;
-const CAMERA_LIGHT_COLOR = 0xffffff;
+const CAMERA_LIGHT_COLOR = 0xcacaca;
 const BACKGROUND_COLOR = 0xfefdfb;
 // TODO: make it possible to switch bg color
 // const BACKGROUND_COLOR = 0x272821;
@@ -84,6 +84,8 @@ class NeuronRenderer {
 
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
     this.controls.enableDamping = true;
+    this.controls.zoomSpeed = 0.4;
+    this.controls.rotateSpeed = 0.5;
 
     this.hoveredMesh = null;
     this.hoveredNeuron = null;
@@ -100,7 +102,7 @@ class NeuronRenderer {
     const segInjTexture = new TextureLoader().load('/seg-inj-texture.png');
     const segRecTexture = new TextureLoader().load('/seg-rec-texture.png');
 
-    this.recMarkerMaterial = new MeshBasicMaterial({
+    this.recMarkerMaterial = new MeshLambertMaterial({
       color: 0x00bfff,
       opacity: 0.6,
       map: segRecTexture,
@@ -109,7 +111,7 @@ class NeuronRenderer {
       depthWrite: false,
     });
 
-    this.injMarkerMaterial = new MeshBasicMaterial({
+    this.injMarkerMaterial = new MeshLambertMaterial({
       color: 0xffa500,
       opacity: 0.6,
       map: segInjTexture,
@@ -157,7 +159,7 @@ class NeuronRenderer {
       size: store.state.circuit.somaSize,
       opacity: 0.85,
       transparent: true,
-      alphaTest: 0.1,
+      alphaTest: 0.2,
       sizeAttenuation: true,
       map: neuronTexture,
     });
