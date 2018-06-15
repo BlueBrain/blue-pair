@@ -120,6 +120,7 @@
           store.$dispatch('addRecording', {
             gid: section.neuron.gid,
             name: section.name,
+            type: section.type,
           });
           this.removeTmpRecording();
         }
