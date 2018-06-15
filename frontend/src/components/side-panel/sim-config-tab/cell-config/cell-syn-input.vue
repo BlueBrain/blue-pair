@@ -130,6 +130,24 @@
         </i-form>
       </i-col>
     </Row>
+    <Row :gutter="16" class="mt-6">
+      <i-col span="8">
+        <i-form :label-width="90">
+          <FormItem label="weight scalar:">
+            <InputNumber
+              v-model="synInput.weightScalar"
+              :disabled="!synInput.gid"
+              :min="0.1"
+              :max="100"
+              :step="0.1"
+              size="small"
+              placeholder="weight scalar"
+              @on-change="emitSynInputChange"
+            ></InputNumber>
+          </FormItem>
+        </i-form>
+      </i-col>
+    </Row>
   </div>
 </template>
 

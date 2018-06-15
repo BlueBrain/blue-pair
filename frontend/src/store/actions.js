@@ -285,11 +285,19 @@ const actions = {
           synInput.valid &&
           neurons[syn.preGid - 1][neuronPropIndex[synInput.preSynCellProp]] === synInput.preSynCellPropVal;
       });
-      const { spikeFrequency, duration, delay } = synInput;
+
+      const {
+        spikeFrequency,
+        duration,
+        delay,
+        weightScalar,
+      } = synInput;
+
       const synapsesByPreGid = groupBy(syns, 'preGid');
       Object.entries(synapsesByPreGid).forEach(([preGid, cellSynapses]) => {
         synConfig[preGid] = synConfig[preGid] || {
           spikeFrequency,
+          weightScalar,
           duration,
           delay,
           synapses: cellSynapses.map(s => pick(s, ['postGid', 'index'])),
@@ -409,6 +417,7 @@ const actions = {
       preSynCellProp: null,
       preSynCellPropVal: null,
       spikeFrequency: 10,
+      weightScalar: 1,
       delay: 100,
       duration: 200,
     };

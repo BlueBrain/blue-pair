@@ -55,6 +55,7 @@ class Simulator(object):
 
         for pre_gid in sim_config['synapses']:
             syn_input_config = sim_config['synapses'][pre_gid]
+            syn_weight_scalar = syn_input_config['weightScalar']
             L.debug('generating pre_spiketrain for pre_gid %s with frequency %s Hz',
                     pre_gid,
                     syn_input_config['spikeFrequency'])
@@ -62,15 +63,16 @@ class Simulator(object):
             pre_spiketrain = self.generate_pre_spiketrain(syn_input_config)
             L.debug('generated pre_spiketrain: %s', pre_spiketrain)
 
-            synapse_description_list = sim_config['synapses'][pre_gid]['synapses']
+            synapse_description_list = syn_input_config['synapses']
             for synapse_description in synapse_description_list:
-                self._add_syn_input(synapse_description, pre_spiketrain)
+                self._add_syn_input(synapse_description, pre_spiketrain, syn_weight_scalar)
 
-    def _add_syn_input(self, synapse_description, pre_spiketrain):
+    def _add_syn_input(self, synapse_description, pre_spiketrain, syn_weight_scalar):
         post_gid = synapse_description['postGid']
         syn_index = synapse_description['index']
         L.debug('adding pre_spiketrain to synapse (%s, %s)', post_gid, syn_index)
         synapse = self.ssim.cells[post_gid].synapses[syn_index]
+        synapse.connection_parameters['Weight'] = syn_weight_scalar
         connection = bglibpy.Connection(synapse, pre_spiketrain=pre_spiketrain)
         self.net_connections.append(connection)
 
