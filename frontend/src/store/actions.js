@@ -276,12 +276,10 @@ const actions = {
       const syns = synapses.filter((syn) => {
         if (synInput.preSynCellProp === 'gid') {
           return syn.gid === synInput.gid &&
-            synInput.synapseVisible &&
             syn.preGid === synInput.preSynCellPropVal;
         }
 
         return syn.gid === synInput.gid &&
-          synInput.synapsesVisible &&
           synInput.valid &&
           neurons[syn.preGid - 1][neuronPropIndex[synInput.preSynCellProp]] === synInput.preSynCellPropVal;
       });
