@@ -91,7 +91,7 @@
               v-model="synInput.delay"
               :min="0"
               :max="3000"
-              :step="100"
+              :step="10"
               :disabled="!synInput.gid"
               @on-change="emitSynInputChange"
             ></InputNumber>
@@ -104,9 +104,9 @@
             <InputNumber
               size="small"
               v-model="synInput.duration"
-              :min="50"
+              :min="10"
               :max="3000"
-              :step="100"
+              :step="10"
               :disabled="!synInput.gid"
               @on-change="emitSynInputChange"
             ></InputNumber>
@@ -119,9 +119,9 @@
             <InputNumber
               v-model="synInput.spikeFrequency"
               :disabled="!synInput.gid"
-              :min="0.5"
-              :max="40"
-              :step="0.5"
+              :min="1"
+              :max="200"
+              :step="1"
               size="small"
               placeholder="f, Hz"
               @on-change="emitSynInputChange"
