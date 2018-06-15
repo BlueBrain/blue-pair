@@ -3,7 +3,11 @@
   <Card>
     <Row :gutter="12">
       <i-col span="12">
-        <Form :label-width="120" label-position="left">
+        <Form
+          label-position="left"
+          :label-width="120"
+          @submit.native.prevent
+        >
           <FormItem label="Color by:" style="margin-bottom: 0">
             <i-select
               size="small"
@@ -21,7 +25,11 @@
         </Form>
       </i-col>
       <i-col span="12">
-        <Form :label-width="120" label-position="left">
+        <Form
+          label-position="left"
+          :label-width="120"
+          @submit.native.prevent
+        >
           <FormItem label="Color theme:" style="margin-bottom: 0">
             <i-select
               size="small"

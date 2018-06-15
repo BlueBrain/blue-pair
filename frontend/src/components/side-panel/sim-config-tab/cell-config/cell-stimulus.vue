@@ -60,7 +60,10 @@
       <div v-if="stimulus.type === 'step'">
         <Row :gutter="16">
           <i-col span="8">
-            <i-form :label-width="40">
+            <i-form
+              :label-width="40"
+              @submit.native.prevent
+            >
               <FormItem label="delay:">
                 <InputNumber
                   size="small"
@@ -76,7 +79,10 @@
             </i-form>
           </i-col>
           <i-col span="8">
-            <i-form :label-width="55">
+            <i-form
+              :label-width="55"
+              @submit.native.prevent
+            >
               <FormItem label="duration:">
                 <InputNumber
                   size="small"
@@ -92,7 +98,10 @@
             </i-form>
           </i-col>
           <i-col span="8">
-            <i-form :label-width="30">
+            <i-form
+              :label-width="30"
+              @submit.native.prevent
+            >
               <FormItem label="amp:">
                 <!-- TODO: check max values for current -->
                 <InputNumber
@@ -114,7 +123,10 @@
       <div v-else-if="stimulus.type === 'ramp'">
         <Row :gutter="16">
           <i-col span="6">
-            <i-form :label-width="40">
+            <i-form
+              :label-width="40"
+              @submit.native.prevent
+            >
               <FormItem label="delay:">
                 <InputNumber
                   size="small"
@@ -129,7 +141,10 @@
             </i-form>
           </i-col>
           <i-col span="6">
-            <i-form :label-width="55">
+            <i-form
+              :label-width="55"
+              @submit.native.prevent
+            >
               <FormItem label="duration:">
                 <InputNumber
                   size="small"
@@ -144,7 +159,10 @@
             </i-form>
           </i-col>
           <i-col span="6">
-            <i-form :label-width="67">
+            <i-form
+              :label-width="67"
+              @submit.native.prevent
+            >
               <FormItem label="start amp:">
                 <InputNumber
                   size="small"
@@ -158,7 +176,10 @@
             </i-form>
           </i-col>
           <i-col span="6">
-            <i-form :label-width="67">
+            <i-form
+              :label-width="67"
+              @submit.native.prevent
+            >
               <FormItem label="stop amp:">
                 <InputNumber
                   size="small"
@@ -178,7 +199,10 @@
       <div v-else-if="stimulus.type === 'pulse'">
         <Row :gutter="16">
           <i-col span="8">
-            <i-form :label-width="60">
+            <i-form
+              :label-width="60"
+              @submit.native.prevent
+            >
               <FormItem label="delay:">
                 <InputNumber
                   size="small"
@@ -194,7 +218,10 @@
             </i-form>
           </i-col>
           <i-col span="8">
-            <i-form :label-width="60">
+            <i-form
+              :label-width="60"
+              @submit.native.prevent
+            >
               <FormItem label="duration:">
                 <InputNumber
                   size="small"
@@ -210,7 +237,10 @@
             </i-form>
           </i-col>
           <i-col span="8">
-            <i-form :label-width="60">
+            <i-form
+              :label-width="60"
+              @submit.native.prevent
+            >
               <FormItem label="amp:">
                 <!-- TODO: check max values for current -->
                 <InputNumber
@@ -228,7 +258,10 @@
         </Row>
         <Row :gutter="16">
           <i-col span="8">
-            <i-form :label-width="60">
+            <i-form
+              :label-width="60"
+              @submit.native.prevent
+            >
               <FormItem label="frequency:">
                 <InputNumber
                   size="small"
@@ -244,7 +277,10 @@
             </i-form>
           </i-col>
           <i-col span="8">
-            <i-form :label-width="60">
+            <i-form
+              :label-width="60"
+              @submit.native.prevent
+            >
               <FormItem label="width:">
                 <InputNumber
                   size="small"
@@ -266,7 +302,10 @@
       <div v-else-if="stimulus.type === 'vclamp'">
         <Row :gutter="16">
           <i-col span="8">
-            <i-form :label-width="55">
+            <i-form
+              :label-width="55"
+              @submit.native.prevent
+            >
               <FormItem label="duration:">
                 <InputNumber
                   size="small"
@@ -282,7 +321,10 @@
             </i-form>
           </i-col>
           <i-col span="8">
-            <i-form :label-width="55">
+            <i-form
+              :label-width="55"
+              @submit.native.prevent
+            >
               <FormItem label="voltage:">
                 <!-- TODO: check max values for voltage -->
                 <InputNumber
@@ -298,7 +340,10 @@
             </i-form>
           </i-col>
           <i-col span="8">
-            <i-form :label-width="40">
+            <i-form
+              :label-width="40"
+              @submit.native.prevent
+            >
               <FormItem label="rs:">
                 <InputNumber
                   size="small"

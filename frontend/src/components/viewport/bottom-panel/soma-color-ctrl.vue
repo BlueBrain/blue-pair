@@ -1,6 +1,10 @@
 
 <template>
-  <Form :label-width="80" label-position="left">
+  <Form
+    label-position="left"
+    :label-width="80"
+    @submit.native.prevent
+  >
     <FormItem label="Color by:" style="margin-bottom: 0">
       <i-select
         size="small"

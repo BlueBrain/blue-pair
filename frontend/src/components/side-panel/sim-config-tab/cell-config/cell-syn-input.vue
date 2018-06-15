@@ -84,7 +84,10 @@
     </Row>
     <Row :gutter="16" class="mt-6">
       <i-col span="8">
-        <i-form :label-width="40">
+        <i-form
+          :label-width="40"
+          @submit.native.prevent
+        >
           <FormItem label="delay:">
             <InputNumber
               size="small"
@@ -99,7 +102,10 @@
         </i-form>
       </i-col>
       <i-col span="8">
-        <i-form :label-width="55">
+        <i-form
+          :label-width="55"
+          @submit.native.prevent
+        >
           <FormItem label="duration:">
             <InputNumber
               size="small"
@@ -114,7 +120,10 @@
         </i-form>
       </i-col>
       <i-col span="8">
-        <i-form :label-width="65">
+        <i-form
+          :label-width="65"
+          @submit.native.prevent
+        >
           <FormItem label="frequency:">
             <InputNumber
               v-model="synInput.spikeFrequency"
@@ -132,7 +141,10 @@
     </Row>
     <Row :gutter="16" class="mt-6">
       <i-col span="8">
-        <i-form :label-width="90">
+        <i-form
+          :label-width="90"
+          @submit.native.prevent
+        >
           <FormItem label="weight scalar:">
             <InputNumber
               v-model="synInput.weightScalar"

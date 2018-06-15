@@ -4,7 +4,11 @@
     <Card>
       <Row :gutter="24">
         <i-col span="8">
-          <Form :label-width="105" label-position="left">
+          <Form
+            label-position="left"
+            :label-width="105"
+            @submit.native.prevent
+          >
             <FormItem label="t_stop [ms]">
               <InputNumber
                 size="small"
@@ -19,7 +23,11 @@
           </Form>
         </i-col>
         <i-col span="8">
-          <Form :label-width="105" label-position="left">
+          <Form
+            label-position="left"
+            :label-width="105"
+            @submit.native.prevent
+          >
             <FormItem label="time step [ms]">
               <InputNumber
                 size="small"
@@ -34,7 +42,11 @@
           </Form>
         </i-col>
         <i-col span="8">
-          <Form :label-width="105" label-position="left">
+          <Form
+            label-position="left"
+            :label-width="105"
+            @submit.native.prevent
+          >
             <FormItem label="forward skip [ms]">
               <InputNumber
                 size="small"
