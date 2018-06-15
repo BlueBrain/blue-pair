@@ -175,7 +175,8 @@ class Simulator(object):
 
         spike_interval = 1000 / frequency
         spiketrain_size = int(round(float(duration) / 1000 * frequency))
-        return np.cumsum(np.random.poisson(spike_interval, spiketrain_size)) + delay
+        spiketrain_raw = np.insert(np.random.poisson(spike_interval, spiketrain_size)[:-1], 0, 0)
+        return np.cumsum(spiketrain_raw) + delay
 
     def run(self):
         t_stop = self.sim_config['tStop']
