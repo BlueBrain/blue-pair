@@ -835,7 +835,9 @@ class NeuronRenderer {
 
     this.raycaster.setFromCamera(this.mouseGl, this.camera);
     const intersections = this.raycaster.intersectObjects(this.scene.children, true);
-    return intersections.find(mesh => !mesh.object.userData.skipHoverDetection);
+
+    return intersections
+      .find(mesh => !mesh.object.userData.skipHoverDetection && mesh.object.material.visible);
   }
 
   animate() {
