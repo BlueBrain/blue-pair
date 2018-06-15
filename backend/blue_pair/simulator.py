@@ -45,7 +45,7 @@ class Simulator(object):
         self.ssim = bglibpy.SSim(CIRCUIT_PATH)
 
         L.debug('instantiating ssim gids: %s', self.gids)
-        self.ssim.instantiate_gids(self.gids, add_synapses=True, add_minis=True)
+        self.ssim.instantiate_gids(self.gids, add_synapses=True)
 
         for recording in sim_config['recordings']:
             self._add_recording_section(recording)
