@@ -458,19 +458,26 @@ const actions = {
     const { neurons, neuronPropIndex } = store.state.circuit;
     const { synInputs } = store.state.simulation;
 
-    store.state.simulation.synapses.forEach((synapse) => {
-      synapse.visible = !!synInputs.find((input) => {
+    const gids = store.state.circuit.simAddedNeurons.map(neuron => neuron.gid);
+
+    const isSynapseInternal = syn => gids.includes(syn.preGid) && gids.includes(syn.postGid);
+    const isSynapseVisibleBySynInput = (syn) => {
+      return !!synInputs.find((input) => {
         // TODO: make this easy to understand
         if (input.preSynCellProp === 'gid') {
-          return synapse.gid === input.gid &&
+          return syn.gid === input.gid &&
             input.synapsesVisible &&
-            synapse.preGid === input.preSynCellPropVal;
+            syn.preGid === input.preSynCellPropVal;
         }
 
-        return synapse.gid === input.gid &&
+        return syn.gid === input.gid &&
           input.synapsesVisible &&
-          neurons[synapse.preGid - 1][neuronPropIndex[input.preSynCellProp]] === input.preSynCellPropVal;
+          neurons[syn.preGid - 1][neuronPropIndex[input.preSynCellProp]] === input.preSynCellPropVal;
       });
+    };
+
+    store.state.simulation.synapses.forEach((synapse) => {
+      synapse.visible = isSynapseInternal(synapse) || isSynapseVisibleBySynInput(synapse);
     });
 
     store.$emit('updateSynapses');
