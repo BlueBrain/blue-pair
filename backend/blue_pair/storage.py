@@ -7,6 +7,7 @@ import bluepy
 from bluepy.v2.enums import Synapse
 
 from blue_pair.redis_client import RedisClient
+from blue_pair.utils import matrices_to_quaternions
 
 L = logging.getLogger(__name__)
 L.setLevel(logging.DEBUG if os.getenv('DEBUG', False) else logging.INFO)
@@ -14,7 +15,7 @@ L.setLevel(logging.DEBUG if os.getenv('DEBUG', False) else logging.INFO)
 
 CIRCUIT_PATH = os.environ['CIRCUIT_PATH']
 L.debug('creating bluepy circuit from %s', CIRCUIT_PATH)
-circuit = bluepy.Circuit(CIRCUIT_PATH)
+CIRCUIT = bluepy.Circuit(CIRCUIT_PATH)
 L.debug('bluepy circuit has been created')
 
 L.debug('creating cache client')
@@ -34,7 +35,7 @@ class Storage():
         L.debug('getting cells')
         cells = cache.get('circuit:cells')
         if cells is None:
-            cells = circuit.v2.cells.get().drop(['orientation', 'synapse_class'], 1, errors='ignore');
+            cells = CIRCUIT.v2.cells.get().drop(['orientation', 'synapse_class'], 1, errors='ignore');
             cache.set('circuit:cells', cells)
         L.debug('getting cells done')
         return cells
@@ -44,8 +45,8 @@ class Storage():
         connectome = cache.get('circuit:connectome:{}'.format(gid))
         if connectome is None:
             connectome = {
-                'afferent': circuit.v2.connectome.afferent_gids(gid),
-                'efferent': circuit.v2.connectome.efferent_gids(gid)
+                'afferent': CIRCUIT.v2.connectome.afferent_gids(gid),
+                'efferent': CIRCUIT.v2.connectome.efferent_gids(gid)
             }
             cache.set('circuit:connectome:{}'.format(gid), connectome)
         L.debug('getting connectome for %s done', gid)
@@ -79,7 +80,8 @@ class Storage():
         syn_dict = {}
 
         for gid in gids:
-            syn_dict[gid] = circuit.v2.connectome.afferent_synapses(gid, properties=props).values.tolist()
+            L.debug('getting afferent synapses for %s', gid)
+            syn_dict[gid] = CIRCUIT.v2.connectome.afferent_synapses(gid, properties=props).values.tolist()
 
         L.debug('getting syn connections for %s done', gids)
 
@@ -94,7 +96,7 @@ class Storage():
         for gid in gids:
             cell_morph = cache.get('cell:morph:{}'.format(gid))
             if cell_morph is None:
-                cell = circuit.v2.morph.get(gid, transform=True)
+                cell = CIRCUIT.v2.morph.get(gid, transform=True)
                 morphology = [
                     {
                         'points': [point[:4] for point in section.points],
@@ -104,6 +106,13 @@ class Storage():
                     for section in cell.sections]
 
                 cache.set('cell:morph:{}'.format(gid), morphology)
-                cells[gid] = morphology
+
+                orientation = CIRCUIT.v2.cells.get(gid)['orientation']
+                cell_quaternion = matrices_to_quaternions(orientation)
+
+                cells[gid] = {
+                    'sections': morphology,
+                    'quaternion': cell_quaternion
+                }
         L.debug('getting cell morph for %s done', gids)
         return {'cells': cells}

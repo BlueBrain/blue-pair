@@ -17,6 +17,9 @@
         <div class="axon-visibility-ctrl">
           <axon-visibility-ctrl/>
         </div>
+        <div class="section-alignment-ctrl">
+          <section-alignment-ctrl/>
+        </div>
         <div class="synapse-size-ctrl">
           <synapse-size-ctrl/>
         </div>
@@ -38,6 +41,7 @@
   import SynapseSizeCtrl from './bottom-panel/synapse-size-ctrl.vue';
   import HoverObjectInfo from './bottom-panel/hover-object-info.vue';
   import AxonVisibilityCtrl from './bottom-panel/axon-visibility-ctrl.vue';
+  import SectionAlignmentCtrl from './bottom-panel/section-alignment-ctrl.vue';
 
   // Simulation config components
   import SynColorPalette from './bottom-panel/syn-color-palette.vue';
@@ -50,6 +54,7 @@
       'synapse-size-ctrl': SynapseSizeCtrl,
       'hover-object-info': HoverObjectInfo,
       'axon-visibility-ctrl': AxonVisibilityCtrl,
+      'section-alignment-ctrl': SectionAlignmentCtrl,
     },
     data() {
       return {
@@ -74,6 +79,12 @@
       position: absolute;
       right: 12px;
       top: -224px;
+    }
+
+    .section-alignment-ctrl {
+      position: absolute;
+      right: 12px;
+      top: -260px;
     }
 
     .hover-object-info-container {

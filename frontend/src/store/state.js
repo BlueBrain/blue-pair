@@ -24,6 +24,7 @@ const state = {
     synByGid: {},
     synapses: [],
     waitingSecSelection: false,
+    waitingSecSelectionForAlignment: false,
     morphology: {},
     params: {
       tStop: 400,

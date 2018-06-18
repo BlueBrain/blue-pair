@@ -1,7 +1,10 @@
 
 <template>
   <div id="container">
-    <canvas :id="canvasId"></canvas>
+    <canvas
+      :class="{'cursor-crosshair': selectionMode}"
+      :id="canvasId"
+    ></canvas>
     <morph-section-poptip/>
     <bottom-panel/>
   </div>
@@ -19,6 +22,7 @@
     data() {
       return {
         canvasId: 'canvas',
+        selectionMode: false,
       };
     },
     components: {
@@ -49,6 +53,10 @@
       });
       store.$on('initSynapseCloud', cloudSize => this.renderer.initSynapseCloud(cloudSize));
       store.$on('updateSynapses', () => this.renderer.updateSynapses());
+
+      store.$on('setSelectionMode', (selectionMode) => { this.selectionMode = selectionMode; });
+
+      store.$on('centerCellMorph', section => this.renderer.centerCellMorph(section.neuron.gid));
 
       store.$on('hideCircuit', () => this.renderer.hideNeuronCloud());
       store.$on('showCircuit', () => this.renderer.showNeuronCloud());
@@ -168,6 +176,10 @@
     top: 28px;
     width: calc(100% - 620px);
     height: calc(100% - 28px);
+  }
+
+  .cursor-crosshair {
+    cursor: crosshair;
   }
 
   .bottom-panel-ctrl {

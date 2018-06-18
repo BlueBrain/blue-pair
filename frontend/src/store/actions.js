@@ -84,6 +84,10 @@ const actions = {
     store.$emit('redrawCircuit');
   },
 
+  sectionAlignmentBtnClicked(store) {
+    store.state.simulation.waitingSecSelectionForAlignment = true;
+  },
+
   neuronHovered(store, neuron) {
     // we don't need all properties of neuron to be shown,
     // for example x, y, z can be skipped.
@@ -230,10 +234,20 @@ const actions = {
   },
 
   morphSectionClicked(store, context) {
+    const { simulation } = store.state;
     const section = context.data;
+
+    if (simulation.waitingSecSelectionForAlignment && section.type === 'soma') {
+      simulation.waitingSecSelectionForAlignment = false;
+      store.$emit('setSelectionMode', false);
+      store.$emit('centerCellMorph', section);
+      store.$emit('resetSectionAlignmentCtrl');
+      return;
+    }
+
     if (section.type === 'axon') return;
 
-    if (!store.state.simulation.waitingSecSelection) store.$emit('showMorphSectionPoptip', context);
+    if (!simulation.waitingSecSelection) store.$emit('showMorphSectionPoptip', context);
 
     store.$emit('morphSectionSelected', section);
   },
@@ -480,9 +494,10 @@ const actions = {
     const gidsToLoad = gids.filter(gid => !cachedGids.includes(gid));
     if (gidsToLoad.length) {
       const morph = await socket.request('get_cell_morphology', gidsToLoad);
-      Object.entries(morph.cells).forEach(([, sections]) => {
+      Object.entries(morph.cells).forEach(([, cellMorph]) => {
         let i;
         let currentType;
+        const { sections } = cellMorph;
         sections.forEach((section) => {
           i = section.type === currentType ? i + 1 : 0;
           currentType = section.type;

@@ -2,13 +2,14 @@
 import throttle from 'lodash/throttle';
 import get from 'lodash/get';
 import difference from 'lodash/difference';
+import pick from 'lodash/pick';
 
 import {
   Color, TextureLoader, WebGLRenderer, Scene, Fog, AmbientLight, PointLight, Vector2,
   Raycaster, PerspectiveCamera, Object3D, BufferAttribute, BufferGeometry,
   PointsMaterial, DoubleSide, VertexColors, Geometry, Points, Vector3, MeshLambertMaterial,
   SphereBufferGeometry, CylinderGeometry, Mesh, LineSegments, LineBasicMaterial, EdgesGeometry,
-  Matrix4,
+  Matrix4, Quaternion,
 } from 'three';
 
 // TODO: consider to use trackball ctrl instead
@@ -232,6 +233,34 @@ class NeuronRenderer {
     this.controls.target = center;
   }
 
+  centerCellMorph(gid) {
+    const controlsTargetVec = new Vector3();
+
+    this.cellMorphologyObj.traverse((child) => {
+      const childSectionName = get(child, 'userData.type');
+      const childGid = get(child, 'userData.neuron.gid');
+      if (childSectionName !== 'soma' || childGid !== gid) return;
+
+      controlsTargetVec.copy(child.position);
+    });
+
+    const { quaternion: cellQuatArr } = store.state.simulation.morphology[gid];
+    const cellQuat = new Quaternion().fromArray(cellQuatArr);
+    const cameraPositionVec = new Vector3(0, 0, 300)
+      .applyQuaternion(cellQuat)
+      .add(controlsTargetVec);
+
+    const animateCamera = () => {
+      TweenLite
+        .to(this.camera.position, 0.15, pick(cameraPositionVec, ['x', 'y', 'z']))
+        .eventCallback('onUpdate', () => { this.controls.target.copy(controlsTargetVec); });
+    };
+
+    TweenLite
+      .to(this.controls.target, 0.15, pick(controlsTargetVec, ['x', 'y', 'z']))
+      .eventCallback('onComplete', animateCamera);
+  }
+
   updateSynapses() {
     const { synapses } = store.state.simulation;
     const { positionBufferAttr, colorBufferAttr } = this.synapseCloud;
@@ -308,7 +337,7 @@ class NeuronRenderer {
 
       const neuronIndex = gid - 1;
       const neuron = store.$get('neuron', neuronIndex);
-      const sections = morphology[gid];
+      const { sections } = morphology[gid];
 
       const colorDiff = (((2 * COLOR_DIFF_RANGE * cellIndex) / gids.length)) - COLOR_DIFF_RANGE;
 
@@ -390,7 +419,7 @@ class NeuronRenderer {
 
     const { morphology } = store.state.simulation;
 
-    const pts = morphology[config.gid]
+    const pts = morphology[config.gid].sections
       .find(sec => config.sectionName === sec.name)
       .points;
 
