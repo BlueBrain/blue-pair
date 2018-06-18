@@ -13,12 +13,12 @@ function eachAsync(
     const arrayLength = array.length;
 
     const runIteration = () => {
-      iterateeFunc(array[i], i);
-
-      i += 1;
       while (i < arrayLength && !filterPredicate(array[i])) i += 1;
 
-      if (i >= arrayLength) {
+      if (i < arrayLength) {
+        iterateeFunc(array[i], i);
+        i += 1;
+      } else {
         resolve();
         return;
       }
