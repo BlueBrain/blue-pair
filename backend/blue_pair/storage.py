@@ -7,7 +7,6 @@ import bluepy
 from bluepy.v2.enums import Synapse
 
 from blue_pair.redis_client import RedisClient
-from blue_pair.utils import matrices_to_quaternions
 
 L = logging.getLogger(__name__)
 L.setLevel(logging.DEBUG if os.getenv('DEBUG', False) else logging.INFO)
@@ -108,11 +107,10 @@ class Storage():
                 cache.set('cell:morph:{}'.format(gid), morphology)
 
                 orientation = CIRCUIT.v2.cells.get(gid)['orientation']
-                cell_quaternion = matrices_to_quaternions(orientation)
 
                 cells[gid] = {
                     'sections': morphology,
-                    'quaternion': cell_quaternion
+                    'orientation': orientation
                 }
         L.debug('getting cell morph for %s done', gids)
         return {'cells': cells}

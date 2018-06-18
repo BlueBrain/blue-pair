@@ -22,6 +22,7 @@ import { TweenLite, TimelineLite } from 'gsap';
 import store from '@/store';
 import eachAsync from './../tools/each-async';
 import utils from './../tools/neuron-renderer-utils';
+import neuronRendererUtils from './../tools/neuron-renderer-utils';
 
 
 const FOG_COLOR = 0xffffff;
@@ -244,8 +245,10 @@ class NeuronRenderer {
       controlsTargetVec.copy(child.position);
     });
 
-    const { quaternion: cellQuatArr } = store.state.simulation.morphology[gid];
-    const cellQuat = new Quaternion().fromArray(cellQuatArr);
+    const { orientation } = store.state.simulation.morphology[gid];
+
+    const cellQuat = neuronRendererUtils.quatFromArray3x3(orientation);
+
     const cameraPositionVec = new Vector3(0, 0, 300)
       .applyQuaternion(cellQuat)
       .add(controlsTargetVec);
