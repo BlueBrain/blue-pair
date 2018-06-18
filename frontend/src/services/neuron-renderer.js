@@ -403,7 +403,7 @@ class NeuronRenderer {
 
       const material = config.type === 'recording' ? this.recMarkerMaterial : this.injMarkerMaterial;
       const somaBufferedGeometry = new SphereBufferGeometry(radius * 1.05, 14, 14);
-      const somaMesh = new Mesh(somaBufferedGeometry, material);
+      const somaMesh = new Mesh(somaBufferedGeometry, material.clone());
       somaMesh.position.copy(position);
       somaMesh.updateMatrix();
       somaMesh.matrixAutoUpdate = false;
