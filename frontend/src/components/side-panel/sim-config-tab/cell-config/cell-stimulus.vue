@@ -70,7 +70,7 @@
                   v-model="stimulus.delay"
                   :min="0"
                   :max="3000"
-                  :step="100"
+                  :step="10"
                   :disabled="!stimulus.sectionName"
                   @on-change="onChange"
                 >
@@ -89,7 +89,7 @@
                   v-model="stimulus.duration"
                   :min="0"
                   :max="3000"
-                  :step="100"
+                  :step="10"
                   :disabled="!stimulus.sectionName"
                   @on-change="onChange"
                 >
@@ -108,7 +108,7 @@
                   size="small"
                   v-model="stimulus.current"
                   :min="0.1"
-                  :max="10"
+                  :max="50"
                   :step="0.1"
                   :disabled="!stimulus.sectionName"
                   @on-change="onChange"
@@ -133,7 +133,7 @@
                   v-model="stimulus.delay"
                   :min="0"
                   :max="3000"
-                  :step="100"
+                  :step="10"
                   @on-change="onChange"
                 >
                 </InputNumber>
@@ -151,7 +151,7 @@
                   v-model="stimulus.duration"
                   :min="0"
                   :max="3000"
-                  :step="100"
+                  :step="10"
                   @on-change="onChange"
                 >
                 </InputNumber>
@@ -168,7 +168,7 @@
                   size="small"
                   v-model="stimulus.current"
                   :min="0.1"
-                  :max="10"
+                  :max="50"
                   :step="0.1"
                   @on-change="onChange"
                 ></InputNumber>
@@ -185,7 +185,7 @@
                   size="small"
                   v-model="stimulus.stopCurrent"
                   :min="0.1"
-                  :max="10"
+                  :max="50"
                   :step="0.1"
                   @on-change="onChange"
                 ></InputNumber>
@@ -209,7 +209,7 @@
                   v-model="stimulus.delay"
                   :min="0"
                   :max="3000"
-                  :step="100"
+                  :step="10"
                   :disabled="!stimulus.sectionName"
                   @on-change="onChange"
                 >
@@ -228,7 +228,7 @@
                   v-model="stimulus.duration"
                   :min="0"
                   :max="3000"
-                  :step="100"
+                  :step="10"
                   :disabled="!stimulus.sectionName"
                   @on-change="onChange"
                 >
@@ -247,7 +247,7 @@
                   size="small"
                   v-model="stimulus.current"
                   :min="0.1"
-                  :max="10"
+                  :max="50"
                   :step="0.1"
                   :disabled="!stimulus.sectionName"
                   @on-change="onChange"
@@ -312,7 +312,7 @@
                   v-model="stimulus.duration"
                   :min="0"
                   :max="3000"
-                  :step="100"
+                  :step="10"
                   :disabled="!stimulus.sectionName"
                   @on-change="onChange"
                 >

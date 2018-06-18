@@ -15,7 +15,7 @@
                 v-model="config.tStop"
                 :min="100"
                 :max="3000"
-                :step="100"
+                :step="10"
                 placeholder="Duration"
                 @on-change="onConfigChange"
               ></InputNumber>
@@ -52,7 +52,7 @@
                 size="small"
                 :min="0"
                 :max="5000"
-                :step="100"
+                :step="10"
                 v-model="config.forwardSkip"
                 placeholder="Forward skip"
                 @on-change="onConfigChange"
