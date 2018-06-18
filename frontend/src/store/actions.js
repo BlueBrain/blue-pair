@@ -161,6 +161,7 @@ const actions = {
   },
 
   setSomaSize(store, size) {
+    store.state.circuit.somaSize = size;
     store.$emit('setSomaSize', size);
   },
 
