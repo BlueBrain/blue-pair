@@ -13,11 +13,18 @@ import storage from '@/services/storage';
 // TODO: prefix events with target component's names
 
 const recAndInjCompareKeys = ['sectionName', 'gid'];
-
+const APP_VERSION = process.env.VUE_APP_VERSION;
 
 const actions = {
   async loadCircuit(store) {
     const { circuit } = store.state;
+
+    const cacheAppVersion = await storage.getItem('appVersion');
+    if (APP_VERSION !== cacheAppVersion) {
+      await storage.clear();
+      await storage.setItem('appVersion', APP_VERSION);
+    }
+
     const neuronDataSet = await storage.getItem('neuronData');
 
     if (neuronDataSet) {
