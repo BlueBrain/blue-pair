@@ -10,6 +10,7 @@
         <i-select
           size="small"
           placeholder="Pick an example set of neurons"
+          not-found-text="List is empty"
           :transfer="true"
           v-model="currentNeuronSetIndex"
         >
@@ -40,17 +41,14 @@
 <script>
   import store from '@/store';
 
+  import neuronSets from './neuron-set-examples-list';
+
   export default {
     name: 'neuron-set-examples',
     data() {
       return {
+        neuronSets,
         currentNeuronSetIndex: null,
-        neuronSets: [{
-          key: 'Martinotti loop',
-          label: 'Martinotti loop',
-          gids: [24671, 23233, 22724],
-          description: 'Martinotti cell L5_MC, gid: 24671, \nL5_TPC:A with reciprocal connections, gid: 23233\nPost synaptic L5_TPC:A, gid: 22724',
-        }],
       };
     },
     methods: {
