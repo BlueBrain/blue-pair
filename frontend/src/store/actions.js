@@ -351,6 +351,7 @@ const actions = {
   circuitTabSelected(store) {
     store.$emit('resetSimConfigBtn');
     store.$emit('showCircuit');
+    store.$emit('resetCameraUp');
     store.$emit('removeCellMorphology');
     store.$emit('setBottomPanelMode', 'cellSelection');
 

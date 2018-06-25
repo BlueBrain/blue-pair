@@ -9,11 +9,10 @@ import {
   Raycaster, PerspectiveCamera, Object3D, BufferAttribute, BufferGeometry,
   PointsMaterial, DoubleSide, VertexColors, Geometry, Points, Vector3, MeshLambertMaterial,
   SphereBufferGeometry, CylinderGeometry, Mesh, LineSegments, LineBasicMaterial, EdgesGeometry,
-  Matrix4, Quaternion,
+  Matrix4,
 } from 'three';
 
-// TODO: consider to use trackball ctrl instead
-import OrbitControls from 'orbit-controls-es6';
+import TrackballControls from './trackball-controls';
 
 import { TweenLite, TimelineLite } from 'gsap';
 
@@ -22,7 +21,6 @@ import { TweenLite, TimelineLite } from 'gsap';
 import store from '@/store';
 import eachAsync from './../tools/each-async';
 import utils from './../tools/neuron-renderer-utils';
-import neuronRendererUtils from './../tools/neuron-renderer-utils';
 
 
 const FOG_COLOR = 0xffffff;
@@ -84,10 +82,10 @@ class NeuronRenderer {
     this.scene.add(this.camera);
     this.camera.add(new PointLight(CAMERA_LIGHT_COLOR, 0.9));
 
-    this.controls = new OrbitControls(this.camera, this.renderer.domElement);
+    this.controls = new TrackballControls(this.camera, this.renderer.domElement);
     this.controls.enableDamping = true;
     this.controls.zoomSpeed = 0.4;
-    this.controls.rotateSpeed = 0.5;
+    this.controls.rotateSpeed = 0.8;
 
     this.hoveredMesh = null;
     this.hoveredNeuron = null;
@@ -234,6 +232,10 @@ class NeuronRenderer {
     this.controls.target = center;
   }
 
+  resetCameraUp() {
+    this.camera.up.set(0, 1, 0);
+  }
+
   centerCellMorph(gid) {
     const controlsTargetVec = new Vector3();
 
@@ -247,11 +249,14 @@ class NeuronRenderer {
 
     const { orientation } = store.state.simulation.morphology[gid];
 
-    const cellQuat = neuronRendererUtils.quatFromArray3x3(orientation);
+    const cellQuat = utils.quatFromArray3x3(orientation);
 
     const cameraPositionVec = new Vector3(0, 0, 300)
       .applyQuaternion(cellQuat)
       .add(controlsTargetVec);
+
+    const up = new Vector3(0, 1, 0).applyQuaternion(cellQuat).normalize();
+    this.camera.up = up;
 
     const animateCamera = () => {
       TweenLite
