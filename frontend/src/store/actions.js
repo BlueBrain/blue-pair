@@ -547,6 +547,10 @@ const actions = {
     store.$dispatch('initSynapses');
   },
 
+  makeScreenshotBtnClicked(store) {
+    store.$emit('downloadScreenshot');
+  },
+
   async initSynapses(store) {
     store.$emit('setStatus', { message: 'Getting synapses' });
 

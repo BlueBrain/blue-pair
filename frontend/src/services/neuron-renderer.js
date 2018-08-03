@@ -14,6 +14,7 @@ import {
 
 import TrackballControls from './trackball-controls';
 
+import { saveAs } from 'file-saver';
 import { TweenLite, TimelineLite } from 'gsap';
 
 // TODO: refactor to remove store operations
@@ -575,6 +576,27 @@ class NeuronRenderer {
 
   setMorphSynapseSize(size) {
     this.synapseCloud.points.material.size = size;
+  }
+
+  downloadScreenshot() {
+    const { clientWidth, clientHeight } = this.renderer.domElement.parentElement;
+
+    const renderer = new WebGLRenderer({
+      antialias: true,
+      alpha: true,
+      preserveDrawingBuffer: true,
+      physicallyCorrectColors: true,
+    });
+
+    renderer.setSize(clientWidth * 3, clientHeight * 3);
+
+    renderer.render(this.scene, this.camera);
+    const circuitName = process.env.VUE_APP_CIRCUIT_NAME;
+    const gidsStr = store.state.circuit.simAddedNeurons.map(n => n.gid).join('_');
+    const timestamp = Date.now();
+    const fileName = `${circuitName}__gids_${gidsStr}__${timestamp}.png`;
+    renderer.domElement.toBlob(blob => saveAs(blob, fileName));
+    renderer.dispose();
   }
 
   updateNeuronCloud() {

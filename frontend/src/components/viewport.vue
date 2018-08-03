@@ -46,6 +46,7 @@
       store.$on('showSectionMarkers', () => this.renderer.showSectionMarkers());
       store.$on('removeSectionMarkers', filterFunction => this.renderer.removeSectionMarkers(filterFunction));
       store.$on('removeCellMorphologies', filterFunction => this.renderer.removeCellMorphologies(filterFunction));
+      store.$on('downloadScreenshot', () => this.renderer.downloadScreenshot());
       store.$on('removeCellMorphology', () => {
         this.renderer.hideCellMorphology();
         this.renderer.hideSectionMarkers();

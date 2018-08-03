@@ -26,6 +26,10 @@
       </div>
     </transition>
 
+    <div class="screenshot-ctrl">
+      <screenshot-ctrl/>
+    </div>
+
     <hover-object-info class="hover-object-info-container"/>
 
   </div>
@@ -42,6 +46,7 @@
   import HoverObjectInfo from './bottom-panel/hover-object-info.vue';
   import AxonVisibilityCtrl from './bottom-panel/axon-visibility-ctrl.vue';
   import SectionAlignmentCtrl from './bottom-panel/section-alignment-ctrl.vue';
+  import ScreenshotCtrl from './bottom-panel/screenshot-ctrl.vue';
 
   // Simulation config components
   import SynColorPalette from './bottom-panel/syn-color-palette.vue';
@@ -55,6 +60,7 @@
       'hover-object-info': HoverObjectInfo,
       'axon-visibility-ctrl': AxonVisibilityCtrl,
       'section-alignment-ctrl': SectionAlignmentCtrl,
+      'screenshot-ctrl': ScreenshotCtrl,
     },
     data() {
       return {
@@ -85,6 +91,12 @@
       position: absolute;
       right: 12px;
       top: -260px;
+    }
+
+    .screenshot-ctrl {
+      position: absolute;
+      right: 52px;
+      top: -41px;
     }
 
     .hover-object-info-container {
