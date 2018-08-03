@@ -174,7 +174,7 @@ echo '### Done'
 echo
 echo '####################################################################################################'
 echo '### Sync MorphologyPath/ascii'
-echo '### Source:' "$morphology_path"/ascii
+echo '### Source:' "$morphology_path"
 echo '### Destination:' "$target_pod:$morphology_path"
 
 if [ ! -f tmp/circuit-morphology-list.txt ]; then
@@ -182,19 +182,12 @@ if [ ! -f tmp/circuit-morphology-list.txt ]; then
     exit 1
 fi
 
-while read morphology
-do
-    rsync \
-        -vLh \
-        --progress \
-        --ignore-existing \
-        "$morphology_path"/ascii/"$morphology".asc "$target_pod:$morphology_path"/ascii/"$morphology".asc
-    rsync \
-        -vLh \
-        --progress \
-        --ignore-existing \
-        "$morphology_path"/v1/"$morphology".h5 "$target_pod:$morphology_path"/v1/"$morphology".h5
-done < tmp/circuit-morphology-list.txt
+rsync \
+    -vLh \
+    --progress \
+    --ignore-existing \
+    --files-from=tmp/circuit-morphology-list.txt \
+    "$morphology_path" "$target_pod:$morphology_path/"
 echo '### Done'
 
 
