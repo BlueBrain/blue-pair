@@ -46,7 +46,7 @@
 <style lang="scss" scoped>
   .container {
     cursor: pointer;
-    padding: 6px 7px 4px 7px;
+    padding: 4px 7px 6px 7px;
     background-color: white;
     border: 1px solid #dddee1;
     border-radius: 4px;

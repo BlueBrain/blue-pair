@@ -292,8 +292,4 @@
   .current-filters {
     margin-top: 12px;
   }
-
-  .text-right {
-    text-align: right;
-  }
 </style>

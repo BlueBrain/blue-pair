@@ -8,9 +8,28 @@
           <span
             class="title-message"
             v-if="!simAddedNeurons.length"
-          >Pick a cell</span>
+          >Pick a cell or enter GID</span>
+          <div class="float-right">
+            <span class="mr-6">GID: </span>
+            <InputNumber
+              v-model="manualInputGid"
+              size="small"
+              :min="1"
+              :max="maxGid"
+              @keyup.enter.native="onNeuronAddByGid"
+            />
+            <i-button
+              class="ml-6"
+              type="primary"
+              size="small"
+              :disabled="!addCellByGidBtnActive"
+              @click="onNeuronAddByGid"
+            >
+              Add
+            </i-button>
+          </div>
         </h4>
-        <div class="gid-list-container">
+        <div class="gid-list-container mt-12 ">
           <Poptip
             trigger="hover"
             placement="left-start"
@@ -20,7 +39,7 @@
             :key="neuron.gid"
           >
             <Tag
-              :color="highlightedNeuronGid === neuron.gid ? 'yellow' : 'blue'"
+              :color="highlightedNeuronGid === neuron.gid ? 'warning' : 'primary'"
               closable
               @mouseover.native="onNeuronHover(neuron.gid)"
               @mouseleave.native="onNeuronHoverStop()"
@@ -42,21 +61,17 @@
 
     <br>
 
-    <Row :gutter="6">
-      <i-col
-        span="8"
-        push="16"
+    <div class="text-right">
+      <i-button
+        size="small"
+        type="primary"
+        :disabled="!simAddedNeurons.length"
+        :loading="simInit"
+        @click="onConfigureSimulationBtnClick"
       >
-        <i-button
-          size="small"
-          type="primary"
-          long
-          :disabled="!simAddedNeurons.length"
-          :loading="simInit"
-          @click="onConfigureSimulationBtnClick"
-        >Proceed to simulation config</i-button>
-      </i-col>
-    </Row>
+        Proceed to simulation config
+      </i-button>
+    </div>
   </Card>
 </template>
 
@@ -74,12 +89,15 @@
     },
     data() {
       return {
+        manualInputGid: null,
+        maxGid: null,
         simAddedNeurons: store.state.circuit.simAddedNeurons,
         simInit: false,
         highlightedNeuronGid: null,
       };
     },
     mounted() {
+      store.$on('circuitLoaded', () => this.init());
       store.$on('addNeuronToSim', neuron => this.onNeuronAdd(neuron));
       store.$on('removeNeuronFromSim', neuron => this.onNeuronRemove(neuron));
       store.$on('resetSimConfigBtn', () => { this.simInit = false; });
@@ -87,6 +105,9 @@
       store.$on('unhighlightSimAddedNeuron', () => { this.highlightedNeuronGid = null; });
     },
     methods: {
+      init() {
+        this.maxGid = store.state.circuit.neurons.length;
+      },
       onNeuronAdd(neuron) {
         if (this.simAddedNeurons.find(nrn => nrn.gid === neuron.gid)) return;
 
@@ -114,6 +135,24 @@
       },
       onNeuronHoverStop() {
         store.$dispatch('simNeuronUnhovered');
+      },
+      onNeuronAddByGid() {
+        if (!this.addCellByGidBtnActive) return;
+
+        const neuron = store.$get('neuron', this.manualInputGid - 1);
+        this.onNeuronAdd(neuron);
+        this.manualInputGid = null;
+      },
+    },
+    computed: {
+      addCellByGidBtnActive() {
+        if (
+          !this.manualInputGid ||
+          this.manualInputGid < 1 ||
+          this.manualInputGid > store.state.circuit.neurons.length
+        ) return false;
+
+        return !this.simAddedNeurons.map(neuron => neuron.gid).includes(this.manualInputGid);
       },
     },
   };

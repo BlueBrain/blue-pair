@@ -44,12 +44,4 @@
     left: 50%;
     transform: translate(-50%, -50%);
   }
-
-  .text-right {
-    text-align: right;
-  }
-
-  .mr-6 {
-    margin-right: 6px;
-  }
 </style>

@@ -27,7 +27,7 @@
     mounted() {
       store.$on('ws:simulation_result', () => {
         this.visible = true;
-        this.percent += 1;
+        if (this.percent < 100) this.percent += 1;
       });
       store.$on('ws:simulation_finish', () => {
         this.visible = false;

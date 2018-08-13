@@ -23,7 +23,7 @@
       class="close-btn"
       @click="onClose"
     >
-      <Icon type="ios-close-empty"></Icon>
+      <Icon type="ios-close"></Icon>
     </div>
 
     <!-- STIMULUS TYPE -->
@@ -107,9 +107,9 @@
                 <InputNumber
                   size="small"
                   v-model="stimulus.current"
-                  :min="0.1"
+                  :min="0.01"
                   :max="50"
-                  :step="0.1"
+                  :step="0.01"
                   :disabled="!stimulus.sectionName"
                   @on-change="onChange"
                 ></InputNumber>
@@ -167,9 +167,9 @@
                 <InputNumber
                   size="small"
                   v-model="stimulus.current"
-                  :min="0.1"
+                  :min="0.01"
                   :max="50"
-                  :step="0.1"
+                  :step="0.01"
                   @on-change="onChange"
                 ></InputNumber>
               </FormItem>
@@ -184,9 +184,9 @@
                 <InputNumber
                   size="small"
                   v-model="stimulus.stopCurrent"
-                  :min="0.1"
+                  :min="0.01"
                   :max="50"
-                  :step="0.1"
+                  :step="0.01"
                   @on-change="onChange"
                 ></InputNumber>
               </FormItem>
@@ -246,9 +246,9 @@
                 <InputNumber
                   size="small"
                   v-model="stimulus.current"
-                  :min="0.1"
+                  :min="0.01"
                   :max="50"
-                  :step="0.1"
+                  :step="0.01"
                   :disabled="!stimulus.sectionName"
                   @on-change="onChange"
                 ></InputNumber>
@@ -332,7 +332,7 @@
                   v-model="stimulus.voltage"
                   :min="-100"
                   :max="30"
-                  :step="0.1"
+                  :step="0.01"
                   :disabled="!stimulus.sectionName"
                   @on-change="onChange"
                 ></InputNumber>
@@ -449,7 +449,7 @@
     position: absolute;
     right: 0;
     top: 0;
-    padding: 0 8px;
+    padding: 0 3px;
     font-size: 22px;
     line-height: 22px;
     color: #666;

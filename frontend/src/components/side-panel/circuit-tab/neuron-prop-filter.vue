@@ -305,8 +305,4 @@
   .reset-btn-container {
     margin-top: 14px;
   }
-
-  .text-right {
-    text-align: right;
-  }
 </style>

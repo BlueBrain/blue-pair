@@ -578,9 +578,9 @@ function TrackballControls(object, domElement) {
   this.domElement.addEventListener( 'mousedown', mousedown, false );
   this.domElement.addEventListener( 'wheel', mousewheel, false );
 
-  this.domElement.addEventListener( 'touchstart', touchstart, false );
-  this.domElement.addEventListener( 'touchend', touchend, false );
-  this.domElement.addEventListener( 'touchmove', touchmove, false );
+  this.domElement.addEventListener( 'touchstart', touchstart, { passive: true } );
+  this.domElement.addEventListener( 'touchend', touchend, { passive: true } );
+  this.domElement.addEventListener( 'touchmove', touchmove, { passive: true } );
 
   window.addEventListener( 'keydown', keydown, false );
   window.addEventListener( 'keyup', keyup, false );

@@ -326,7 +326,9 @@ const actions = {
       return synConfig;
     }, {});
 
-    store.$emit('setStatus', { message: 'Runnig simulation' });
+    store.$emit('setStatus', { message: 'Running simulation' });
+    store.$once('ws:simulation_finish', () => store.$emit('setStatus', { message: 'Ready' }));
+
     store.$emit('showOnlyTracesPanel');
     store.$emit('resetTraces');
 

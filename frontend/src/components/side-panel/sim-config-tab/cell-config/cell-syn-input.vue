@@ -27,7 +27,7 @@
       class="close-btn"
       @click="onClose"
     >
-      <Icon type="ios-close-empty"></Icon>
+      <Icon type="ios-close"></Icon>
     </div>
 
     <Row :gutter="6" class="mt-6">

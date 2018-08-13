@@ -79,16 +79,32 @@
     margin-top: 12px;
   }
 
+  .mr-12 {
+    margin-right: 12px;
+  }
+
+  .mb-12 {
+    margin-bottom: 12px;
+  }
+
+  .ml-12 {
+    margin-left: 12px;
+  }
+
   .mt-6 {
     margin-top: 6px;
   }
 
-  .ml-6 {
-    margin-left: 6px;
+  .mr-6 {
+    margin-right: 6px;
   }
 
   .mb-6 {
     margin-bottom: 6px;
+  }
+
+  .ml-6 {
+    margin-left: 6px;
   }
 
   .ivu-collapse-header {
@@ -116,5 +132,13 @@
 
   .tooltip-block, .tooltip-block>.ivu-tooltip-rel {
     display: block;
+  }
+
+  .text-right {
+    text-align: right;
+  }
+
+  .float-right {
+    float: right;
   }
 </style>

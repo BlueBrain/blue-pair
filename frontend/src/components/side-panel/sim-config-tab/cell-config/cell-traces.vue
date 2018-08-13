@@ -24,7 +24,7 @@
           :download="trace.voltage.download.filename"
           :href="trace.voltage.download.hrefData"
         >
-          <Icon type="android-download" size="24"></Icon>
+          <Icon type="md-cloud-download" size="24"></Icon>
         </a>
       </div>
 
