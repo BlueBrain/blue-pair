@@ -2,6 +2,12 @@
 import clone from 'lodash/clone';
 import some from 'lodash/some';
 
+
+function isSectionOfInteractionSite(interactionSite, section) {
+  return interactionSite.sectionName === section.name &&
+    interactionSite.gid === section.neuron.gid;
+}
+
 const getters = {
   neuron(store, index) {
     const { neurons, neuronPropIndex } = store.state.circuit;
@@ -40,12 +46,13 @@ const getters = {
   },
 
   isStimulusPresent(store, section) {
-    return some(store.state.simulation.stimuli, s => s.sectionName === section.name);
+    return some(store.state.simulation.stimuli, s => isSectionOfInteractionSite(s, section));
   },
 
   isRecordingPresent(store, section) {
-    return some(store.state.simulation.recordings, r => r.sectionName === section.name);
+    return some(store.state.simulation.recordings, r => isSectionOfInteractionSite(r, section));
   },
 };
+
 
 export default getters;
