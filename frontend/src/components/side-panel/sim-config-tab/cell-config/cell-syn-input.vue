@@ -36,7 +36,6 @@
           class="tooltip-block"
           content="Please select pre-synaptic cell property"
           placement="top"
-          :transfer="true"
           :always="propInputPoptipVisible"
           :disabled="!propInputPoptipVisible"
         >
@@ -47,7 +46,6 @@
             size="small"
             placeholder="Prop"
             @on-change="onPreSynCellPropChange"
-            @on-open-change="onPropOpenChange"
           >
             <i-option
               v-for="prop in preSynCellProps"
@@ -58,27 +56,28 @@
         </Tooltip>
       </i-col>
       <i-col span="12">
-        <!-- TODO: use v-model when this bug is fixed: https://github.com/iview/iview/issues/2489 -->
         <Tooltip
           class="tooltip-block"
           content="Please select value"
           placement="top"
-          :transfer="true"
           :disabled="!propValueInputPoptipVisible"
           :always="propValueInputPoptipVisible"
         >
-          <AutoComplete
-            :value="synInput.preSynCellPropVal"
-            :disabled="!synInput.gid"
-            :data="preSynCellPropValues"
-            :filter-method="valueFilterMethod"
-            :transfer="true"
+          <i-select
             size="small"
             placeholder="Value"
+            v-model="synInput.preSynCellPropVal"
+            filterable
+            :transfer="true"
+            :disabled="!synInput.gid"
             @on-change="onPreSynCellPropValueChange"
-            @on-focus="onValueOpenChange(true)"
-            @on-blur="onValueOpenChange(false)"
-          ></AutoComplete>
+          >
+            <i-option
+              v-for="value in preSynCellPropValues"
+              :key="value"
+              :value="value"
+            >{{ value }}</i-option>
+          </i-select>
         </Tooltip>
       </i-col>
     </Row>
@@ -175,8 +174,6 @@
         synInput: this.value,
         preSynCellProps: [],
         preSynCellPropValues: [],
-        propInputOpened: false,
-        valueInputOpened: false,
       };
     },
     mounted() {
@@ -189,8 +186,7 @@
         this.updateFilters();
         this.emitSynInputChange();
       },
-      onPreSynCellPropValueChange(val) {
-        this.synInput.preSynCellPropVal = val;
+      onPreSynCellPropValueChange() {
         this.updateValidity();
         this.emitSynInputChange();
       },
@@ -219,17 +215,6 @@
       onClose() {
         this.$emit('on-close');
       },
-      valueFilterMethod(value, option) {
-        if (!value) return true;
-
-        return option.toString().toUpperCase().includes(value.toString().toUpperCase());
-      },
-      onPropOpenChange(opened) {
-        this.propInputOpened = opened;
-      },
-      onValueOpenChange(opened) {
-        this.valueInputOpened = opened;
-      },
     },
     computed: {
       preSynCellPropValValid() {
@@ -237,15 +222,12 @@
       },
       propInputPoptipVisible() {
         return this.synInput.gid &&
-          !this.synInput.preSynCellProp &&
-          !this.propInputOpened;
+          !this.synInput.preSynCellProp;
       },
       propValueInputPoptipVisible() {
         return this.synInput.gid &&
           !this.propInputPoptipVisible &&
-          !this.propInputOpened &&
-          !this.preSynCellPropValValid &&
-          !this.valueInputOpened;
+          !this.preSynCellPropValValid;
       },
     },
   };

@@ -30,14 +30,18 @@
         </i-select>
       </i-col>
       <i-col span="10">
-        <AutoComplete
-          size="small"
+        <i-select
           v-model="ctrl.currentValue"
-          :data="ctrl.values"
-          :filter-method="valueFilterMethod"
-          :transfer="true"
+          size="small"
+          filterable
           placeholder="Value"
-        ></AutoComplete>
+        >
+          <i-option
+            v-for="value in ctrl.values"
+            :value="value"
+            :key="value"
+          >{{ value }}</i-option>
+        </i-select>
       </i-col>
       <i-col span="4" style="text-align: center">
         <i-button
@@ -239,9 +243,6 @@
             .map(f => f.value)
             .includes(value);
         });
-      },
-      valueFilterMethod(value = '', option) {
-        return option.toString().toUpperCase().includes(value.toString().toUpperCase());
       },
       updateGlobalFilterIndex() {
         // TODO: move to webworker or async separate module
