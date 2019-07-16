@@ -1,6 +1,5 @@
 
 import os
-import time
 import json
 import logging
 import sys
@@ -11,30 +10,23 @@ import tornado.web
 import tornado.websocket
 
 from tornado.log import enable_pretty_logging
-from blue_pair.sim_manager import SimStatus
+from .sim_manager import SimStatus
 
 
 enable_pretty_logging()
 L = logging.getLogger(__name__)
 L.setLevel(logging.DEBUG if os.getenv('DEBUG', False) else logging.INFO)
 
-circuit_path = os.environ['CIRCUIT_PATH']
-while not os.path.isfile(circuit_path):
-    L.warning('circuit config is not found (not uploaded yet / wrong path)')
-    L.info('waiting while circuit config will become available')
-    time.sleep(60)
 
-
-from blue_pair.storage import Storage
-from blue_pair.utils import NumpyAwareJSONEncoder
-from blue_pair.sim_manager import SimManager
+from .storage import Storage
+from .utils import NumpyAwareJSONEncoder
+from .sim_manager import SimManager
 
 L.debug('creating storage instance')
 STORAGE = Storage()
 L.debug('storage instance has been created')
 
 SIM_MANAGER = SimManager()
-SIM_STATUS = SimStatus()
 
 def on_terminate(signal, frame):
     L.debug('received shutdown signal')
@@ -59,9 +51,14 @@ class WSHandler(tornado.websocket.WebSocketHandler):
         L.debug('got ws message: %s', msg)
         cmd = msg['cmd']
         cmdid = msg['cmdid']
+        context = msg['context']
+        circut_config = context['circuitConfig']
+
+        if 'circuitConfig' in context:
+            circuit_path = context['circuitConfig']['path']
 
         if cmd == 'get_circuit_cells':
-            cells = STORAGE.get_circuit_cells()
+            cells = STORAGE.get_circuit_cells(circuit_path)
             cell_count = len(cells)
 
             L.debug('sending circuit cell properties to the client')
@@ -83,10 +80,7 @@ class WSHandler(tornado.websocket.WebSocketHandler):
             cell_chunks_it = generate_cell_chunks()
 
             def send():
-                try:
-                    cell_chunk = cell_chunks_it.next()
-                except StopIteration:
-                    cell_chunk = None
+                cell_chunk = next(cell_chunks_it, None)
                 if cell_chunk is not None:
                     self.send_message('circuit_cells_data', cell_chunk.values)
                     tornado.ioloop.IOLoop.current().add_callback(send)
@@ -95,7 +89,7 @@ class WSHandler(tornado.websocket.WebSocketHandler):
 
         elif cmd == 'get_cell_connectome':
             gid = msg['data']
-            connectome = STORAGE.get_connectome(gid)
+            connectome = STORAGE.get_connectome(circuit_path, gid)
             connectome['cmdid'] = cmdid
 
             L.debug('sending cell connectome to the client')
@@ -103,7 +97,7 @@ class WSHandler(tornado.websocket.WebSocketHandler):
 
         elif cmd == 'get_syn_connections':
             gids = msg['data']
-            connections = STORAGE.get_syn_connections(gids)
+            connections = STORAGE.get_syn_connections(circuit_path, gids)
             connections['cmdid'] = cmdid
 
             L.debug('sending syn connections to the client')
@@ -111,7 +105,7 @@ class WSHandler(tornado.websocket.WebSocketHandler):
 
         elif cmd == 'get_cell_morphology':
             gids = msg['data']
-            cell_nm_morph = STORAGE.get_cell_morphology(gids)
+            cell_nm_morph = STORAGE.get_cell_morphology(circuit_path, gids)
             cell_nm_morph['cmdid'] = cmdid
 
             L.debug('sending cell morphology to the client')
@@ -122,18 +116,22 @@ class WSHandler(tornado.websocket.WebSocketHandler):
             socket = self
             IOLoop = tornado.ioloop.IOLoop.current()
             def send_sim_data(sim_data):
-                if sim_data.status == SIM_STATUS.QUEUE:
+                if sim_data.status == SimStatus.QUEUE:
                     socket.send_message('simulation_queued', sim_data.data)
-                elif sim_data.status == SIM_STATUS.INIT:
+                elif sim_data.status == SimStatus.CH_MECH_COMPILE:
+                    socket.send_message('simulation_compile_ch_mech')
+                elif sim_data.status == SimStatus.CH_MECH_COMPILE_ERR:
+                    socket.send_message('simulation_compile_ch_mech_err', sim_data.data)
+                elif sim_data.status == SimStatus.INIT:
                     socket.send_message('simulation_init')
-                elif sim_data.status == SIM_STATUS.FINISH:
+                elif sim_data.status == SimStatus.FINISH:
                     socket.send_message('simulation_finish')
                     socket.sim_id = None
                 else:
                     socket.send_message('simulation_result', sim_data.data)
             def cb(sim_data):
                 IOLoop.add_callback(send_sim_data, sim_data)
-            self.sim_id = SIM_MANAGER.create_sim(simulator_config, cb)
+            self.sim_id = SIM_MANAGER.create_sim(circut_config, simulator_config, cb)
 
         elif cmd == 'cancel_simulation':
             if self.sim_id is not None:

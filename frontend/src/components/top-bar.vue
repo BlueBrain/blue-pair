@@ -2,9 +2,10 @@
 <template>
   <div class="top-bar">
     <div class="title">
-      Pair recording App: {{ circuitName }}
+      <circuit-select/>
+      Pair recording<span v-if="circuitName">: {{ circuitName }}</span>
     </div>
-    <div class="status">
+    <div class="right-side">
       {{ status.message }}
     </div>
   </div>
@@ -14,19 +15,23 @@
 <script>
   import store from '@/store';
 
-  const circuitName = process.env.VUE_APP_CIRCUIT_NAME;
+  import CircuitSelect from './circuit-select.vue';
 
   export default {
     name: 'top-bar',
+    components: {
+      'circuit-select': CircuitSelect,
+    },
     data() {
       return {
+        circuitName: '',
         status: {
           message: 'Ready',
         },
-        circuitName,
       };
     },
     mounted() {
+      store.$on('setCircuitName', (name) => { this.circuitName = name; });
       store.$on('setStatus', status => Object.assign(this.status, status));
     },
   };
@@ -35,19 +40,31 @@
 
 <style scoped lang="scss">
   .top-bar {
+    font-size: 14px;
     position: relative;
-    height: 28px;
-    line-height: 28px;
+    height: 36px;
+    line-height: 36px;
     background-color: #3e1b3e;
     padding: 0 .5em;
     color: #fffefc;
 
-    .status {
+    .right-side {
       position: absolute;
       height: 100%;
       right: 0;
       top: 0;
       padding-right: 12px;
+    }
+  }
+</style>
+
+
+<style lang="scss">
+  .circuit-select{
+    .ivu-drawer {
+      background-color: #ca00ba;
+      top: 36px;
+      bottom: 0;
     }
   }
 </style>

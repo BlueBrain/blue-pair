@@ -1,60 +1,101 @@
 
 import os
+import time
 import logging
+import re
+import subprocess
 
-import bglibpy
+from os.path import join
+
 import numpy as np
 
-global custom_progress_cb
-def default_progress_cb():
-    pass
 
-custom_progress_cb = default_progress_cb
+APP_HOME_PATH = '/opt/blue-pair'
+NEURODAMUS_PATH = '/opt/blue-pair/bbp'
 
-
-def progress_callback(self):
-        custom_progress_cb()
-        bglibpy.neuron.h.cvode.event(bglibpy.neuron.h.t + self.progress_dt, self.progress_callback)
-
-bglibpy.Simulation.progress_callback = progress_callback
-
+EXCLUDED_MOD_FILES = [
+    'modlib/Bin*.mod',
+    'modlib/HDF*.mod',
+    'modlib/hdf*.mod',
+    'modlib/MemUsage*.mod',
+    'modlib/SpikeWriter.mod'
+]
 
 L = logging.getLogger(__name__)
 L.setLevel(logging.DEBUG if os.getenv('DEBUG', False) else logging.INFO)
 
-
-CIRCUIT_PATH = os.environ['CIRCUIT_PATH']
+class SimulatorState:
+    CREATED = 0
+    CH_MECH_COMPILE = 1
+    INIT = 2
+    RUN = 3
+    FINISHED = 4
 
 
 class Simulator(object):
-    def __init__(self, sim_config, progress_cb):
+    def __init__(self, circuit_config, sim_config, progress_cb):
         L.debug('creating simulation')
 
-        global custom_progress_cb
-
+        self.state = SimulatorState.CREATED
+        self.circuit_config = circuit_config
         self.net_connections = []
         self.sim_config = sim_config
         self.v_rec_list = []
         self.i_rec_list = []
         self.gids = sorted(sim_config['gids'])
         self.current_trace_index = 0
+        self.ch_mech_ready = False
+        self.progress_cb = progress_cb
 
-        custom_progress_cb = progress_cb
+    def init_sim(self):
+        L.debug('init simulation')
+
+        self.state = SimulatorState.INIT
+
+        if not self.ch_mech_ready:
+            raise ValueError('Channel mechanisms have not been initialised')
+
+        import bglibpy
+        self.bglibpy = bglibpy
+
+        progress_cb = self.progress_cb
+        def progress_callback(self):
+            progress_cb()
+            bglibpy.neuron.h.cvode.event(bglibpy.neuron.h.t + self.progress_dt, self.progress_callback)
+        bglibpy.Simulation.progress_callback = progress_callback
 
         L.debug('creating bglibpy SSim instance')
-        self.ssim = bglibpy.SSim(CIRCUIT_PATH)
+        self.ssim = bglibpy.SSim(self.circuit_config['path'])
 
         L.debug('instantiating ssim gids: %s', self.gids)
-        self.ssim.instantiate_gids(self.gids, add_synapses=True)
+        conf = self.sim_config
+        net_stim = conf['netStimuli']
+        L.debug('replay: {}, '.format(conf['addReplay']) +
+                'minis: {}, '.format(conf['addMinis']) +
+                'stimuli: {}, '.format(net_stim['all']) +
+                'noise: {}, '.format(net_stim['noise']) +
+                'hyperpolarizing: {}, '.format(net_stim['hyperpolarizing']) +
+                'relativelinear: {}, '.format(net_stim['relativelinear']) +
+                'pulse: {}'.format(net_stim['pulse']))
 
-        for recording in sim_config['recordings']:
+        self.ssim.instantiate_gids(self.gids,
+                                   add_synapses=True,
+                                   add_replay=conf['addReplay'],
+                                   add_minis=conf['addMinis'],
+                                   add_stimuli=net_stim['all'],
+                                   add_noise_stimuli=net_stim['noise'],
+                                   add_hyperpolarizing_stimuli=net_stim['hyperpolarizing'],
+                                   add_relativelinear_stimuli=net_stim['relativelinear'],
+                                   add_pulse_stimuli=net_stim['pulse'])
+
+        for recording in self.sim_config['recordings']:
             self._add_recording_section(recording)
 
-        for stimulus in sim_config['stimuli']:
+        for stimulus in self.sim_config['stimuli']:
             self._add_stimulus(stimulus)
 
-        for pre_gid in sim_config['synapses']:
-            syn_input_config = sim_config['synapses'][pre_gid]
+        for pre_gid in self.sim_config['synapses']:
+            syn_input_config = self.sim_config['synapses'][pre_gid]
             syn_weight_scalar = syn_input_config['weightScalar']
             L.debug('generating pre_spiketrain for pre_gid %s with frequency %s Hz',
                     pre_gid,
@@ -67,13 +108,79 @@ class Simulator(object):
             for synapse_description in synapse_description_list:
                 self._add_syn_input(synapse_description, pre_spiketrain, syn_weight_scalar)
 
+    def init_channel_mechanisms(self):
+        self.state = SimulatorState.CH_MECH_COMPILE
+
+        neurodamus_branch = re.sub(r'[^a-zA-Z0-9/._]', '', self.circuit_config['neurodamusBranch'])
+        lib_target_path = join(APP_HOME_PATH, 'lib', neurodamus_branch)
+        hoclib_target_path = join(lib_target_path, 'hoclib')
+
+        L.debug('Neurodamus branch: {}'.format(neurodamus_branch))
+
+        def write_lock_file():
+            L.debug('add lock for {}'.format(lib_target_path))
+            open(join(lib_target_path, 'compile.lock'), 'a').close()
+
+        def remove_lock_file():
+            L.debug('remove lock for {}'.format(lib_target_path))
+            os.remove(join(lib_target_path, 'compile.lock'))
+
+        def write_error_file(message):
+            L.debug('add error file for {}'.format(lib_target_path))
+            open(join(lib_target_path, 'error.txt')).write(message).close()
+
+        if not os.path.exists(lib_target_path):
+            os.makedirs(lib_target_path)
+            write_lock_file()
+
+            os.chdir(NEURODAMUS_PATH)
+            subprocess.run(['git', 'reset', '--hard', 'HEAD'])
+            git_checkout = subprocess.run(['git', 'checkout', neurodamus_branch])
+            if git_checkout.returncode != 0:
+                err_msg = 'Can\'t checkout neurodamus branch {}'.format(neurodamus_branch)
+                write_error_file(err_msg)
+                remove_lock_file()
+                raise ValueError(err_msg)
+
+            os.chdir(lib_target_path)
+            subprocess.run(
+                'cp -r {} {}'.format(join(NEURODAMUS_PATH, 'lib') + '/*', lib_target_path),
+                shell=True
+            )
+
+            for pattern in EXCLUDED_MOD_FILES:
+                subprocess.run('rm -rf {}'.format(pattern), shell=True)
+
+            compile_ch_mech = subprocess.run(['nrnivmodl', 'modlib'])
+            if compile_ch_mech.returncode != 0:
+                err_msg = 'Error while compiling channel mechanisms'
+                write_error_file(err_msg)
+                remove_lock_file()
+                raise ValueError(err_msg)
+
+            L.debug('done compilation')
+            remove_lock_file()
+
+        while os.path.isfile('{}/compile.lock'.format(lib_target_path)):
+            L.debug('found lock file, waiting for 1 second')
+            time.sleep(1)
+
+        error_file_path = '{}/error.txt'.format(lib_target_path)
+        if os.path.isfile(error_file_path):
+            L.debug('found error.txt')
+            raise ValueError(open(error_file_path).read())
+
+        os.chdir(lib_target_path)
+        os.environ['HOC_LIBRARY_PATH'] = hoclib_target_path
+        self.ch_mech_ready = True
+
     def _add_syn_input(self, synapse_description, pre_spiketrain, syn_weight_scalar):
         post_gid = synapse_description['postGid']
         syn_index = synapse_description['index']
         L.debug('adding pre_spiketrain to synapse (%s, %s)', post_gid, syn_index)
         synapse = self.ssim.cells[post_gid].synapses[syn_index]
         synapse.connection_parameters['Weight'] = syn_weight_scalar
-        connection = bglibpy.Connection(synapse, pre_spiketrain=pre_spiketrain)
+        connection = self.bglibpy.Connection(synapse, pre_spiketrain=pre_spiketrain)
         self.net_connections.append(connection)
 
     def _add_recording_section(self, recording):
@@ -156,14 +263,14 @@ class Simulator(object):
             L.debug('adding voltage clamp for cell %s', gid)
             L.debug('duration: %s, voltage level: %s', duration, voltage_level)
 
-            vclamp = bglibpy.neuron.h.SEClamp(0.5, sec=sec)
+            vclamp = self.bglibpy.neuron.h.SEClamp(0.5, sec=sec)
             vclamp.amp1 = voltage_level
             vclamp.dur1 = duration
             vclamp.dur2 = 0
             vclamp.dur3 = 0
             vclamp.rs = series_resistance
 
-            current_vec = bglibpy.neuron.h.Vector()
+            current_vec = self.bglibpy.neuron.h.Vector()
             current_vec.record(vclamp._ref_i)
 
             self.i_rec_list.append(((gid, sec, vclamp, current_vec)))
@@ -179,12 +286,16 @@ class Simulator(object):
         return np.cumsum(spiketrain_raw) + delay
 
     def run(self):
+        self.state = SimulatorState.RUN
+
         t_stop = self.sim_config['tStop']
         time_step = self.sim_config['timeStep']
         forward_skip = self.sim_config['forwardSkip'] if self.sim_config['forwardSkip'] > 0 else None
         L.debug('starting simulation run with t_stop=%s, dt=%s, forward_skip=%s', t_stop, time_step, forward_skip)
         self.ssim.run(t_stop=t_stop, dt=time_step, show_progress=True, forward_skip_value=forward_skip)
         L.debug('simulation run has been finished')
+
+        self.state = SimulatorState.FINISHED
 
     def get_trace_diff(self):
         index = self.current_trace_index
@@ -211,4 +322,4 @@ class Simulator(object):
 
     def _get_sec_by_name(self, gid, sec_name):
         sec_full_name = '%s.%s' % (self.ssim.cells[gid].cell.hname(), sec_name)
-        return [sec for sec in bglibpy.neuron.h.allsec() if sec.name() == sec_full_name][0]
+        return [sec for sec in self.bglibpy.neuron.h.allsec() if sec.name() == sec_full_name][0]

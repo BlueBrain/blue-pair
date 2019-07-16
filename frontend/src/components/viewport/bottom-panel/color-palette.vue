@@ -43,6 +43,9 @@
       };
     },
     mounted() {
+      store.$on('resetPalette', () => {
+        this.colorPalette = {};
+      });
       store.$on('updateColorPalette', () => {
         const glColorPalette = store.state.circuit.color.palette;
         const colorKeys = Object.keys(glColorPalette).sort();

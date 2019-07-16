@@ -12,16 +12,16 @@ import {
   Matrix4,
 } from 'three';
 
-import TrackballControls from './trackball-controls';
-
 import { saveAs } from 'file-saver';
 import { TweenLite, TimelineLite } from 'gsap';
+
+import TrackballControls from '@/services/trackball-controls';
 
 // TODO: refactor to remove store operations
 // and move them to vue viewport component
 import store from '@/store';
-import eachAsync from './../tools/each-async';
-import utils from './../tools/neuron-renderer-utils';
+import eachAsync from '@/tools/each-async';
+import utils from '@/tools/neuron-renderer-utils';
 
 
 const FOG_COLOR = 0xffffff;
@@ -39,7 +39,6 @@ const HOVERED_NEURON_GL_COLOR = new Color(0xf26d21).toArray();
 const HOVERED_SYN_GL_COLOR = new Color(0xf26d21).toArray();
 
 const ALL_SEC_TYPES = [
-  'axon',
   'soma',
   'axon',
   'apic',
@@ -175,20 +174,30 @@ class NeuronRenderer {
     this.neuronCloud.points.frustumCulled = false;
     this.scene.add(this.neuronCloud.points);
 
-    const highlightedNeuronGeometry = new Geometry();
-    const highlightedNeuronMaterial = new PointsMaterial({
+    const highlightedNrnGeom = new BufferGeometry();
+    const highlightedNrnGeomVerts = new Float32Array([0, 0, 0]);
+    highlightedNrnGeom.addAttribute('position', new BufferAttribute(highlightedNrnGeomVerts, 3));
+
+    const highlightedNrnMaterial = new PointsMaterial({
       size: 0,
       transparent: true,
       opacity: 0,
       map: neuronTexture,
     });
-    highlightedNeuronGeometry.vertices.push(new Vector3(0, 0, 0));
     this.highlightedNeuron = new Points(
-      highlightedNeuronGeometry,
-      highlightedNeuronMaterial,
+      highlightedNrnGeom,
+      highlightedNrnMaterial,
     );
     this.highlightedNeuron.frustumCulled = false;
     this.scene.add(this.highlightedNeuron);
+  }
+
+  destroyNeuronCloud() {
+    if (!this.neuronCloud) return;
+
+    this.scene.remove(this.neuronCloud.points);
+    utils.disposeMesh(this.neuronCloud.points);
+    this.neuronCloud = null;
   }
 
   initSynapseCloud(cloudSize) {
@@ -219,6 +228,13 @@ class NeuronRenderer {
     this.scene.remove(this.synapseCloud.points);
     utils.disposeMesh(this.synapseCloud.points);
     this.synapseCloud = null;
+  }
+
+  clearScene() {
+    this.destroyNeuronCloud();
+    this.destroySynapseCloud();
+    this.removeCellMorphologies(() => true);
+    this.disposeSecMarkers();
   }
 
   alignCamera() {
@@ -524,10 +540,9 @@ class NeuronRenderer {
 
   removeSecMarker(secMarkerConfig) {
     // TODO: refactor
-    const secMarkerObj3d = this.secMarkerObj.children.find((obj3d) => {
-      return obj3d.userData.sectionName === secMarkerConfig.sectionName &&
-        obj3d.userData.type === secMarkerConfig.type;
-    });
+    const cfg = secMarkerConfig;
+    const secMarkerObj3d = this.secMarkerObj.children
+      .find(obj3d => obj3d.userData.sectionName === cfg.sectionName && obj3d.userData.type === cfg.type);
 
     this.secMarkerObj.remove(secMarkerObj3d);
     utils.disposeMesh(secMarkerObj3d.children[0]);
@@ -549,15 +564,6 @@ class NeuronRenderer {
 
   showSectionMarkers() {
     this.secMarkerObj.visible = true;
-  }
-
-  disposeCellMorphology() {
-    this.scene.remove(this.cellMorphologyObj);
-    this.cellMorphologyObj.traverse((child) => {
-      if (child instanceof Mesh) utils.disposeMesh(child);
-    });
-
-    this.cellMorphologyObj = null;
   }
 
   disposeSecMarkers() {
@@ -892,7 +898,7 @@ class NeuronRenderer {
   getMeshByNativeCoordinates(x, y) {
     this.mouseGl.x = (x / this.renderer.domElement.clientWidth) * 2 - 1;
     // TODO: remove hardcoded const
-    this.mouseGl.y = -((y - 28) / this.renderer.domElement.clientHeight) * 2 + 1;
+    this.mouseGl.y = -((y - 36) / this.renderer.domElement.clientHeight) * 2 + 1;
 
     this.raycaster.setFromCamera(this.mouseGl, this.camera);
     const intersections = this.raycaster.intersectObjects(this.scene.children, true);

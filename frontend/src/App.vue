@@ -14,7 +14,8 @@
 
 
 <script>
-  import config from './config';
+  import config from '@/config';
+  import store from '@/store';
 
   import TopBar from './components/top-bar';
   import Viewport from './components/viewport';
@@ -30,11 +31,14 @@
         maintenance: config.maintenance,
       };
     },
+    mounted() {
+      store.$dispatch('init');
+    },
     components: {
       'top-bar': TopBar,
       'viewport-component': Viewport,
       'side-panel': SidePanel,
-      'spinner': Spinner,
+      spinner: Spinner,
       'circuit-loading-modal': CircuitLoadingModal,
       'maintenance-page': MaintenancePage,
     },
@@ -75,37 +79,25 @@
     max-height: 0px;
   }
 
-  .mt-12 {
-    margin-top: 12px;
-  }
+  .mt-2 { margin-top: 2px; }
+  .mr-2 { margin-right: 2px; }
+  .mb-2 { margin-bottom: 2px; }
+  .ml-2 { margin-left: 2px; }
 
-  .mr-12 {
-    margin-right: 12px;
-  }
+  .mt-6 { margin-top: 6px; }
+  .mr-6 { margin-right: 6px; }
+  .mb-6 { margin-bottom: 6px; }
+  .ml-6 { margin-left: 6px; }
 
-  .mb-12 {
-    margin-bottom: 12px;
-  }
+  .mt-12 { margin-top: 12px; }
+  .mr-12 { margin-right: 12px; }
+  .mb-12 { margin-bottom: 12px; }
+  .ml-12 { margin-left: 12px; }
 
-  .ml-12 {
-    margin-left: 12px;
-  }
-
-  .mt-6 {
-    margin-top: 6px;
-  }
-
-  .mr-6 {
-    margin-right: 6px;
-  }
-
-  .mb-6 {
-    margin-bottom: 6px;
-  }
-
-  .ml-6 {
-    margin-left: 6px;
-  }
+  .mt-24 { margin-top: 24px; }
+  .mr-24 { margin-right: 24px; }
+  .mb-24 { margin-bottom: 24px; }
+  .ml-24 { margin-left: 24px; }
 
   .ivu-collapse-header {
     height: 24px !important;
@@ -140,5 +132,9 @@
 
   .float-right {
     float: right;
+  }
+
+  .cursor-pointer {
+    cursor: pointer;
   }
 </style>

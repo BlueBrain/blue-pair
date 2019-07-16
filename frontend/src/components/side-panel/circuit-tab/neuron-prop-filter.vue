@@ -143,32 +143,45 @@
 
 
 <script>
+  import cloneDeep from 'lodash/cloneDeep';
+
   import store from '@/store';
+
+  const defaultCtrl = {
+    currentType: '',
+    currentProp: '',
+    currentValue: '',
+    props: [],
+    values: [],
+    includeAlgorythm: 'union',
+    excludeAlgorythm: 'union',
+  };
+
+  const defaultCurrentFilters = {
+    include: [],
+    exclude: [],
+    includeUnion: true,
+    excludeUnion: true,
+  };
 
   export default {
     name: 'neuron-prop-filter',
     data() {
       return {
-        ctrl: {
-          currentType: '',
-          currentProp: '',
-          currentValue: '',
-          props: [],
-          values: [],
-          includeAlgorythm: 'union',
-          excludeAlgorythm: 'union',
-        },
-        currentFilters: {
-          include: [],
-          exclude: [],
-          includeUnion: true,
-          excludeUnion: true,
-        },
+        ctrl: cloneDeep(defaultCtrl),
+        currentFilters: cloneDeep(defaultCurrentFilters),
         filterSet: {},
         tmpFilter: null,
       };
     },
     mounted() {
+      store.$on('resetDisplayFilters', () => {
+        this.ctrl = cloneDeep(defaultCtrl);
+        this.currentFilters = cloneDeep(defaultCurrentFilters);
+        this.filterSet = {};
+        this.tmpFilter = null;
+      });
+
       store.$on('initNeuronPropFilter', this.initFilters);
 
       store.$on('addTmpGlobalFilter', (tmpFilter) => {

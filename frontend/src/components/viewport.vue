@@ -4,7 +4,7 @@
     <canvas
       :class="{'cursor-crosshair': selectionMode}"
       :id="canvasId"
-    ></canvas>
+    />
     <morph-section-poptip/>
     <bottom-panel/>
   </div>
@@ -37,7 +37,6 @@
         onClick: this.onClick.bind(this),
       });
       // TODO: refactor
-      store.$dispatch('loadCircuit');
       store.$on('circuitLoaded', this.initRenderer.bind(this));
       store.$on('setSomaSize', size => this.renderer.setNeuronCloudPointSize(size));
       store.$on('setSynapseSize', size => this.renderer.setMorphSynapseSize(size));
@@ -75,6 +74,8 @@
 
       store.$on('addSecMarker', config => this.renderer.addSecMarker(config));
       store.$on('removeSecMarker', config => this.renderer.removeSecMarker(config));
+
+      store.$on('clearScene', () => this.renderer.clearScene());
     },
     methods: {
       onHover(obj) {
@@ -176,9 +177,9 @@
 <style scoped lang="scss">
   #container {
     position: absolute;
-    top: 28px;
+    top: 36px;
     width: calc(100% - 620px);
-    height: calc(100% - 28px);
+    height: calc(100% - 36px);
   }
 
   .cursor-crosshair {

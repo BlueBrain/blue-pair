@@ -32,17 +32,25 @@ class Ws {
   constructor() {
     this.cmdId = 0;
     this.messageQueue = [];
+    this.messageContext = {};
     this.requestResolvers = new Map();
     this.socket = null;
 
     this._initWebSocket();
   }
 
+  /**
+   * Send message
+   * @param {String} message
+   * @param {*} data
+   * @param {*} cmdId
+   */
   send(message, data, cmdId = null) {
     switch (this.socket.readyState) {
       case socketState.OPEN: {
         this.socket.send(JSON.stringify({
           data,
+          context: this.messageContext,
           cmd: message,
           cmdid: cmdId,
           timestamp: Date.now(),
@@ -57,6 +65,16 @@ class Ws {
         break;
       }
     }
+  }
+
+  /**
+   * Set a message context that will be sent to backend
+   * with every websocket message
+   *
+   * @param {Object} context
+   */
+  setMessageContext(context) {
+    this.messageContext = context;
   }
 
   async request(message, data) {

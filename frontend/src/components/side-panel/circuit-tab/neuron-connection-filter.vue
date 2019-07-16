@@ -151,33 +151,43 @@
   import union from 'lodash/union';
   import intersection from 'lodash/intersection';
   import difference from 'lodash/difference';
+  import cloneDeep from 'lodash/cloneDeep';
 
   import store from '@/store';
   import socket from '@/services/websocket';
+
+  const defaultCtrl = {
+    currentFilterType: 'include',
+    currentConnectionType: '',
+    connectionTypes: ['afferent', 'efferent'],
+    gids: [],
+    currentgid: '',
+    includeAlgorythm: 'union',
+    excludeAlgorythm: 'union',
+  };
+
+  const defaultCurrentFilters = {
+    include: [],
+    exclude: [],
+    includeUnion: true,
+    excludeUnion: true,
+  };
 
   export default {
     name: 'neuron-connection-filter',
     data() {
       return {
-        ctrl: {
-          currentFilterType: 'include',
-          currentConnectionType: '',
-          connectionTypes: ['afferent', 'efferent'],
-          gids: [],
-          currentgid: '',
-          includeAlgorythm: 'union',
-          excludeAlgorythm: 'union',
-        },
-        currentFilters: {
-          include: [],
-          exclude: [],
-          includeUnion: true,
-          excludeUnion: true,
-        },
+        ctrl: cloneDeep(defaultCtrl),
+        currentFilters: cloneDeep(defaultCurrentFilters),
         gids: [],
       };
     },
     mounted() {
+      store.$on('resetConnectivityFilters', () => {
+        this.gids = [];
+        this.ctrl = cloneDeep(defaultCtrl);
+        this.currentFilters = cloneDeep(defaultCurrentFilters);
+      });
       store.$on('updateConnectionFilters', () => this.initFilters());
       store.$on('neuronAddedToSim', (gid) => {
         this.gids.push(gid);

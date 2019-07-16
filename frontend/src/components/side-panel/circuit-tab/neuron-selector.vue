@@ -103,6 +103,13 @@
       store.$on('resetSimConfigBtn', () => { this.simInit = false; });
       store.$on('highlightSimAddedNeuron', (neuron) => { this.highlightedNeuronGid = neuron.gid; });
       store.$on('unhighlightSimAddedNeuron', () => { this.highlightedNeuronGid = null; });
+      store.$on('resetCells', () => {
+        this.manualInputGid = null;
+        this.maxGid = null;
+        this.simAddedNeurons = store.state.circuit.simAddedNeurons;
+        this.simInit = false;
+        this.highlightedNeuronGid = null;
+      });
     },
     methods: {
       init() {

@@ -32,7 +32,10 @@
     },
     mounted() {
       store.$on('setCircuitLoadingProgress', (progress) => { this.progress = progress; });
-      store.$on('showCircuitLoadingModal', () => { this.visible = true; });
+      store.$on('showCircuitLoadingModal', () => {
+        this.progress = 0;
+        this.visible = true;
+      });
       store.$on('hideCircuitLoadingModal', () => { this.visible = false; });
     },
   };

@@ -45,6 +45,10 @@ class Store {
   $once(action, handler) {
     this.eventBus.$once(action, handler);
   }
+
+  $off(action, handler) {
+    this.eventBus.$off(action, handler);
+  }
 }
 
 export default new Store();

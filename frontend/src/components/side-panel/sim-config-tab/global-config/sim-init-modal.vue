@@ -62,8 +62,9 @@
         /**
          * Progress scale:
          * # Add sim to the queue: 0% - 10%
-         * # Wait for the queue: 10% - 87%
-         * # Init simulation with params: 87% - 100%
+         * # Wait for the queue: 10% - 60%
+         * # Compile channel mechanisms: 60% - 85%
+         * # Init simulation with params: 85% - 100%
          */
         this.progress = 0;
         this.statusMsg = defaultStatusMsg;
@@ -76,11 +77,16 @@
         }
 
         this.simQueueIndex = queueIndex;
-        this.progress = 10 + Math.ceil(77 - (77 / this.simQueueLength * queueIndex));
+        this.progress = 10 + Math.ceil(50 - (50 / this.simQueueLength * queueIndex));
         this.statusMsg = `Waiting in simulation queue, current position: ${this.simQueueIndex}`;
       });
+      store.$on('ws:simulation_compile_ch_mech', () => {
+        this.progress = 60;
+        this.statusMsg = 'Compiling channel mechanisms';
+      });
+      store.$on('ws:simulation_compile_ch_mech_err', () => this.resetState());
       store.$on('ws:simulation_init', () => {
-        this.progress = 87;
+        this.progress = 85;
         this.statusMsg = 'Initializing simulator with given parameters';
       });
       store.$on('ws:simulation_finish', () => {

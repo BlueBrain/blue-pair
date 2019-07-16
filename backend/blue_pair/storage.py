@@ -6,16 +6,10 @@ import bluepy
 
 from bluepy.v2.enums import Synapse
 
-from blue_pair.redis_client import RedisClient
+from .redis_client import RedisClient
 
 L = logging.getLogger(__name__)
 L.setLevel(logging.DEBUG if os.getenv('DEBUG', False) else logging.INFO)
-
-
-CIRCUIT_PATH = os.environ['CIRCUIT_PATH']
-L.debug('creating bluepy circuit from %s', CIRCUIT_PATH)
-CIRCUIT = bluepy.Circuit(CIRCUIT_PATH)
-L.debug('bluepy circuit has been created')
 
 L.debug('creating cache client')
 cache = RedisClient()
@@ -28,31 +22,48 @@ SEC_SHORT_TYPE_DICT = {
     'axon': 'axon'
 }
 
+circuit_cache = {}
+
+def get_circuit(circuit_path):
+    # TODO: limit amount of circuits
+    global circuit_cache
+    if circuit_path in circuit_cache:
+        L.debug('Using cached circuit for {}'.format(circuit_path))
+        return circuit_cache[circuit_path]
+
+    L.debug('Creating bluepy circuit for {}'.format(circuit_path))
+    circuit = bluepy.Circuit(circuit_path)
+    circuit_cache[circuit_path] = circuit
+    return circuit
+
 
 class Storage():
-    def get_circuit_cells(self):
+    def get_circuit_cells(self, circuit_path):
         L.debug('getting cells')
+        circuit = get_circuit(circuit_path)
         cells = cache.get('circuit:cells')
         if cells is None:
-            cells = CIRCUIT.v2.cells.get().drop(['orientation', 'synapse_class'], 1, errors='ignore');
+            cells = circuit.v2.cells.get().drop(['orientation', 'synapse_class'], 1, errors='ignore');
             cache.set('circuit:cells', cells)
         L.debug('getting cells done')
         return cells
 
-    def get_connectome(self, gid):
+    def get_connectome(self, circuit_path, gid):
         L.debug('getting connectome for %s', gid)
+        circuit = get_circuit(circuit_path)
         connectome = cache.get('circuit:connectome:{}'.format(gid))
         if connectome is None:
             connectome = {
-                'afferent': CIRCUIT.v2.connectome.afferent_gids(gid),
-                'efferent': CIRCUIT.v2.connectome.efferent_gids(gid)
+                'afferent': circuit.v2.connectome.afferent_gids(gid),
+                'efferent': circuit.v2.connectome.efferent_gids(gid)
             }
             cache.set('circuit:connectome:{}'.format(gid), connectome)
         L.debug('getting connectome for %s done', gid)
         return connectome
 
-    def get_syn_connections(self, gids):
+    def get_syn_connections(self, circuit_path, gids):
         L.debug('getting syn connections for %s', gids)
+        circuit = get_circuit(circuit_path)
 
         props = [
             Synapse.POST_X_CENTER,
@@ -80,7 +91,7 @@ class Storage():
 
         for gid in gids:
             L.debug('getting afferent synapses for %s', gid)
-            syn_dict[gid] = CIRCUIT.v2.connectome.afferent_synapses(gid, properties=props).values.tolist()
+            syn_dict[gid] = circuit.v2.connectome.afferent_synapses(gid, properties=props).values.tolist()
 
         L.debug('getting syn connections for %s done', gids)
 
@@ -89,13 +100,14 @@ class Storage():
             'connection_properties': props_str
         }
 
-    def get_cell_morphology(self, gids):
+    def get_cell_morphology(self, circuit_path, gids):
         L.debug('getting cell morph for %s', gids)
+        circuit = get_circuit(circuit_path)
         cells = {}
         for gid in gids:
             cell_morph = cache.get('cell:morph:{}'.format(gid))
             if cell_morph is None:
-                cell = CIRCUIT.v2.morph.get(gid, transform=True)
+                cell = circuit.v2.morph.get(gid, transform=True)
                 morphology = [
                     {
                         'points': [point[:4] for point in section.points],
@@ -106,7 +118,7 @@ class Storage():
 
                 cache.set('cell:morph:{}'.format(gid), morphology)
 
-                orientation = CIRCUIT.v2.cells.get(gid)['orientation']
+                orientation = circuit.v2.cells.get(gid)['orientation']
 
                 cells[gid] = {
                     'sections': morphology,

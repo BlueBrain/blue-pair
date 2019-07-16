@@ -29,7 +29,8 @@
       };
     },
     mounted() {
-      store.$on('setSimulationConfigTabActive', () => this.currentTabName = 'simConfig');
+      store.$on('setSimulationConfigTabActive', () => { this.currentTabName = 'simConfig'; });
+      store.$on('selectTab', (tabName) => { this.currentTabName = tabName; });
     },
     methods: {
       onTabClick(tabName) {
@@ -50,7 +51,7 @@
   .side-panel {
     position: absolute;
     overflow: scroll;
-    top: 28px;
+    top: 36px;
     bottom: 0;
     right: 0px;
     width: 620px;

@@ -2,6 +2,13 @@
 // TODO: write documentation
 
 const state = {
+  circuitConfig: {
+    name: null,
+    path: null,
+    neurodamusBranch: null,
+    description: null,
+    type: null,
+  },
   circuit: {
     neurons: [],
     neuronPropIndex: {},
@@ -30,6 +37,15 @@ const state = {
       tStop: 400,
       timeStep: 0.05,
       forwardSkip: 5000,
+      addReplay: false,
+      addMinis: false,
+      netStimuli: {
+        all: false,
+        noise: false,
+        hyperpolarizing: false,
+        relativelinear: false,
+        pulse: false,
+      },
     },
     view: {
       axonsVisible: false,

@@ -5,19 +5,109 @@ import pickBy from 'lodash/pickBy';
 import pick from 'lodash/pick';
 import groupBy from 'lodash/groupBy';
 
-import isEqualBy from '@/tools/is-equal-by.js';
+import qs from 'qs';
+
+import isEqualBy from '@/tools/is-equal-by';
 
 import socket from '@/services/websocket';
 import storage from '@/services/storage';
+import config from '@/config';
+import constants from '@/constants';
 
 // TODO: prefix events with target component's names
 
 const recAndInjCompareKeys = ['sectionName', 'gid'];
 const APP_VERSION = process.env.VUE_APP_VERSION;
+const { Entity } = constants;
 
 const actions = {
+  init(store) {
+    const path = window.location.pathname;
+
+    const routeR = new RegExp(`/(${Entity.SIMULATION}s|${Entity.CIRCUIT}s)/([a-z0-9-_]*)/?`);
+    const customParams = qs.parse(window.location.search.slice(1));
+
+    if (!path.match(routeR)) {
+      store.$emit('showCircuitSelector', { closable: false });
+      return;
+    }
+
+    const [, collection, circuitName] = routeR.exec(path);
+
+    const type = collection.slice(0, -1);
+    if (![Entity.CIRCUIT, Entity.SIMULATION].includes(type)) {
+      store.$emit('showCircuitSelector', { closable: false });
+      return;
+    }
+
+    const customConfig = customParams.name
+      && customParams.path
+      && customParams.neurodamusBranch;
+
+    const internalCircuitConfig = config.circuits
+      .find(c => c.urlName === circuitName && c.type === type);
+
+    const queryBuiltCircuicConfig = Object.assign(
+      { type, urlName: encodeURIComponent(customParams.name), custom: true },
+      pick(customParams, ['name', 'path', 'neurodamusBranch']),
+    );
+
+    const circuitConfig = customConfig
+      ? queryBuiltCircuicConfig
+      : internalCircuitConfig;
+
+    if (!circuitConfig) {
+      store.$emit('showCircuitSelector', { closable: false });
+      return;
+    }
+
+    store.$dispatch('setCircuitConfig', circuitConfig);
+  },
+
+  setCircuitConfig(store, circuitConfig) {
+    store.state.circuitConfig = circuitConfig;
+    store.state.circuit.neurons = [];
+    socket.setMessageContext({ circuitConfig });
+    store.$emit('updateAvailableSimConfigOptions');
+    store.$emit('setSelectedCircuitConfig', circuitConfig);
+    store.$dispatch('reset');
+    store.$dispatch('setCircuitRoute', circuitConfig);
+    store.$emit('setCircuitName', circuitConfig.name);
+    store.$emit('initExampleNeuronSets', circuitConfig.examples);
+    store.$dispatch('loadCircuit');
+  },
+
+  setCircuitRoute(store, circuitConfig) {
+    const path = `/${circuitConfig.type}s/${circuitConfig.urlName}`;
+    const query = circuitConfig.custom
+      ? qs.stringify(pick(circuitConfig, ['name', 'path', 'neurodamusBranch']))
+      : null;
+
+    window.history.pushState(null, null, `${path}${query ? `?${query}` : ''}`);
+  },
+
+  reset(store) {
+    store.state.circuit.simAddedNeurons = [];
+    store.state.simulation.synInputs = [];
+    store.state.simulation.stimuli = [];
+    store.state.simulation.recordings = [];
+
+    store.$emit('selectTab', 'circuit');
+    store.$emit('clearScene');
+    store.$emit('resetConnectivityFilters');
+    store.$emit('resetDisplayFilters');
+    store.$emit('resetCells');
+    store.$emit('updateSynInputs');
+    store.$emit('updateStimuli');
+    store.$emit('updateRecordings');
+    store.$emit('setBottomPanelMode', 'cellSelection');
+    store.$emit('resetPalette');
+  },
+
   async loadCircuit(store) {
     const { circuit } = store.state;
+    const circuitPath = store.state.circuitConfig.path;
+    const neuronDataStorageKey = `neuronData:${circuitPath}`;
 
     const cacheAppVersion = await storage.getItem('appVersion');
     if (APP_VERSION !== cacheAppVersion) {
@@ -25,7 +115,7 @@ const actions = {
       await storage.setItem('appVersion', APP_VERSION);
     }
 
-    const neuronDataSet = await storage.getItem('neuronData');
+    const neuronDataSet = await storage.getItem(neuronDataStorageKey);
 
     if (neuronDataSet) {
       circuit.neuronProps = neuronDataSet.properties;
@@ -46,10 +136,11 @@ const actions = {
       const progress = Math.ceil((circuit.neurons.length / circuit.neuronCount) * 100);
       store.$emit('setCircuitLoadingProgress', progress);
       if (circuit.neurons.length === circuit.neuronCount) {
-        storage.setItem('neuronData', {
+        storage.setItem(neuronDataStorageKey, {
           properties: circuit.neuronProps,
           data: circuit.neurons,
         });
+        store.$off('ws:circuit_cells_data');
         store.$dispatch('initCircuit');
       }
     });
@@ -341,6 +432,9 @@ const actions = {
       tStop: params.tStop,
       timeStep: params.timeStep,
       forwardSkip: params.forwardSkip,
+      addReplay: params.addReplay,
+      addMinis: params.addMinis,
+      netStimuli: params.netStimuli,
       stimuli,
       recordings,
       synapses: simSynapsesByPreGid,
@@ -471,8 +565,7 @@ const actions = {
     const gids = store.state.circuit.simAddedNeurons.map(neuron => neuron.gid);
 
     const isSynapseInternal = syn => gids.includes(syn.preGid) && gids.includes(syn.postGid);
-    const isSynapseVisibleBySynInput = (syn) => {
-      return !!synInputs.find((input) => {
+    const isSynapseVisibleBySynInput = syn => !!synInputs.find((input) => {
         // TODO: make this easy to understand
         if (input.preSynCellProp === 'gid') {
           return syn.gid === input.gid &&
@@ -484,7 +577,6 @@ const actions = {
           input.synapsesVisible &&
           neurons[syn.preGid - 1][neuronPropIndex[input.preSynCellProp]] === input.preSynCellPropVal;
       });
-    };
 
     store.state.simulation.synapses.forEach((synapse) => {
       synapse.visible = isSynapseInternal(synapse) || isSynapseVisibleBySynInput(synapse);
