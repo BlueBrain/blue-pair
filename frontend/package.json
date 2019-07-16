@@ -19,27 +19,32 @@
     "lint": "vue-cli-service lint"
   },
   "dependencies": {
-    "chroma-js": "^1.4.0",
+    "chroma-js": "^2.0.3",
     "distinct-colors": "^1.0.4",
     "dygraphs": "^2.1.0",
-    "file-saver": "^1.3.8",
-    "gsap": "^2.0.2",
-    "iview": "^3.1.3",
-    "localforage": "^1.7.2",
+    "file-saver": "^2.0.2",
+    "gsap": "^2.1.2",
+    "iview": "^3.3.3",
+    "localforage": "^1.7.3",
     "lodash": "^4.17.11",
     "orbit-controls-es6": "^1.0.12",
-    "three": "^0.97.0",
-    "vue": "^2.5.17",
-    "vue-slider-component": "^2.7.8"
+    "qs": "^6.7.0",
+    "three": "^0.106.2",
+    "vue": "^2.6.10",
+    "vue-slider-component": "^2.8.14"
   },
   "devDependencies": {
-    "@vue/cli-plugin-babel": "^3.0.4",
-    "@vue/cli-plugin-eslint": "^3.0.4",
-    "@vue/cli-service": "^3.0.4",
-    "@vue/eslint-config-airbnb": "^3.0.4",
-    "node-sass": "^4.9.3",
+    "@vue/cli-plugin-babel": "^3.5.1",
+    "@vue/cli-plugin-eslint": "^3.5.1",
+    "@vue/cli-service": "^3.5.2",
+    "@vue/eslint-config-airbnb": "^4.0.1",
+    "babel-eslint": "^10.0.1",
+    "eslint-import-resolver-alias": "^1.1.2",
+    "eslint-plugin-import": "^2.16.0",
+    "eslint-plugin-vue": "^5.2.2",
+    "node-sass": "^4.12.0",
     "sass-loader": "^7.1.0",
-    "vue-template-compiler": "^2.5.17"
+    "vue-template-compiler": "^2.6.10"
   },
   "babel": {
     "presets": [
@@ -61,6 +66,19 @@
           "baseIndent": 1
         }
       ]
+    },
+    "parserOptions": {
+      "parser": "babel-eslint"
+    },
+    "settings": {
+      "import/resolver": {
+        "alias": [
+          [
+            "@",
+            "./frontend/src"
+          ]
+        ]
+      }
     }
   },
   "postcss": {
