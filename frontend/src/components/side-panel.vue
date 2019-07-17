@@ -16,9 +16,10 @@
   </div>
 </template>
 
+
 <script>
-  import CircuitTab from './side-panel/circuit-tab';
-  import SimConfigTab from './side-panel/sim-config-tab';
+  import CircuitTab from './side-panel/circuit-tab.vue';
+  import SimConfigTab from './side-panel/sim-config-tab.vue';
   import store from '@/store';
 
   export default {
@@ -46,6 +47,7 @@
     },
   };
 </script>
+
 
 <style scoped lang="scss">
   .side-panel {

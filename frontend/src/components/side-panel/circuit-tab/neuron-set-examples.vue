@@ -41,15 +41,19 @@
 <script>
   import store from '@/store';
 
-  import neuronSets from './neuron-set-examples-list';
-
   export default {
     name: 'neuron-set-examples',
     data() {
       return {
-        neuronSets,
+        neuronSets: [],
         currentNeuronSetIndex: null,
       };
+    },
+    mounted() {
+      store.$on('initExampleNeuronSets', (neuronSets) => {
+        this.currentNeuronSetIndex = null;
+        this.neuronSets = neuronSets || [];
+      });
     },
     methods: {
       loadNeuronSet() {
