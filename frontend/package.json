@@ -27,7 +27,6 @@
     "iview": "^3.3.3",
     "localforage": "^1.7.3",
     "lodash": "^4.17.11",
-    "orbit-controls-es6": "^1.0.12",
     "qs": "^6.7.0",
     "three": "^0.106.2",
     "vue": "^2.6.10",
