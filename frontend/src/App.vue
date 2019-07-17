@@ -17,10 +17,10 @@
   import config from '@/config';
   import store from '@/store';
 
-  import TopBar from './components/top-bar';
-  import Viewport from './components/viewport';
-  import SidePanel from './components/side-panel';
-  import Spinner from './components/spinner';
+  import TopBar from './components/top-bar.vue';
+  import Viewport from './components/viewport.vue';
+  import SidePanel from './components/side-panel.vue';
+  import Spinner from './components/spinner.vue';
   import CircuitLoadingModal from './components/circuit-loading-modal.vue';
   import MaintenancePage from './components/maintenance-page.vue';
 
