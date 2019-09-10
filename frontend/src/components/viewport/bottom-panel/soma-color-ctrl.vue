@@ -44,18 +44,12 @@
     },
     methods: {
       init() {
-        const { neurons, neuronProps } = store.state.circuit;
-        const neuronSample = neurons[0];
+        const { cells } = store.state.circuit;
+        const neuronProps = cells.meta.props;
 
-        this.uniqueValuesByProp = neuronProps.reduce((uniqueValuesByProp, propName, propIndex) => {
-          const propsToSkip = ['x', 'y', 'z'];
-          if (propsToSkip.includes(propName)) return uniqueValuesByProp;
-
-          const propType = typeof neuronSample[propIndex];
-          if (propType !== 'string' && propType !== 'number') return uniqueValuesByProp;
-
-          const propUniqueValues = Array.from(new Set(neurons.map(n => n[propIndex])));
-          if (propUniqueValues.length > 20) return uniqueValuesByProp;
+        this.uniqueValuesByProp = neuronProps.reduce((uniqueValuesByProp, propName) => {
+          const propUniqueValues = cells.prop[propName].values;
+          if (cells.prop[propName].values.length > 20) return uniqueValuesByProp;
 
           return Object.assign(uniqueValuesByProp, { [propName]: propUniqueValues.sort() });
         }, {});

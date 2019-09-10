@@ -8,6 +8,7 @@ import groupBy from 'lodash/groupBy';
 import qs from 'qs';
 
 import isEqualBy from '@/tools/is-equal-by';
+import MinSizeUintArray from '@/tools/min-size-uint-array';
 
 import socket from '@/services/websocket';
 import storage from '@/services/storage';
@@ -21,7 +22,10 @@ const APP_VERSION = process.env.VUE_APP_VERSION;
 const { Entity } = constants;
 
 const actions = {
-  init(store) {
+  async init(store) {
+    await store.$dispatch('resetInvalidStorageCache');
+
+    // TODO: split into multiple actions
     const path = window.location.pathname;
 
     const routeR = new RegExp(`/(${Entity.SIMULATION}s|${Entity.CIRCUIT}s)/([a-z0-9-_]*)/?`);
@@ -64,6 +68,14 @@ const actions = {
     store.$dispatch('setCircuitConfig', circuitConfig);
   },
 
+  async resetInvalidStorageCache() {
+    const cacheAppVersion = await storage.getItem('appVersion');
+    if (APP_VERSION !== cacheAppVersion) {
+      await storage.clear();
+      await storage.setItem('appVersion', APP_VERSION);
+    }
+  },
+
   setCircuitConfig(store, circuitConfig) {
     store.state.circuitConfig = circuitConfig;
     store.state.circuit.neurons = [];
@@ -74,6 +86,8 @@ const actions = {
     store.$dispatch('setCircuitRoute', circuitConfig);
     store.$emit('setCircuitName', circuitConfig.name);
     store.$emit('initExampleNeuronSets', circuitConfig.examples);
+
+    // FIXME: make sure the whole block makes sense
     store.$dispatch('loadCircuit');
   },
 
@@ -105,64 +119,212 @@ const actions = {
   },
 
   async loadCircuit(store) {
-    const { circuit } = store.state;
-    const circuitPath = store.state.circuitConfig.path;
-    const neuronDataStorageKey = `neuronData:${circuitPath}`;
+    store.$dispatch('showGlobalSpinner');
+    const cached = await storage.getItem(store.$get('storageKey'));
 
-    const cacheAppVersion = await storage.getItem('appVersion');
-    if (APP_VERSION !== cacheAppVersion) {
-      await storage.clear();
-      await storage.setItem('appVersion', APP_VERSION);
+    if (cached) {
+      store.$dispatch('showGlobalSpinner');
+      await store.$dispatch('loadCircuitFromCache');
+    } else {
+      await store.$dispatch('loadCircuitFromBackend');
+
+      store.$dispatch('showGlobalSpinner');
+      await store.$dispatch('saveCircuitToCache');
     }
 
-    const neuronDataSet = await storage.getItem(neuronDataStorageKey);
+    store.$dispatch('initCircuit');
+    store.$dispatch('hideGlobalSpinner');
+  },
 
-    if (neuronDataSet) {
-      circuit.neuronProps = neuronDataSet.properties;
-      circuit.neurons = neuronDataSet.data;
-      store.$dispatch('initCircuit');
-      return;
+  async saveCircuitToCache(store) {
+    const { cells } = store.state.circuit;
+
+    await storage.setItem(store.$get('storageKey', 'meta'), cells.meta);
+
+    /* eslint-disable-next-line */
+    for (let prop of cells.meta.props) {
+      /* eslint-disable-next-line */
+      await storage.setItem(
+        store.$get('storageKey', `propValues:${prop}`),
+        cells.prop[prop].values,
+      );
+
+      /* eslint-disable-next-line */
+      await storage.setItem(
+        store.$get('storageKey', `propIndex:${prop}`),
+        cells.prop[prop].index,
+      );
     }
 
-    store.$emit('showCircuitLoadingModal');
+    await storage.setItem(
+      store.$get('storageKey', 'position'),
+      cells.positions,
+    );
 
-    store.$once('ws:circuit_cell_info', (info) => {
-      circuit.neuronCount = info.count;
-      circuit.neuronProps = info.properties;
-    });
+    await storage.setItem(store.$get('storageKey'), true);
+  },
 
-    store.$on('ws:circuit_cells_data', (cellData) => {
-      circuit.neurons.push(...cellData);
-      const progress = Math.ceil((circuit.neurons.length / circuit.neuronCount) * 100);
-      store.$emit('setCircuitLoadingProgress', progress);
-      if (circuit.neurons.length === circuit.neuronCount) {
-        storage.setItem(neuronDataStorageKey, {
-          properties: circuit.neuronProps,
-          data: circuit.neurons,
+  async loadCircuitFromCache(store) {
+    const { cells } = store.state.circuit;
+
+    cells.meta = await storage.getItem(store.$get('storageKey', 'meta'));
+
+    /* eslint-disable-next-line */
+    for (let prop of cells.meta.props) {
+      cells.prop[prop] = {};
+      const propObj = cells.prop[prop];
+
+      const valuesStorageKey = store.$get('storageKey', `propValues:${prop}`);
+      /* eslint-disable-next-line */
+      propObj.values = await storage.getItem(valuesStorageKey);
+
+      const indexStorageKey = store.$get('storageKey', `propIndex:${prop}`);
+      /* eslint-disable-next-line */
+      propObj.index = await storage.getItem(indexStorageKey);
+    }
+
+    cells.positions = await storage.getItem(store.$get('storageKey', 'position'));
+  },
+
+  async loadCircuitFromBackend(store) {
+    const { cells } = store.state.circuit;
+    const cellProp = cells.prop;
+
+    store.$emit('showGlobalSpinner');
+    cells.meta = await socket.request('get_circuit_metadata');
+    store.$emit('hideGlobalSpinner');
+
+    const cellProps = Object.keys(cells.meta.prop);
+    store.$emit('showCircuitLoadingModal', { cellProps });
+
+    await store.$dispatch('loadCircuitCellPositions');
+    /* eslint-disable-next-line */
+    for (let prop of cellProps) {
+      const valuesCount = cells.meta.prop[prop].size;
+      cellProp[prop] = {
+        values: [],
+        index: new MinSizeUintArray(cells.meta.count, valuesCount),
+      };
+
+      /* eslint-disable-next-line */
+      await store.$dispatch('loadCircuitPropValues', prop);
+      /* eslint-disable-next-line */
+      await store.$dispatch('loadCircuitPropIndex', prop);
+    }
+
+    store.$emit('hideCircuitLoadingModal');
+  },
+
+  async loadCircuitPropValues(store, prop) {
+    const { cells } = store.state.circuit;
+    const cellProp = cells.prop;
+
+    const done = new Promise((resolve) => {
+      const processPropValues = ({ prop: receivedProp, values }) => {
+        if (prop !== receivedProp) {
+          throw new Error(`Received ${receivedProp} prop instead of expected ${prop}`);
+        }
+
+        cellProp[prop].values.push(...values);
+
+        const progress = Math.trunc(cellProp[prop].values.length / cells.meta.prop[prop].size * 100);
+        store.$emit('setCircuitLoadingProgress', {
+          progress,
+          cellProp: prop,
+          progressType: 'valuesProgress',
         });
-        store.$off('ws:circuit_cells_data');
-        store.$dispatch('initCircuit');
-      }
+
+        if (cellProp[prop].values.length === store.state.circuit.cells.meta.prop[prop].size) {
+          store.$off('ws:circuit_prop_values', processPropValues);
+          resolve();
+        }
+      };
+
+      store.$on('ws:circuit_prop_values', processPropValues);
+      socket.send('get_circuit_prop_values', prop);
     });
 
-    socket.request('get_circuit_cells');
+    await done;
+  },
+
+  async loadCircuitPropIndex(store, prop) {
+    const { cells } = store.state.circuit;
+    const cellProp = cells.prop;
+
+    const done = new Promise((resolve) => {
+      let idxOffset = 0;
+
+      const processPropIndex = ({ prop: receivedProp, values }) => {
+        if (prop !== receivedProp) {
+          throw new Error(`Received ${receivedProp} prop instead of expected ${prop}`);
+        }
+
+        values.forEach((value, idx) => {
+          cellProp[prop].index[idxOffset + idx] = value;
+        });
+        idxOffset += values.length;
+
+        const progress = Math.trunc(idxOffset / cells.meta.count * 100);
+        store.$emit('setCircuitLoadingProgress', {
+          cellProp: prop,
+          progress,
+          progressType: 'indexProgress',
+        });
+
+        if (idxOffset >= cells.meta.count) {
+          store.$off('ws:circuit_prop_index', processPropIndex);
+          resolve();
+        }
+      };
+
+      store.$on('ws:circuit_prop_index', processPropIndex);
+      socket.send('get_circuit_prop_index', prop);
+    });
+
+    await done;
+  },
+
+  async loadCircuitCellPositions(store) {
+    const { cells } = store.state.circuit;
+
+    const positionsArrSize = cells.meta.count * 3;
+    cells.positions = new Float32Array(positionsArrSize);
+    let idxOffset = 0;
+
+    const done = new Promise((resolve) => {
+      const processPositions = ({ positions }) => {
+        positions.forEach((val, posIdx) => { cells.positions[posIdx + idxOffset] = val; });
+
+        idxOffset += positions.length;
+
+        const progress = Math.trunc(idxOffset / positionsArrSize * 100);
+        store.$emit('setCircuitLoadingProgress', {
+          progress,
+          cellProp: 'position',
+        });
+
+        if (positionsArrSize === idxOffset) {
+          store.$off('ws:circuit_cell_positions', processPositions);
+          resolve();
+        }
+      };
+
+      store.$on('ws:circuit_cell_positions', processPositions);
+      socket.send('get_circuit_cell_positions');
+    });
+
+    await done;
   },
 
   initCircuit(store) {
-    store.state.circuit.neuronPropIndex = store.state.circuit.neuronProps
-      .reduce((propIndexObj, propName, propIndex) => Object.assign(propIndexObj, {
-        [propName]: propIndex,
-      }), {});
-
-    const neuronsCount = store.state.circuit.neurons.length;
-    store.state.circuit.globalFilterIndex = new Array(neuronsCount).fill(true);
-    store.state.circuit.connectionFilterIndex = new Array(neuronsCount).fill(true);
+    const neuronsCount = store.state.circuit.cells.meta.count;
+    store.state.circuit.globalFilterIndex = new Uint8Array(neuronsCount).fill(1);
+    store.state.circuit.connectionFilterIndex = new Uint8Array(neuronsCount).fill(1);
 
     store.$emit('initNeuronColor');
     store.$emit('updateColorPalette');
     store.$emit('initNeuronPropFilter');
     store.$emit('circuitLoaded');
-    store.$emit('hideCircuitLoadingModal');
   },
 
   showGlobalSpinner(store, msg) {
@@ -388,13 +550,13 @@ const actions = {
     const simSynapsesByPreGid = synInputs.reduce((synConfig, synInput) => {
       const syns = synapses.filter((syn) => {
         if (synInput.preSynCellProp === 'gid') {
-          return syn.gid === synInput.gid &&
-            syn.preGid === synInput.preSynCellPropVal;
+          return syn.gid === synInput.gid
+            && syn.preGid === synInput.preSynCellPropVal;
         }
 
-        return syn.gid === synInput.gid &&
-          synInput.valid &&
-          neurons[syn.preGid - 1][neuronPropIndex[synInput.preSynCellProp]] === synInput.preSynCellPropVal;
+        return syn.gid === synInput.gid
+          && synInput.valid
+          && neurons[syn.preGid - 1][neuronPropIndex[synInput.preSynCellProp]] === synInput.preSynCellPropVal;
       });
 
       const {
@@ -559,7 +721,7 @@ const actions = {
   },
 
   updateSynapseStates(store) {
-    const { neurons, neuronPropIndex } = store.state.circuit;
+    const { cells } = store.state.circuit;
     const { synInputs } = store.state.simulation;
 
     const gids = store.state.circuit.simAddedNeurons.map(neuron => neuron.gid);
@@ -568,14 +730,19 @@ const actions = {
     const isSynapseVisibleBySynInput = syn => !!synInputs.find((input) => {
         // TODO: make this easy to understand
         if (input.preSynCellProp === 'gid') {
-          return syn.gid === input.gid &&
-            input.synapsesVisible &&
-            syn.preGid === input.preSynCellPropVal;
+          return syn.gid === input.gid
+            && input.synapsesVisible
+            && syn.preGid === input.preSynCellPropVal;
         }
 
-        return syn.gid === input.gid &&
-          input.synapsesVisible &&
-          neurons[syn.preGid - 1][neuronPropIndex[input.preSynCellProp]] === input.preSynCellPropVal;
+        if (syn.gid !== input.gid || !input.synapsesVisible || !input.preSynCellProp) {
+          return false;
+        }
+
+        const neuronPropValIndex = cells.prop[input.preSynCellProp].index[syn.preGid - 1];
+        const neuronPropVal = cells.prop[input.preSynCellProp].values[neuronPropValIndex];
+
+        return neuronPropVal === input.preSynCellPropVal;
       });
 
     store.state.simulation.synapses.forEach((synapse) => {

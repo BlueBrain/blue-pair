@@ -196,17 +196,11 @@
     },
     methods: {
       initFilters() {
-        const { neurons, neuronProps } = store.state.circuit;
-        const neuronSample = neurons[0];
+        const { cells } = store.state.circuit;
+        const neuronProps = cells.meta.props;
 
-        this.filterSet = neuronProps.reduce((filterSet, propName, propIndex) => {
-          const filterPropsToSkip = ['x', 'y', 'z'];
-          if (filterPropsToSkip.includes(propName)) return filterSet;
-
-          const propType = typeof neuronSample[propIndex];
-          if (propType !== 'string' && propType !== 'number') return filterSet;
-
-          const propUniqueValues = Array.from(new Set(neurons.map(n => n[propIndex])));
+        this.filterSet = neuronProps.reduce((filterSet, propName) => {
+          const propUniqueValues = cells.prop[propName].values;
           if (propUniqueValues.length > 1000) return filterSet;
 
           return Object.assign(filterSet, { [propName]: propUniqueValues.sort() });
@@ -259,37 +253,52 @@
       },
       updateGlobalFilterIndex() {
         // TODO: move to webworker or async separate module
-        // to not block UI
+        // not to block UI
         setTimeout(() => {
-          const { neurons, neuronPropIndex } = store.state.circuit;
-          const { tmpFilter } = this;
-          const filters = this.currentFilters;
+          const { cells } = store.state.circuit;
+          const cellsPropObj = cells.prop;
 
-          function neuronVisible(neuron) {
-            const affectedByFilter = f => neuron[neuronPropIndex[f.prop]] === f.value;
+          /**
+           * Removing Vue's reactive getters by deep cloning
+           * to optimize property access
+           */
+          // FIXME: remove tmpFilter
+          const tmpFilter = cloneDeep(this.tmpFilter);
+          const filters = cloneDeep(this.currentFilters);
+
+          // assign index for every filter value;
+          const assignPropIndex = (f) => {
+            f.idx = cellsPropObj[f.prop].values.findIndex(val => val === f.value);
+          };
+          filters.include.forEach(assignPropIndex);
+          filters.exclude.forEach(assignPropIndex);
+
+          function neuronVisible(neuronIdx) {
+            const affectedByFilter = f => cellsPropObj[f.prop].index[neuronIdx] === f.idx;
 
             if (
-              tmpFilter &&
-              neuron[neuronPropIndex[tmpFilter.prop]] != tmpFilter.val
+              filters.include.length
+              && !filters.include[filters.includeUnion ? 'some' : 'every'](affectedByFilter)
             ) return false;
 
             if (
-              filters.include.length &&
-              !filters.include[filters.includeUnion ? 'some' : 'every'](affectedByFilter)
-            ) return false;
-
-            if (
-              filters.exclude.length &&
-              filters.exclude[filters.excludeUnion ? 'some' : 'every'](affectedByFilter)
+              filters.exclude.length
+              && filters.exclude[filters.excludeUnion ? 'some' : 'every'](affectedByFilter)
             ) return false;
 
             return true;
           }
 
           const { globalFilterIndex } = store.state.circuit;
-          neurons.forEach((neuron, index) => {
-            globalFilterIndex[index] = neuronVisible(neuron);
-          });
+
+          if (!filters.include.length && !filters.exclude.length) {
+            // TODO: for some reason fill is slow here, find a way to improve performance
+            globalFilterIndex.fill(1);
+          } else {
+            for (let idx = 0; idx < cells.meta.count; idx += 1) {
+              globalFilterIndex[idx] = neuronVisible(idx);
+            }
+          }
 
           store.$dispatch('propFilterUpdated');
         }, 20);

@@ -191,10 +191,10 @@
         this.emitSynInputChange();
       },
       updateValidity() {
-        this.synInput.valid = this.synInput.gid &&
-          this.synInput.preSynCellProp &&
-          this.synInput.preSynCellPropVal &&
-          this.preSynCellPropValValid;
+        this.synInput.valid = this.synInput.gid
+          && this.synInput.preSynCellProp
+          && this.synInput.preSynCellPropVal
+          && this.preSynCellPropValValid;
       },
       updateFilters() {
         const { synInputs } = store.state.simulation;
@@ -204,9 +204,9 @@
           .filter(propValue => !synInputs.find((input) => {
             if (!input.valid) return false;
 
-            return input.preSynCellProp === currentProp &&
-              input.preSynCellPropVal === propValue &&
-              input.gid === this.synInput.gid;
+            return input.preSynCellProp === currentProp
+              && input.preSynCellPropVal === propValue
+              && input.gid === this.synInput.gid;
           }));
       },
       emitSynInputChange() {
@@ -221,13 +221,13 @@
         return this.preSynCellPropValues.includes(this.synInput.preSynCellPropVal);
       },
       propInputPoptipVisible() {
-        return this.synInput.gid &&
-          !this.synInput.preSynCellProp;
+        return this.synInput.gid
+          && !this.synInput.preSynCellProp;
       },
       propValueInputPoptipVisible() {
-        return this.synInput.gid &&
-          !this.propInputPoptipVisible &&
-          !this.preSynCellPropValValid;
+        return this.synInput.gid
+          && !this.propInputPoptipVisible
+          && !this.preSynCellPropValValid;
       },
     },
   };

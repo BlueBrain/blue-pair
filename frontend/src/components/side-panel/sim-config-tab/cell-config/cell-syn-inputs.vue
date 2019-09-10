@@ -90,18 +90,11 @@
       init() {
         this.synInputs = [];
 
-        const { synapses } = store.state.simulation;
-        const { neurons, neuronProps } = store.state.circuit;
-        const neuronSample = neurons[0];
+        const { cells } = store.state.circuit;
+        const neuronProps = cells.meta.props;
 
-        this.filterSet = neuronProps.reduce((filterSet, propName, propIndex) => {
-          const filterPropsToSkip = ['x', 'y', 'z'];
-          if (filterPropsToSkip.includes(propName)) return filterSet;
-
-          const propType = typeof neuronSample[propIndex];
-          if (propType !== 'string' && propType !== 'number') return filterSet;
-
-          const propUniqueValues = Array.from(new Set(synapses.map(synapse => neurons[synapse.preGid - 1][propIndex])));
+        this.filterSet = neuronProps.reduce((filterSet, propName) => {
+          const propUniqueValues = cells.prop[propName].values;
           if (propUniqueValues.length > 200) return filterSet;
 
           return Object.assign(filterSet, { [propName]: propUniqueValues.sort() });

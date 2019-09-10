@@ -135,7 +135,7 @@
         }
       },
       initRenderer() {
-        const neuronSetSize = store.state.circuit.neurons.length;
+        const neuronSetSize = store.state.circuit.cells.meta.count;
         this.renderer.initNeuronCloud(neuronSetSize);
         this.redrawNeurons();
         this.renderer.alignCamera();
@@ -143,29 +143,31 @@
       redrawNeurons() {
         const {
           globalFilterIndex,
-          neurons,
-          neuronPropIndex,
           connectionFilterIndex,
           color: {
             palette,
             neuronProp,
           },
         } = store.state.circuit;
+        const { cells } = store.state.circuit;
 
         const { positionBufferAttr, colorBufferAttr } = this.renderer.neuronCloud;
 
-        neurons.forEach((neuron, neuronIndex) => {
-          if (!globalFilterIndex[neuronIndex] || !connectionFilterIndex[neuronIndex]) {
-            // TODO: find a better way to hide part of the cloud
-            return positionBufferAttr.setXYZ(neuronIndex, 10000, 10000, 10000);
+        for (let neuronIdx = 0; neuronIdx < cells.meta.count; neuronIdx += 1) {
+          if (!globalFilterIndex[neuronIdx] || !connectionFilterIndex[neuronIdx]) {
+            // FIXME: switch to opacity attribute
+            positionBufferAttr.setXYZ(neuronIdx, 10000, 10000, 10000);
+          } else {
+            const neuronPosition = store.$get('neuronPosition', neuronIdx);
+
+            const propIndex = cells.prop[neuronProp].index[neuronIdx];
+            const propValue = cells.prop[neuronProp].values[propIndex];
+            const glColor = palette[propValue];
+
+            positionBufferAttr.setXYZ(neuronIdx, ...neuronPosition);
+            colorBufferAttr.setXYZ(neuronIdx, ...glColor);
           }
-
-          const neuronPosition = store.$get('neuronPosition', neuronIndex);
-          const glColor = palette[neuron[neuronPropIndex[neuronProp]]];
-
-          positionBufferAttr.setXYZ(neuronIndex, ...neuronPosition);
-          colorBufferAttr.setXYZ(neuronIndex, ...glColor);
-        });
+        }
 
         this.renderer.updateNeuronCloud();
       },

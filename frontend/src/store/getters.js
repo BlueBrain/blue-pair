@@ -9,28 +9,41 @@ function isSectionOfInteractionSite(interactionSite, section) {
 }
 
 const getters = {
-  neuron(store, index) {
-    const { neurons, neuronPropIndex } = store.state.circuit;
+  neuron(store, idx) {
+    const { cells } = store.state.circuit;
+    const { props } = cells.meta;
 
-    return Object.keys(neuronPropIndex)
-      .reduce((nrn, prop) => {
-        const propValue = neurons[index][neuronPropIndex[prop]];
-        return Object.assign(nrn, { [prop]: propValue });
-      }, { gid: index + 1 });
+    return props.reduce((nrn, prop) => {
+      const propValueIdx = cells.prop[prop].index[idx];
+      const propValue = cells.prop[prop].values[propValueIdx];
+      return Object.assign(nrn, { [prop]: propValue });
+    }, { gid: idx + 1 });
+  },
+
+  neuronProp(store, idx, propName) {
+    const { cells } = store.state.circuit;
+    const valueIdx = cells.prop[propName].index[idx];
+    const propValue = cells.prop[propName].values[valueIdx];
+    return propValue;
   },
 
   synapse(store, synapseIndex) {
     return store.state.simulation.synapses[synapseIndex];
   },
 
-  neuronPosition(store, index) {
-    const { neurons, neuronPropIndex } = store.state.circuit;
+  neuronPosition(store, idx) {
+    const { cells } = store.state.circuit;
 
     return [
-      neurons[index][neuronPropIndex.x],
-      neurons[index][neuronPropIndex.y],
-      neurons[index][neuronPropIndex.z],
+      cells.positions[idx * 3],
+      cells.positions[idx * 3 + 1],
+      cells.positions[idx * 3 + 2],
     ];
+  },
+
+  storageKey(store, type = 'default', prefix = 'circuit') {
+    const circuitPath = store.state.circuitConfig.path;
+    return `${prefix}:${circuitPath}${type ? `:${type}` : ''}`;
   },
 
   stimuli(store) {

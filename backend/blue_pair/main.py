@@ -8,6 +8,7 @@ import signal
 import tornado.ioloop
 import tornado.web
 import tornado.websocket
+import numpy as np
 
 from tornado.log import enable_pretty_logging
 from .sim_manager import SimStatus
@@ -36,6 +37,16 @@ def on_terminate(signal, frame):
 signal.signal(signal.SIGINT, on_terminate)
 signal.signal(signal.SIGTERM, on_terminate)
 
+def generate_chunks(values, data_type=None):
+    current_index = 0
+    chunk_size = int(len(values) / 100 + 1)
+    while current_index < len(values):
+        data_chunk = values[current_index : current_index + chunk_size]
+        if data_type:
+            L.debug(f'{data_type} chunk {current_index}:{current_index + chunk_size} is ready to be sent')
+        yield data_chunk
+        current_index = current_index + chunk_size
+
 
 class WSHandler(tornado.websocket.WebSocketHandler):
     sim_id = None
@@ -52,18 +63,86 @@ class WSHandler(tornado.websocket.WebSocketHandler):
         cmd = msg['cmd']
         cmdid = msg['cmdid']
         context = msg['context']
-        circut_config = context['circuitConfig']
+        circuit_config = context['circuitConfig']
 
         if 'circuitConfig' in context:
             circuit_path = context['circuitConfig']['path']
+
+        if cmd == 'get_circuit_metadata':
+            # TODO: move logic to storage module
+            cells = STORAGE.get_circuit_cells(circuit_path)
+            cell_count = len(cells)
+            props = [
+                prop
+                for prop
+                in cells.columns.tolist()
+                if prop not in ['x', 'y', 'z']
+            ]
+
+            prop_meta = {
+                prop: {
+                    'size': len(cells[prop].unique())
+                }
+                for prop
+                in props
+            }
+            L.debug('sending circuit metadata to the client')
+            circuit_metadata = {
+                'prop': prop_meta,
+                'props': props,
+                'count': cell_count,
+                'cmdid': cmdid
+            }
+            self.send_message('circuit_metadata', circuit_metadata)
+
+        if cmd in ['get_circuit_prop_values', 'get_circuit_prop_index']:
+            prop = msg['data']
+            cells = STORAGE.get_circuit_cells(circuit_path)
+
+            d_type, fctr_idx = ['index', 0] if cmd == 'get_circuit_prop_index' else ['values', 1]
+
+            values = cells[prop].factorize()[fctr_idx].tolist()
+            values_it = generate_chunks(values, data_type=f'{prop} {d_type}')
+            def send():
+                chunk = next(values_it, None)
+                if chunk is not None:
+                    self.send_message(f'circuit_prop_{d_type}', {
+                        'prop': prop,
+                        'values': chunk
+                    })
+                    tornado.ioloop.IOLoop.current().add_callback(send)
+
+            tornado.ioloop.IOLoop.current().add_callback(send)
+
+        if cmd == 'get_circuit_cell_positions':
+            cells = STORAGE.get_circuit_cells(circuit_path)
+            positions = np.dstack((cells.x, cells.y, cells.z)).flatten()
+            positions_it = generate_chunks(positions, data_type='positions')
+            def send():
+                chunk = next(positions_it, None)
+                if chunk is not None:
+                    self.send_message('circuit_cell_positions', {
+                        'positions': chunk
+                    })
+                    tornado.ioloop.IOLoop.current().add_callback(send)
+
+            tornado.ioloop.IOLoop.current().add_callback(send)
 
         if cmd == 'get_circuit_cells':
             cells = STORAGE.get_circuit_cells(circuit_path)
             cell_count = len(cells)
 
+            prop_meta = {
+                prop: len(cells[prop].unique())
+                for prop
+                in cells.columns.tolist()
+                if prop not in ['x', 'y', 'z']
+            }
+
             L.debug('sending circuit cell properties to the client')
             circuit_info = {
                 'properties': cells.columns.tolist(),
+                'prop_meta': prop_meta,
                 'count': cell_count
             }
             self.send_message('circuit_cell_info', circuit_info)
@@ -118,10 +197,6 @@ class WSHandler(tornado.websocket.WebSocketHandler):
             def send_sim_data(sim_data):
                 if sim_data.status == SimStatus.QUEUE:
                     socket.send_message('simulation_queued', sim_data.data)
-                elif sim_data.status == SimStatus.CH_MECH_COMPILE:
-                    socket.send_message('simulation_compile_ch_mech')
-                elif sim_data.status == SimStatus.CH_MECH_COMPILE_ERR:
-                    socket.send_message('simulation_compile_ch_mech_err', sim_data.data)
                 elif sim_data.status == SimStatus.INIT:
                     socket.send_message('simulation_init')
                 elif sim_data.status == SimStatus.FINISH:
@@ -131,7 +206,7 @@ class WSHandler(tornado.websocket.WebSocketHandler):
                     socket.send_message('simulation_result', sim_data.data)
             def cb(sim_data):
                 IOLoop.add_callback(send_sim_data, sim_data)
-            self.sim_id = SIM_MANAGER.create_sim(circut_config, simulator_config, cb)
+            self.sim_id = SIM_MANAGER.create_sim(circuit_config, simulator_config, cb)
 
         elif cmd == 'cancel_simulation':
             if self.sim_id is not None:
@@ -153,7 +228,7 @@ class WSHandler(tornado.websocket.WebSocketHandler):
 if __name__ == '__main__':
     app = tornado.web.Application([
         (r'/ws', WSHandler),
-    ])
+    ], debug=os.getenv('DEBUG', False))
     L.debug('starting tornado io loop')
     app.listen(8000)
     tornado.ioloop.IOLoop.current().start()

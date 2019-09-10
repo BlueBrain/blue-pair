@@ -113,7 +113,7 @@
     },
     methods: {
       init() {
-        this.maxGid = store.state.circuit.neurons.length;
+        this.maxGid = store.state.circuit.cells.count;
       },
       onNeuronAdd(neuron) {
         if (this.simAddedNeurons.find(nrn => nrn.gid === neuron.gid)) return;

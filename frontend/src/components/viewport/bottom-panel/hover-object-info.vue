@@ -1,13 +1,12 @@
 
 <template>
-  <transition name="fade">
-    <div
-      class="hover-object-info-container"
-      v-if="visible"
-    >
-      <h4>{{ content.header }}</h4>
+  <div
+    class="hover-object-info-container opacity-transition"
+    :class="{opaque: !visible}"
+  >
+    <h4>{{ content.header }}</h4>
+    <div v-if="content.items">
       <div
-        v-if="content"
         v-for="(item, index) in content.items"
         :key="index"
       >
@@ -30,7 +29,7 @@
         </div>
       </div>
     </div>
-  </transition>
+  </div>
 </template>
 
 
@@ -42,7 +41,7 @@
     data() {
       return {
         visible: false,
-        content: null,
+        content: {},
       };
     },
     mounted() {
@@ -68,5 +67,13 @@
 
   table {
     width: 100%;
+  }
+
+  .opacity-transition {
+    transition: opacity 0.3s ease-in-out;
+  }
+
+  .opaque {
+    opacity: 0;
   }
 </style>
