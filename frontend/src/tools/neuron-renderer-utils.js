@@ -27,6 +27,45 @@ const baseMorphColors = {
 };
 
 
+class RendererCtrl {
+  countinuousRenderCounter = 0;
+
+  once = true;
+
+  stopTime = null;
+
+  get render() {
+    if (this.countinuousRenderCounter) return true;
+
+    if (this.stopTime) {
+      const now = Date.now();
+      if (this.stopTime > now) return true;
+
+      this.stopTime = null;
+      return false;
+    }
+
+    const { once } = this;
+    this.once = false;
+    return once;
+  }
+
+  renderOnce() {
+    this.once = true;
+  }
+
+  renderFor(time) {
+    const now = Date.now();
+    if (this.stopTime && this.stopTime > now + time) return;
+    this.stopTime = now + time;
+  }
+
+  renderUntilStopped() {
+    this.countinuousRenderCounter += 1;
+    return () => { this.countinuousRenderCounter -= 1; };
+  }
+}
+
 function disposeMesh(obj) {
   obj.geometry.dispose();
   obj.material.dispose();
@@ -175,4 +214,5 @@ export default {
   getSomaRadiusFromPoints,
   generateSecMaterialMap,
   quatFromArray3x3,
+  RendererCtrl,
 };

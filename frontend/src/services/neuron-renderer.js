@@ -9,7 +9,7 @@ import {
   Raycaster, PerspectiveCamera, Object3D, BufferAttribute, BufferGeometry,
   PointsMaterial, DoubleSide, VertexColors, Geometry, Points, Vector3, MeshLambertMaterial,
   SphereBufferGeometry, CylinderGeometry, Mesh, LineSegments, LineBasicMaterial, EdgesGeometry,
-  Matrix4,
+  Matrix4, WebGLRenderTarget,
 } from 'three';
 
 import { saveAs } from 'file-saver';
@@ -38,6 +38,11 @@ const INH_SYN_GL_COLOR = new Color(0x0080ff).toArray();
 const HOVERED_NEURON_GL_COLOR = new Color(0xf26d21).toArray();
 const HOVERED_SYN_GL_COLOR = new Color(0xf26d21).toArray();
 
+const SQUARE_DOT_SCALE = 1.3;
+
+// TODO: calculate in runtime
+const HEADER_HEIGHT = 36;
+
 const ALL_SEC_TYPES = [
   'soma',
   'axon',
@@ -63,6 +68,8 @@ class NeuronRenderer {
       alpha: true,
     });
 
+    this.ctrl = new utils.RendererCtrl();
+
     const { clientWidth, clientHeight } = canvas.parentElement;
 
     this.renderer.setSize(clientWidth, clientHeight);
@@ -73,8 +80,12 @@ class NeuronRenderer {
     this.scene.fog = new Fog(FOG_COLOR, NEAR, FAR);
     this.scene.add(new AmbientLight(AMBIENT_LIGHT_COLOR));
 
-    this.mouseGl = new Vector2();
+    this.pickingScene = new Scene();
+    this.pickingTexture = new WebGLRenderTarget(1, 1);
+    this.pickingPixelBuffer = new Uint8Array(4);
+
     this.mouseNative = new Vector2();
+    this.mouseGl = new Vector2();
 
     this.raycaster = new Raycaster();
 
@@ -98,6 +109,9 @@ class NeuronRenderer {
 
     this.cellMorphologyObj = new Object3D();
     this.scene.add(this.cellMorphologyObj);
+
+    this.pickingCellMorphologyObj = new Object3D();
+    this.pickingScene.add(this.pickingCellMorphologyObj);
 
     const segInjTexture = new TextureLoader().load('/seg-inj-texture.png');
     const segRecTexture = new TextureLoader().load('/seg-rec-texture.png');
@@ -135,24 +149,21 @@ class NeuronRenderer {
     this.onClickExternalHandler = config.onClick;
 
     this.initEventHandlers();
-    this.animate();
+    this.startRenderLoop();
   }
 
   initNeuronCloud(cloudSize) {
     const positionBuffer = new Float32Array(cloudSize * 3);
     const colorBuffer = new Float32Array(cloudSize * 3);
-    const alphaBuffer = new Float32Array(cloudSize).fill(0.8);
 
     this.neuronCloud = {
       positionBufferAttr: new BufferAttribute(positionBuffer, 3),
       colorBufferAttr: new BufferAttribute(colorBuffer, 3),
-      alphaBufferAttr: new BufferAttribute(alphaBuffer, 1),
     };
 
     const geometry = new BufferGeometry();
     geometry.addAttribute('position', this.neuronCloud.positionBufferAttr);
     geometry.addAttribute('color', this.neuronCloud.colorBufferAttr);
-    geometry.addAttribute('alpha', this.neuronCloud.alphaBufferAttr);
 
     const material = new PointsMaterial({
       vertexColors: VertexColors,
@@ -174,20 +185,47 @@ class NeuronRenderer {
     this.neuronCloud.points.frustumCulled = false;
     this.scene.add(this.neuronCloud.points);
 
-    const highlightedNrnGeom = new BufferGeometry();
-    const highlightedNrnGeomVerts = new Float32Array([0, 0, 0]);
-    highlightedNrnGeom.addAttribute('position', new BufferAttribute(highlightedNrnGeomVerts, 3));
+    // picking cloud setup
+    const pickingColorBuffer = new Float32Array(cloudSize * 3);
+    const tmpColor = new Color();
+    for (let i = 0; i < cloudSize; i += 1) {
+      tmpColor.setHex(i + 1);
+      pickingColorBuffer[i * 3] = tmpColor.r;
+      pickingColorBuffer[i * 3 + 1] = tmpColor.g;
+      pickingColorBuffer[i * 3 + 2] = tmpColor.b;
+    }
 
-    const highlightedNrnMaterial = new PointsMaterial({
+    const pickingColorBufferAttr = new BufferAttribute(pickingColorBuffer, 3);
+    const pickingGeometry = new BufferGeometry();
+    pickingGeometry.addAttribute('position', this.neuronCloud.positionBufferAttr);
+    pickingGeometry.addAttribute('color', pickingColorBufferAttr);
+
+    const pickingMaterial = new PointsMaterial({
+      vertexColors: VertexColors,
+      size: store.state.circuit.somaSize / SQUARE_DOT_SCALE,
+      sizeAttenuation: true,
+      map: neuronTexture,
+    });
+
+    this.pickingNeuronCloud = new Points(pickingGeometry, pickingMaterial);
+    this.pickingNeuronCloud.frustumCulled = false;
+    this.pickingScene.add(this.pickingNeuronCloud);
+
+    const highlightedNeuronGeometry = new Geometry();
+    const highlightedNeuronMaterial = new PointsMaterial({
       size: 0,
       transparent: true,
       opacity: 0,
       map: neuronTexture,
     });
+
+    highlightedNeuronGeometry.vertices.push(new Vector3(0, 0, 0));
+
     this.highlightedNeuron = new Points(
-      highlightedNrnGeom,
-      highlightedNrnMaterial,
+      highlightedNeuronGeometry,
+      highlightedNeuronMaterial,
     );
+
     this.highlightedNeuron.frustumCulled = false;
     this.scene.add(this.highlightedNeuron);
   }
@@ -198,23 +236,21 @@ class NeuronRenderer {
     this.scene.remove(this.neuronCloud.points);
     utils.disposeMesh(this.neuronCloud.points);
     this.neuronCloud = null;
+    this.ctrl.renderOnce();
   }
 
   initSynapseCloud(cloudSize) {
     const positionBuffer = new Float32Array(cloudSize * 3);
     const colorBuffer = new Float32Array(cloudSize * 3);
-    const alphaBuffer = new Float32Array(cloudSize).fill(0.8);
 
     this.synapseCloud = {
       positionBufferAttr: new BufferAttribute(positionBuffer, 3),
       colorBufferAttr: new BufferAttribute(colorBuffer, 3),
-      alphaBufferAttr: new BufferAttribute(alphaBuffer, 1),
     };
 
     const geometry = new BufferGeometry();
     geometry.addAttribute('position', this.synapseCloud.positionBufferAttr);
     geometry.addAttribute('color', this.synapseCloud.colorBufferAttr);
-    geometry.addAttribute('alpha', this.synapseCloud.alphaBufferAttr);
 
     this.synapseCloud.points = new Points(geometry, this.synapseMaterial);
     this.synapseCloud.points.name = 'synapseCloud';
@@ -228,6 +264,7 @@ class NeuronRenderer {
     this.scene.remove(this.synapseCloud.points);
     utils.disposeMesh(this.synapseCloud.points);
     this.synapseCloud = null;
+    this.ctrl.renderOnce();
   }
 
   clearScene() {
@@ -235,6 +272,7 @@ class NeuronRenderer {
     this.destroySynapseCloud();
     this.removeCellMorphologies(() => true);
     this.disposeSecMarkers();
+    this.ctrl.renderOnce();
   }
 
   alignCamera() {
@@ -247,10 +285,12 @@ class NeuronRenderer {
 
     this.camera.position.z = distance + center.z;
     this.controls.target = center;
+    this.ctrl.renderOnce();
   }
 
   resetCameraUp() {
     this.camera.up.set(0, 1, 0);
+    this.ctrl.renderOnce();
   }
 
   centerCellMorph(gid) {
@@ -284,6 +324,8 @@ class NeuronRenderer {
     TweenLite
       .to(this.controls.target, 0.15, pick(controlsTargetVec, ['x', 'y', 'z']))
       .eventCallback('onComplete', animateCamera);
+
+      this.ctrl.renderFor(500);
   }
 
   updateSynapses() {
@@ -308,14 +350,18 @@ class NeuronRenderer {
     this.synapseCloud.points.geometry.attributes.position.needsUpdate = true;
     this.synapseCloud.points.geometry.attributes.color.needsUpdate = true;
     this.synapseCloud.points.geometry.computeBoundingSphere();
+
+    this.ctrl.renderOnce();
   }
 
   showNeuronCloud() {
     this.neuronCloud.points.visible = true;
+    this.ctrl.renderOnce();
   }
 
   hideNeuronCloud() {
     this.neuronCloud.points.visible = false;
+    this.ctrl.renderOnce();
   }
 
   removeCellMorphologies(filterFunction) {
@@ -330,10 +376,13 @@ class NeuronRenderer {
       const toRemove = obj.children.map(child => child);
       toRemove.forEach(o => utils.disposeMesh(o));
     });
+
+    this.ctrl.renderOnce();
   }
 
   hideCellMorphology() {
     this.cellMorphologyObj.visible = false;
+    this.ctrl.renderOnce();
   }
 
   showMorphology(secTypes = ALL_SEC_TYPES.filter(defaultSecRenderFilter)) {
@@ -389,7 +438,12 @@ class NeuronRenderer {
       addSecOperations.push(addSecOperation);
     });
 
-    Promise.all(addSecOperations).then(() => store.$dispatch('morphRenderFinished'));
+    const stopRender = this.ctrl.renderUntilStopped();
+
+    Promise.all(addSecOperations).then(() => {
+      store.$dispatch('morphRenderFinished');
+      stopRender();
+    });
 
     this.cellMorphologyObj.visible = true;
   }
@@ -412,8 +466,10 @@ class NeuronRenderer {
 
     materialsToAnimate.forEach((m) => { m.visible = true; });
 
+    const stopRender = this.ctrl.renderUntilStopped();
     const onAnimationEnd = () => {
       store.$dispatch('showAxonsFinished');
+      stopRender();
     };
 
     TweenLite
@@ -429,9 +485,11 @@ class NeuronRenderer {
       }
     });
 
+    const stopRender = this.ctrl.renderUntilStopped();
     const onAnimationEnd = () => {
       materialsToAnimate.forEach((m) => { m.visible = false; });
       store.$dispatch('hideAxonsFinished');
+      stopRender();
     };
 
     TweenLite
@@ -536,6 +594,8 @@ class NeuronRenderer {
     secMarkerObj3d.name = 'sectionMarker';
     secMarkerObj3d.userData = Object.assign({ skipHoverDetection: true }, config);
     this.secMarkerObj.add(secMarkerObj3d);
+
+    this.ctrl.renderOnce();
   }
 
   removeSecMarker(secMarkerConfig) {
@@ -546,6 +606,8 @@ class NeuronRenderer {
 
     this.secMarkerObj.remove(secMarkerObj3d);
     utils.disposeMesh(secMarkerObj3d.children[0]);
+
+    this.ctrl.renderOnce();
   }
 
   removeSectionMarkers(filterFunction) {
@@ -556,14 +618,18 @@ class NeuronRenderer {
     });
 
     secMarkerConfigsToRemove.forEach(secMarkerConfig => this.removeSecMarker(secMarkerConfig));
+
+    this.ctrl.renderOnce();
   }
 
   hideSectionMarkers() {
     this.secMarkerObj.visible = false;
+    this.ctrl.renderOnce();
   }
 
   showSectionMarkers() {
     this.secMarkerObj.visible = true;
+    this.ctrl.renderOnce();
   }
 
   disposeSecMarkers() {
@@ -574,14 +640,18 @@ class NeuronRenderer {
 
     this.secMarkerObj = new Object3D();
     this.scene.add(this.secMarkerObj);
+    this.ctrl.renderOnce();
   }
 
   setNeuronCloudPointSize(size) {
     this.neuronCloud.points.material.size = size;
+    this.pickingNeuronCloud.material.size = size / SQUARE_DOT_SCALE;
+    this.ctrl.renderOnce();
   }
 
   setMorphSynapseSize(size) {
     this.synapseCloud.points.material.size = size;
+    this.ctrl.renderOnce();
   }
 
   downloadScreenshot() {
@@ -608,12 +678,15 @@ class NeuronRenderer {
   updateNeuronCloud() {
     this.neuronCloud.points.geometry.attributes.position.needsUpdate = true;
     this.neuronCloud.points.geometry.attributes.color.needsUpdate = true;
+    this.ctrl.renderOnce();
   }
 
   initEventHandlers() {
     this.renderer.domElement.addEventListener('mousedown', this.onMouseDown.bind(this), false);
     this.renderer.domElement.addEventListener('mouseup', this.onMouseUp.bind(this), false);
+    this.renderer.domElement.addEventListener('wheel', this.onMouseWheel.bind(this), false);
     this.renderer.domElement.addEventListener('mousemove', throttle(this.onMouseMove.bind(this), 100), false);
+    this.controls.addEventListener('change', this.ctrl.renderOnce.bind(this));
     window.addEventListener('resize', this.onResize.bind(this), false);
   }
 
@@ -641,15 +714,16 @@ class NeuronRenderer {
   }
 
   onMouseMove(e) {
-    if (this.mousePressed) return;
+    this.ctrl.renderFor(2000);
+    if (e.which) return;
 
     const mesh = this.getMeshByNativeCoordinates(e.clientX, e.clientY);
 
     if (
-      mesh &&
-      this.hoveredMesh &&
-      mesh.object.uuid === this.hoveredMesh.object.uuid &&
-      this.hoveredMesh.index === mesh.index
+      mesh
+      && this.hoveredMesh
+      && mesh.object.uuid === this.hoveredMesh.object.uuid
+      && this.hoveredMesh.index === mesh.index
     ) return;
 
     if (this.hoveredMesh) {
@@ -661,6 +735,14 @@ class NeuronRenderer {
       this.onHover(mesh);
       this.hoveredMesh = mesh;
     }
+  }
+
+  onMouseWheel() {
+    this.ctrl.renderFor(2000);
+  }
+
+  onControlChange() {
+    this.ctrl.renderOnce();
   }
 
   onHover(mesh) {
@@ -717,6 +799,8 @@ class NeuronRenderer {
     ];
     this.neuronCloud.colorBufferAttr.setXYZ(neuronIndex, ...HOVERED_NEURON_GL_COLOR);
     this.neuronCloud.points.geometry.attributes.color.needsUpdate = true;
+
+    this.ctrl.renderOnce();
   }
 
   onNeuronHoverEnd(neuronIndex) {
@@ -728,6 +812,8 @@ class NeuronRenderer {
     this.neuronCloud.colorBufferAttr.setXYZ(...this.hoveredNeuron);
     this.neuronCloud.points.geometry.attributes.color.needsUpdate = true;
     this.hoveredNeuron = null;
+
+    this.ctrl.renderOnce();
   }
 
   onSynapseHover(synapseIndex) {
@@ -744,6 +830,8 @@ class NeuronRenderer {
     ];
     this.synapseCloud.colorBufferAttr.setXYZ(synapseIndex, ...HOVERED_SYN_GL_COLOR);
     this.synapseCloud.points.geometry.attributes.color.needsUpdate = true;
+
+    this.ctrl.renderOnce();
   }
 
   onSynapseHoverEnd(synapseIndex) {
@@ -755,6 +843,8 @@ class NeuronRenderer {
     this.synapseCloud.colorBufferAttr.setXYZ(...this.hoveredSynapse);
     this.synapseCloud.points.geometry.attributes.color.needsUpdate = true;
     this.hoveredSynapse = null;
+
+    this.ctrl.renderOnce();
   }
 
   onMorphSectionHover(mesh) {
@@ -775,6 +865,8 @@ class NeuronRenderer {
       type: 'morphSection',
       data: mesh.object.userData,
     });
+
+    this.ctrl.renderOnce();
   }
 
   onMorphSectionHoverEnd(mesh) {
@@ -786,6 +878,8 @@ class NeuronRenderer {
       type: 'morphSection',
       data: mesh.object.userData,
     });
+
+    this.ctrl.renderOnce();
   }
 
   highlightMorphCell(gid) {
@@ -823,6 +917,8 @@ class NeuronRenderer {
     this.morphCellHighlightAnimation
       .to(materialsToHide, 0.3, { opacity: 0.1 })
       .to(materialsToShow, 0.3, { opacity: 1 }, 0);
+
+      this.ctrl.renderFor(1000);
   }
 
   unhighlightMorphCell() {
@@ -844,6 +940,8 @@ class NeuronRenderer {
     }
 
     this.morphCellHighlightAnimation = TweenLite.to(materialsToShow, 0.3, { opacity: 1 });
+
+    this.ctrl.renderFor(500);
   }
 
   highlightCircuitSoma(gid) {
@@ -870,6 +968,8 @@ class NeuronRenderer {
       this.highlightedNeuron.geometry.verticesNeedUpdate = true;
       this.highlightedNeuron.geometry.colorsNeedUpdate = true;
     });
+
+    this.ctrl.renderFor(1000);
   }
 
   removeCircuitSomaHighlight() {
@@ -886,6 +986,8 @@ class NeuronRenderer {
       this.highlightedNeuron.geometry.verticesNeedUpdate = true;
       this.highlightedNeuron.geometry.colorsNeedUpdate = true;
     });
+
+    this.ctrl.renderFor(1000);
   }
 
   onResize() {
@@ -893,12 +995,40 @@ class NeuronRenderer {
     this.camera.aspect = clientWidth / clientHeight;
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(clientWidth, clientHeight);
+
+    this.ctrl.renderOnce();
   }
 
   getMeshByNativeCoordinates(x, y) {
     this.mouseGl.x = (x / this.renderer.domElement.clientWidth) * 2 - 1;
-    // TODO: remove hardcoded const
-    this.mouseGl.y = -((y - 36) / this.renderer.domElement.clientHeight) * 2 + 1;
+    this.mouseGl.y = -((y - HEADER_HEIGHT) / this.renderer.domElement.clientHeight) * 2 + 1;
+
+    if (this.neuronCloud.points.visible) {
+      // doing gpu picking for neuron cloud, otherwise - raycast
+      this.camera.setViewOffset(
+        this.renderer.domElement.width,
+        this.renderer.domElement.height,
+        x * window.devicePixelRatio,
+        (y - HEADER_HEIGHT) * window.devicePixelRatio,
+        1,
+        1,
+      );
+
+      this.renderer.setRenderTarget(this.pickingTexture);
+      this.renderer.render(this.pickingScene, this.camera);
+      this.renderer.readRenderTargetPixels(this.pickingTexture, 0, 0, 1, 1, this.pickingPixelBuffer);
+      this.camera.clearViewOffset();
+
+      /* eslint-disable-next-line */
+      const id = (this.pickingPixelBuffer[0] << 16) | (this.pickingPixelBuffer[1] << 8) | (this.pickingPixelBuffer[2]);
+
+      if (!id) return null;
+
+      return {
+        index: id - 1,
+        object: this.neuronCloud.points,
+      };
+    }
 
     this.raycaster.setFromCamera(this.mouseGl, this.camera);
     const intersections = this.raycaster.intersectObjects(this.scene.children, true);
@@ -907,10 +1037,13 @@ class NeuronRenderer {
       .find(mesh => !mesh.object.userData.skipHoverDetection && mesh.object.material.visible);
   }
 
-  animate() {
-    this.controls.update();
-    this.renderer.render(this.scene, this.camera);
-    requestAnimationFrame(this.animate.bind(this));
+  startRenderLoop() {
+    if (this.ctrl.render) {
+      this.controls.update();
+      this.renderer.setRenderTarget(null);
+      this.renderer.render(this.scene, this.camera);
+    }
+    requestAnimationFrame(this.startRenderLoop.bind(this));
   }
 }
 
