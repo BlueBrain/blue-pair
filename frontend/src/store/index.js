@@ -12,30 +12,30 @@ class Store {
     this.eventBus = eventBus;
   }
 
-  $get(property, args) {
+  $get(property, ...args) {
     if (!getters[property]) throw new Error(`Store getter ${property} is not available`);
 
-    return getters[property](this, args);
+    return getters[property](this, ...args);
   }
 
-  $dispatchAsync(action, payload) {
+  $dispatchAsync(action, ...args) {
     if (!actions[action]) throw new Error(`Store action ${action} is not available`);
 
-    setTimeout(() => actions[action](this, payload), 1);
+    setTimeout(() => actions[action](this, ...args), 1);
   }
 
-  $dispatch(action, payload) {
+  $dispatch(action, ...args) {
     if (!actions[action]) throw new Error(`Store action ${action} is not available`);
 
-    actions[action](this, payload);
+    return actions[action](this, ...args);
   }
 
-  $emit(action, payload) {
-    this.eventBus.$emit(action, payload);
+  $emit(action, ...args) {
+    this.eventBus.$emit(action, ...args);
   }
 
-  $emitAsync(action, payload) {
-    setTimeout(() => this.eventBus.$emit(action, payload), 0);
+  $emitAsync(action, ...args) {
+    setTimeout(() => this.eventBus.$emit(action, ...args), 0);
   }
 
   $on(action, handler) {
