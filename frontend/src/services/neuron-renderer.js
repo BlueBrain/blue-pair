@@ -715,7 +715,7 @@ class NeuronRenderer {
 
   onMouseMove(e) {
     this.ctrl.renderFor(2000);
-    if (e.which) return;
+    if (e.buttons) return;
 
     const mesh = this.getMeshByNativeCoordinates(e.clientX, e.clientY);
 
