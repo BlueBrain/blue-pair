@@ -113,7 +113,7 @@
     },
     methods: {
       init() {
-        this.maxGid = store.state.circuit.cells.count;
+        this.maxGid = store.state.circuit.cells.meta.count;
       },
       onNeuronAdd(neuron) {
         if (this.simAddedNeurons.find(nrn => nrn.gid === neuron.gid)) return;
@@ -154,9 +154,9 @@
     computed: {
       addCellByGidBtnActive() {
         if (
-          !this.manualInputGid ||
-          this.manualInputGid < 1 ||
-          this.manualInputGid > store.state.circuit.neurons.length
+          !this.manualInputGid
+          || this.manualInputGid < 1
+          || this.manualInputGid > this.maxGid
         ) return false;
 
         return !this.simAddedNeurons.map(neuron => neuron.gid).includes(this.manualInputGid);
