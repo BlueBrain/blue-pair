@@ -37,7 +37,7 @@ build: | $(NODE_MODULES)
 	VUE_APP_SERVER_PORT=$(SERVER_PORT) \
 	VUE_APP_MAINTENANCE=$(MAINTENANCE) \
 	VUE_APP_VERSION=$(VERSION) \
-	npm run build
+	npm run build --modern
 
 docker_build_version: build
 	docker build -t bp:$(VERSION) \
