@@ -1,6 +1,6 @@
 {
   "name": "blue-pair",
-  "version": "0.0.1",
+  "version": "0.0.3",
   "description": "Pair recording application",
   "license": "BSD-3-Clause",
   "author": "NSE(Neuroscientific Software Engineering) <bbp-ou-nse@groupes.epfl.ch> (http://bluebrain.epfl.ch)",
@@ -15,20 +15,20 @@
   },
   "scripts": {
     "serve": "vue-cli-service serve --open",
-    "build": "vue-cli-service build",
+    "build": "vue-cli-service build --modern",
     "lint": "vue-cli-service lint"
   },
   "dependencies": {
-    "chroma-js": "^2.0.3",
+    "chroma-js": "^2.0.6",
     "distinct-colors": "^1.0.4",
     "dygraphs": "^2.1.0",
     "file-saver": "^2.0.2",
     "gsap": "^2.1.2",
     "iview": "^3.3.3",
     "localforage": "^1.7.3",
-    "lodash": "^4.17.11",
-    "qs": "^6.7.0",
-    "three": "^0.106.2",
+    "lodash": "^4.17.15",
+    "qs": "^6.8.0",
+    "three": "^0.108.0",
     "vue": "^2.6.10",
     "vue-slider-component": "^2.8.14"
   },
