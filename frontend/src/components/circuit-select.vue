@@ -73,11 +73,23 @@
             size="small"
           />
         </FormItem>
-        <FormItem label="Neurodamus branch *">
-          <i-input
-            v-model="circuitConfig.neurodamusBranch"
-            :readonly="!customConfig"
+        <FormItem label="Sim model *">
+          <i-select
+            v-if="customConfig"
+            v-model="circuitConfig.simModel"
             size="small"
+          >
+            <i-option
+              v-for="(simModelObj, simModelName) in simModel"
+              :key="simModelName"
+              :value="simModelName"
+            >{{ simModelObj.label }}</i-option>
+          </i-select>
+          <i-input
+            v-else
+            size="small"
+            :value="circuitConfig.simModel"
+            readonly
           />
         </FormItem>
         <FormItem
@@ -114,6 +126,8 @@
   import store from '@/store';
   import constants from '@/constants';
 
+  import modelConfig from '@/../../backend/config.json';
+
   const { circuits: allCircuits } = config;
   const { Entity } = constants;
 
@@ -133,6 +147,7 @@
       return {
         circuits,
         simulations,
+        simModel: modelConfig.simModel,
         customConfig: false,
         circuitSelect: {
           closable: false,
@@ -170,9 +185,9 @@
       },
       onLoadCircuitBtnClick() {
         if (this.customConfig) {
-          const type = this.circuitConfig.path.includes('BlueConfig') ?
-            Entity.SIMULATION :
-            Entity.CIRCUIT;
+          const type = this.circuitConfig.path.includes('BlueConfig')
+            ? Entity.SIMULATION
+            : Entity.CIRCUIT;
 
           Object.assign(
             this.circuitConfig,

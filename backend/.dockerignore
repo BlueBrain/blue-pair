@@ -3,3 +3,4 @@
 venv
 tools
 tmp/*-list.txt
+**/.git

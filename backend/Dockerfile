@@ -3,25 +3,39 @@ FROM python:3.7-slim-stretch as builder
 
 RUN pip install --upgrade pip setuptools virtualenv
 
-COPY tmp/neuron /tmp/neuron
+COPY tmp/neuron /build/neuron
+COPY tmp/sim-models /build/sim-models
 
 # Install system dependencies
-RUN apt-get update && apt-get install -yq --no-install-recommends \
+RUN apt-get update && apt-get install -yq \
     build-essential \
     libreadline-dev \
+    jq \
     libz-dev
 
 # Install Neuron
-WORKDIR /tmp/neuron
+WORKDIR /build/neuron
 RUN ./configure \
   --without-x \
-  --without-paranrn \
+  --disable-rx3d \
   --with-nrnpython=/usr/local/bin/python \
-  && make -j8 \
+  && make -j4 \
   && make install \
-  && cd /tmp/neuron/src/nrnpython \
+  && cd /build/neuron/src/nrnpython \
   && python setup.py install \
-  && rm -rf /tmp/*
+  && rm -rf /build/neuron/*
+
+ENV PATH="/usr/local/nrn/x86_64/bin:${PATH}"
+ENV PYTHONPATH="/usr/local/nrn/lib/python"
+
+COPY config.json /build/
+RUN repos=$(cat /build/config.json | jq -c -r '.simModel | map(.repo) | unique | .[]') && \
+	for repo in $repos; do \
+    mod_dirs=$(cat /build/config.json | jq -c -r ".simModel | .[] | select(.repo==\"$repo\") | .modPath"); \
+		for mod_dir in $mod_dirs; do \
+      cd /build/sim-models/$repo/$mod_dir && nrnivmodl .; \
+		done; \
+	done
 
 
 FROM python:3.7-slim-stretch
@@ -36,20 +50,16 @@ ENV PYTHONPATH="/usr/local/nrn/lib/python"
 ENV PATH="/usr/local/nrn/x86_64/bin:${PATH}"
 
 COPY dist/* ./dist/
+COPY config.json .
 COPY --from=builder /usr/local/nrn /usr/local/nrn
-COPY tmp/bbp /opt/blue-pair/bbp
-COPY entrypoint.sh .
+COPY --from=builder /build/sim-models sim-models
 
-RUN chmod -R 777 /opt/blue-pair/bbp
-RUN mkdir -m 777 /opt/blue-pair/lib
+COPY entrypoint.sh .
 
 RUN pip install \
     --no-cache-dir \
     -i https://bbpteam.epfl.ch/repository/devpi/simple \
     $(ls -t $PWD/dist/*.* | head -n 1)
-
-RUN apt-get update && \
-  apt-get install -yq --no-install-recommends libncurses-dev build-essential libreadline-dev git
 
 EXPOSE 8000
 

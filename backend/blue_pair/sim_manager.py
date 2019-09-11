@@ -29,18 +29,16 @@ class SimData(object):
 
 class SimStatus:
     QUEUE = 0
-    CH_MECH_COMPILE = 1
-    CH_MECH_COMPILE_ERR = 2
-    INIT = 3
-    INIT_ERR = 4
-    RUN = 5
-    RUN_ERR = 6
-    FINISH = 7
+    INIT = 1
+    INIT_ERR = 2
+    RUN = 3
+    RUN_ERR = 4
+    FINISH = 5
 
     # artificial status to pass to sim watcher thread
     # to terminate it with running simulation
     # in case of app shutdown
-    TERMINATE = 8
+    TERMINATE = 6
 
 
 class SimManager(object):
@@ -119,7 +117,6 @@ class SimManager(object):
                     break
 
                 elif sim_data.status in [SimStatus.FINISH,
-                                         SimStatus.CH_MECH_COMPILE_ERR,
                                          SimStatus.INIT_ERR]:
                     L.debug('waiting for simulator process to terminate')
                     self._sim_proc.join()
@@ -142,31 +139,13 @@ class SimManager(object):
                 time.sleep(0.001)
 
             simulator = Simulator(circuit_config, sim_config, on_progress)
-            kill_sim = False
 
             def on_sigint(signal, frame):
-                nonlocal kill_sim
                 result_queue.put(SimData(SimStatus.FINISH))
-                if simulator.state == SimulatorState.CH_MECH_COMPILE:
-                    L.debug('kill sim after ch_mech compile finish')
-                    kill_sim = True
-                else:
-                    L.debug('kill sim now')
-                    sys.exit(0)
+                L.debug('kill sim now')
+                sys.exit(0)
 
             signal.signal(signal.SIGINT, on_sigint)
-
-            result_queue.put(SimData(SimStatus.CH_MECH_COMPILE))
-
-            try:
-                simulator.init_channel_mechanisms()
-            except Exception as error:
-                result_queue.put(SimData(SimStatus.CH_MECH_COMPILE_ERR, str(error)))
-                raise error
-
-            if kill_sim == True:
-                L.debug('kill sim flag found, exit')
-                sys.exit(0)
 
             result_queue.put(SimData(SimStatus.INIT))
 
@@ -182,4 +161,3 @@ class SimManager(object):
         self._sim_proc = Process(target=simulation_runner, args=(self._result_queue, self._current_sim.circuit_config, self._current_sim.config))
         self._sim_proc.start()
         L.debug('simulator process has been started')
-

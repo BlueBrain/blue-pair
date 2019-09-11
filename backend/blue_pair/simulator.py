@@ -1,9 +1,9 @@
 
 import os
-import time
-import logging
+import json
 import re
 import subprocess
+import logging
 
 from os.path import join
 
@@ -11,25 +11,18 @@ import numpy as np
 
 
 APP_HOME_PATH = '/opt/blue-pair'
-NEURODAMUS_PATH = '/opt/blue-pair/bbp'
-
-EXCLUDED_MOD_FILES = [
-    'modlib/Bin*.mod',
-    'modlib/HDF*.mod',
-    'modlib/hdf*.mod',
-    'modlib/MemUsage*.mod',
-    'modlib/SpikeWriter.mod'
-]
+SIM_MODEL_BASE_PATH = '/opt/blue-pair/sim-models'
+SIM_MODEL = json.loads(open('config.json').read())['simModel']
 
 L = logging.getLogger(__name__)
 L.setLevel(logging.DEBUG if os.getenv('DEBUG', False) else logging.INFO)
 
+
 class SimulatorState:
     CREATED = 0
-    CH_MECH_COMPILE = 1
-    INIT = 2
-    RUN = 3
-    FINISHED = 4
+    INIT = 1
+    RUN = 2
+    FINISHED = 3
 
 
 class Simulator(object):
@@ -44,7 +37,6 @@ class Simulator(object):
         self.i_rec_list = []
         self.gids = sorted(sim_config['gids'])
         self.current_trace_index = 0
-        self.ch_mech_ready = False
         self.progress_cb = progress_cb
 
     def init_sim(self):
@@ -52,8 +44,15 @@ class Simulator(object):
 
         self.state = SimulatorState.INIT
 
-        if not self.ch_mech_ready:
-            raise ValueError('Channel mechanisms have not been initialised')
+        sim_model_name = self.circuit_config['simModel']
+        L.debug(f'Sim model: {sim_model_name}')
+        sim_model = SIM_MODEL[sim_model_name]
+
+        hoclib_path = join(SIM_MODEL_BASE_PATH, sim_model['repo'], 'hoc')
+        modlib_path = join(SIM_MODEL_BASE_PATH, sim_model['repo'], sim_model['modPath'])
+
+        os.chdir(modlib_path)
+        os.environ['HOC_LIBRARY_PATH'] = hoclib_path
 
         import bglibpy
         self.bglibpy = bglibpy
@@ -107,72 +106,6 @@ class Simulator(object):
             synapse_description_list = syn_input_config['synapses']
             for synapse_description in synapse_description_list:
                 self._add_syn_input(synapse_description, pre_spiketrain, syn_weight_scalar)
-
-    def init_channel_mechanisms(self):
-        self.state = SimulatorState.CH_MECH_COMPILE
-
-        neurodamus_branch = re.sub(r'[^a-zA-Z0-9/._]', '', self.circuit_config['neurodamusBranch'])
-        lib_target_path = join(APP_HOME_PATH, 'lib', neurodamus_branch)
-        hoclib_target_path = join(lib_target_path, 'hoclib')
-
-        L.debug('Neurodamus branch: {}'.format(neurodamus_branch))
-
-        def write_lock_file():
-            L.debug('add lock for {}'.format(lib_target_path))
-            open(join(lib_target_path, 'compile.lock'), 'a').close()
-
-        def remove_lock_file():
-            L.debug('remove lock for {}'.format(lib_target_path))
-            os.remove(join(lib_target_path, 'compile.lock'))
-
-        def write_error_file(message):
-            L.debug('add error file for {}'.format(lib_target_path))
-            open(join(lib_target_path, 'error.txt')).write(message).close()
-
-        if not os.path.exists(lib_target_path):
-            os.makedirs(lib_target_path)
-            write_lock_file()
-
-            os.chdir(NEURODAMUS_PATH)
-            subprocess.run(['git', 'reset', '--hard', 'HEAD'])
-            git_checkout = subprocess.run(['git', 'checkout', neurodamus_branch])
-            if git_checkout.returncode != 0:
-                err_msg = 'Can\'t checkout neurodamus branch {}'.format(neurodamus_branch)
-                write_error_file(err_msg)
-                remove_lock_file()
-                raise ValueError(err_msg)
-
-            os.chdir(lib_target_path)
-            subprocess.run(
-                'cp -r {} {}'.format(join(NEURODAMUS_PATH, 'lib') + '/*', lib_target_path),
-                shell=True
-            )
-
-            for pattern in EXCLUDED_MOD_FILES:
-                subprocess.run('rm -rf {}'.format(pattern), shell=True)
-
-            compile_ch_mech = subprocess.run(['nrnivmodl', 'modlib'])
-            if compile_ch_mech.returncode != 0:
-                err_msg = 'Error while compiling channel mechanisms'
-                write_error_file(err_msg)
-                remove_lock_file()
-                raise ValueError(err_msg)
-
-            L.debug('done compilation')
-            remove_lock_file()
-
-        while os.path.isfile('{}/compile.lock'.format(lib_target_path)):
-            L.debug('found lock file, waiting for 1 second')
-            time.sleep(1)
-
-        error_file_path = '{}/error.txt'.format(lib_target_path)
-        if os.path.isfile(error_file_path):
-            L.debug('found error.txt')
-            raise ValueError(open(error_file_path).read())
-
-        os.chdir(lib_target_path)
-        os.environ['HOC_LIBRARY_PATH'] = hoclib_target_path
-        self.ch_mech_ready = True
 
     def _add_syn_input(self, synapse_description, pre_spiketrain, syn_weight_scalar):
         post_gid = synapse_description['postGid']

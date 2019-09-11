@@ -5,15 +5,17 @@ const state = {
   circuitConfig: {
     name: null,
     path: null,
-    neurodamusBranch: null,
+    simModel: null,
     description: null,
     type: null,
   },
   circuit: {
-    neurons: [],
-    neuronPropIndex: {},
-    neuronProps: [],
-    neuronCount: null,
+    cells: {
+      positions: null,
+      prop: {},
+      meta: null,
+    },
+
     somaSize: 10,
     globalFilterIndex: [],
     connectionFilterIndex: [],

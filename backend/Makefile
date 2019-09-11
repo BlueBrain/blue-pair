@@ -2,10 +2,13 @@
 
 VERSION?=$(shell cat ../VERSION)
 
-NEURON_SRC_URL:=https://neuron.yale.edu/ftp/neuron/versions/v7.6/7.6.5/nrn-7.6.5.tar.gz
+NEURON_SRC_URL:=https://neuron.yale.edu/ftp/neuron/versions/v7.6/7.6.7/nrn-7.6.7.tar.gz
 VENV_DIR:=venv
 NEURON_SRC_DIR:=tmp/neuron
-NEURODAMUS_SRC_DIR:=tmp/bbp
+SIM_MODELS_DIR:=tmp/sim-models
+SIM_MODELS_REPO_BASE:=ssh://bbpcode.epfl.ch/sim/models
+NEURODAMUS_CORE_REPO:=ssh://bbpcode.epfl.ch/sim/neurodamus-core
+NEURODAMUS_CORE_DIR:=tmp/neurodamus-core
 
 REDIS_HOST?=
 
@@ -36,10 +39,33 @@ $(NEURON_SRC_DIR):
 	tar -xf tmp/nrn.tar.gz --strip-components=1 -C $@
 	rm tmp/nrn.tar.gz
 
-$(NEURODAMUS_SRC_DIR):
-	git clone https://$$(whoami)@bbpcode.epfl.ch/code/a/sim/neurodamus/bbp $@
-	chmod -R 777 $@
-	cd $@ && git reset HEAD --hard
+$(NEURODAMUS_CORE_DIR):
+	git clone $(NEURODAMUS_CORE_REPO) $@
+
+$(SIM_MODELS_DIR): | $(NEURODAMUS_CORE_DIR)
+	mkdir -p $(SIM_MODELS_DIR)/core/hoc
+	cp $(NEURODAMUS_CORE_DIR)/hoc/*.hoc $(SIM_MODELS_DIR)/core/hoc/
+
+	mkdir -p $(SIM_MODELS_DIR)/core/mod
+	cp $(NEURODAMUS_CORE_DIR)/mod/*.mod $(SIM_MODELS_DIR)/core/mod/
+
+	rm -rf $(SIM_MODELS_DIR)/core/mod/Bin*.mod
+	rm -rf $(SIM_MODELS_DIR)/core/mod/HDF*.mod
+	rm -rf $(SIM_MODELS_DIR)/core/mod/hdf*.mod
+	rm -rf $(SIM_MODELS_DIR)/core/mod/MemUsage*.mod
+	rm -rf $(SIM_MODELS_DIR)/core/mod/SpikeWriter.mod
+	rm -rf $(SIM_MODELS_DIR)/core/mod/VecStim.mod
+
+
+	repos=$$(cat config.json | jq -c -r '.simModel | map(.repo) | unique | .[]') && \
+	for repo in $$repos; do \
+		git clone --recurse-submodules $(SIM_MODELS_REPO_BASE)/$$repo $@/$$repo; \
+		cp $(SIM_MODELS_DIR)/core/hoc/* $@/$$repo/hoc/; \
+		mod_dirs=$$(cat config.json | jq -c -r ".simModel | .[] | select(.repo==\"$$repo\") | .modPath"); \
+		for mod_dir in $$mod_dirs; do \
+			cp $(SIM_MODELS_DIR)/core/mod/* $@/$$repo/$$mod_dir/; \
+		done; \
+	done
 
 python_build: | $(VENV_DIR)
 	$(VENV_DIR)/bin/python setup.py sdist
@@ -52,17 +78,18 @@ run_dev:
 		-v /gpfs:/gpfs:ro \
 		-e DEBUG=True \
 		-v $$(pwd)/blue_pair:/usr/local/lib/python3.7/site-packages/blue_pair \
+		-v $$(pwd)/config.json:/opt/blue-pair/config.json \
 		-p 8888:8000 \
 		bp-svc
 
-docker_build_version: python_build | $(NEURON_SRC_DIR) $(NEURODAMUS_SRC_DIR)
+docker_build_version: python_build | $(NEURON_SRC_DIR) $(SIM_MODELS_DIR)
 	docker build -t bp-svc:$(VERSION) \
 		--build-arg=redis_host=$(REDIS_HOST) \
 		--build-arg=http_proxy=http://bbpproxy.epfl.ch:80/ \
 		--build-arg=https_proxy=http://bbpproxy.epfl.ch:80/ \
 		.
 
-docker_build_latest: python_build | $(NEURON_SRC_DIR) $(NEURODAMUS_SRC_DIR)
+docker_build_latest: python_build | $(NEURON_SRC_DIR) $(SIM_MODELS_DIR)
 	docker build -t bp-svc:latest \
 		--build-arg=redis_host=$(REDIS_HOST) \
 		--build-arg=http_proxy=http://bbpproxy.epfl.ch:80/ \
