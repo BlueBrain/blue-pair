@@ -62,14 +62,15 @@
     },
     mounted() {
       store.$on('showCircuitLoadingModal', ({ cellProps }) => {
+        this.currentPropIdx = 0;
+        this.visible = true;
+
         this.props = ['position', ...cellProps].map(prop => ({
           name: prop,
           indexProgress: 0,
           valuesProgress: 0,
           totalProgress: 0,
         }));
-
-        this.visible = true;
       });
 
       store.$on('setCircuitLoadingProgress', ({ cellProp, progress, progressType }) => {
