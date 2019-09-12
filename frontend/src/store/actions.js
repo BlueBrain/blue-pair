@@ -78,7 +78,6 @@ const actions = {
 
   setCircuitConfig(store, circuitConfig) {
     store.state.circuitConfig = circuitConfig;
-    store.state.circuit.neurons = [];
     socket.setMessageContext({ circuitConfig });
     store.$emit('updateAvailableSimConfigOptions');
     store.$emit('setSelectedCircuitConfig', circuitConfig);
@@ -541,7 +540,7 @@ const actions = {
 
   runSim(store) {
     const { synapses, synInputs } = store.state.simulation;
-    const { neurons, neuronPropIndex } = store.state.circuit;
+    const { cells } = store.state.circuit;
 
     const { simulation } = store.state;
     simulation.running = true;
@@ -554,9 +553,13 @@ const actions = {
             && syn.preGid === synInput.preSynCellPropVal;
         }
 
-        return syn.gid === synInput.gid
-          && synInput.valid
-          && neurons[syn.preGid - 1][neuronPropIndex[synInput.preSynCellProp]] === synInput.preSynCellPropVal;
+        if (syn.gid !== synInput.gid || !synInput.valid) return false;
+
+        const cellPropObj = cells.prop[synInput.preSynCellProp];
+        const propValIdx = cellPropObj.index[syn.preGid - 1];
+        const propVal = cellPropObj.values[propValIdx];
+
+        return propVal === synInput.preSynCellPropVal;
       });
 
       const {
