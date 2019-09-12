@@ -54,7 +54,6 @@ $(SIM_MODELS_DIR): | $(NEURODAMUS_CORE_DIR)
 	rm -rf $(SIM_MODELS_DIR)/core/mod/hdf*.mod
 	rm -rf $(SIM_MODELS_DIR)/core/mod/MemUsage*.mod
 	rm -rf $(SIM_MODELS_DIR)/core/mod/SpikeWriter.mod
-	rm -rf $(SIM_MODELS_DIR)/core/mod/VecStim.mod
 
 
 	repos=$$(cat config.json | jq -c -r '.simModel | map(.repo) | unique | .[]') && \
