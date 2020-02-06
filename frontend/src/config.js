@@ -47,7 +47,7 @@ const circuits = [
     type: Entity.SIMULATION,
     urlName: 'mouse-o1',
     path: '/gpfs/bbp.cscs.ch/project/proj66/simulations/MouseSScx.O1/20180305/decoupled_depolarization/depolarization100p0/seed234626/BlueConfig',
-    neurodamusBranch: 'sandbox/vangeit/mousify',
+    simModel: 'mousify',
     description: 'decoupled_depolarization',
   },
 ];

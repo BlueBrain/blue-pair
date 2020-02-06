@@ -46,14 +46,14 @@ const actions = {
 
     const customConfig = customParams.name
       && customParams.path
-      && customParams.neurodamusBranch;
+      && customParams.simModel;
 
     const internalCircuitConfig = config.circuits
       .find(c => c.urlName === circuitName && c.type === type);
 
     const queryBuiltCircuicConfig = Object.assign(
       { type, urlName: encodeURIComponent(customParams.name), custom: true },
-      pick(customParams, ['name', 'path', 'neurodamusBranch']),
+      pick(customParams, ['name', 'path', 'simModel']),
     );
 
     const circuitConfig = customConfig
@@ -91,9 +91,9 @@ const actions = {
   },
 
   setCircuitRoute(store, circuitConfig) {
-    const path = `/${circuitConfig.type}s/${circuitConfig.urlName}`;
+    const path = `/${circuitConfig.type}s/${circuitConfig.custom ? '' : circuitConfig.urlName}`;
     const query = circuitConfig.custom
-      ? qs.stringify(pick(circuitConfig, ['name', 'path', 'neurodamusBranch']))
+      ? qs.stringify(pick(circuitConfig, ['name', 'path', 'simModel']))
       : null;
 
     window.history.pushState(null, null, `${path}${query ? `?${query}` : ''}`);
@@ -125,7 +125,16 @@ const actions = {
       store.$dispatch('showGlobalSpinner');
       await store.$dispatch('loadCircuitFromCache');
     } else {
-      await store.$dispatch('loadCircuitFromBackend');
+      try {
+        await store.$dispatch('loadCircuitFromBackend');
+      } catch (error) {
+        store.$emit('showModal', 'error', {
+          title: error.name,
+          message: error.message,
+        });
+        store.$emit('showCircuitSelector', { closable: false });
+        return;
+      }
 
       store.$dispatch('showGlobalSpinner');
       await store.$dispatch('saveCircuitToCache');
@@ -190,8 +199,15 @@ const actions = {
     const cellProp = cells.prop;
 
     store.$emit('showGlobalSpinner');
-    cells.meta = await socket.request('get_circuit_metadata');
+    const meta = await socket.request('get_circuit_metadata');
     store.$emit('hideGlobalSpinner');
+    if (meta.error) {
+      const error = new Error(meta.description);
+      error.name = meta.error;
+      throw error;
+    }
+
+    cells.meta = meta;
 
     const cellProps = Object.keys(cells.meta.prop);
     store.$emit('showCircuitLoadingModal', { cellProps });

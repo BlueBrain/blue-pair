@@ -155,7 +155,11 @@ class SimManager(object):
                 result_queue.put(SimData(SimStatus.INIT_ERR, str(error)))
                 raise error
 
-            simulator.run()
+            try:
+                simulator.run()
+            except Exception as error:
+                result_queue.put(SimData(SimStatus.RUN_ERR, str(error)))
+                raise error
 
             result_queue.put(SimData(SimStatus.FINISH))
         self._sim_proc = Process(target=simulation_runner, args=(self._result_queue, self._current_sim.circuit_config, self._current_sim.config))

@@ -137,7 +137,7 @@
   const defaultCircuit = {
     name: '',
     path: '',
-    neurodamusBranch: '',
+    simModel: '',
     description: '',
   };
 
@@ -201,15 +201,17 @@
     },
     computed: {
       loadBtnEnabled() {
-        if (this.selectedCircuitPath === store.state.circuitConfig.path) return false;
+        const { name, path, simModel } = this.circuitConfig;
+        const circuitConfigValid = name && path && simModel;
+
+        if (
+          this.selectedCircuitPath
+          && this.selectedCircuitPath === store.state.circuitConfig.path
+        ) return false;
 
         if (this.selectedCircuitPath) return true;
 
-        if (
-          this.circuitConfig.name
-          && this.circuitConfig.path
-          && this.circuitConfig.neurodamusBranch
-        ) return true;
+        if (circuitConfigValid) return true;
 
         return false;
       },
@@ -223,4 +225,3 @@
     display: inline-block;
   }
 </style>
-

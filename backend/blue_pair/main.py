@@ -70,7 +70,17 @@ class WSHandler(tornado.websocket.WebSocketHandler):
 
         if cmd == 'get_circuit_metadata':
             # TODO: move logic to storage module
-            cells = STORAGE.get_circuit_cells(circuit_path)
+            try:
+                cells = STORAGE.get_circuit_cells(circuit_path)
+            except FileNotFoundError as e:
+                self.send_message('circuit_metadata', {
+                    'error': 'Error accessing a file in GPFS',
+                    'description': str(e),
+                    'cmdid': cmdid
+                })
+                L.debug(e)
+                return
+
             cell_count = len(cells)
             props = [
                 prop
@@ -201,6 +211,12 @@ class WSHandler(tornado.websocket.WebSocketHandler):
                     socket.send_message('simulation_init')
                 elif sim_data.status == SimStatus.FINISH:
                     socket.send_message('simulation_finish')
+                    socket.sim_id = None
+                elif sim_data.status == SimStatus.INIT_ERR:
+                    socket.send_message('simulation_init_error', sim_data.data)
+                    socket.sim_id = None
+                elif sim_data.status == SimStatus.RUN_ERR:
+                    socket.send_message('simulation_run_error', sim_data.data)
                     socket.sim_id = None
                 else:
                     socket.send_message('simulation_result', sim_data.data)

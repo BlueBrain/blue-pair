@@ -134,6 +134,7 @@
             long
             size="small"
             type="primary"
+            :disabled="!runSimBtnAvailable"
             @click="onRunSimBtnClick"
           >
             Run Simulation
@@ -227,6 +228,11 @@
         this.onConfigChange();
       },
     },
+    computed: {
+      runSimBtnAvailable() {
+        return this.config.tStop && this.config.timeStep;
+      },
+    },
     mounted() {
       store.$on('ws:simulation_result', () => {
         this.loading = false;
@@ -237,12 +243,21 @@
         this.simRunning = false;
         this.simInitModalVisible = false;
       });
-      store.$on('ws:simulation_compile_ch_mech_err', (errMessage) => {
+      store.$on('ws:simulation_init_error', (errMessage) => {
         this.loading = false;
         this.simRunning = false;
         this.simInitModalVisible = false;
         this.$Modal.error({
-          title: 'Channel mechanisms error',
+          title: 'Sim init error',
+          content: errMessage,
+        });
+      });
+      store.$on('ws:simulation_run_error', (errMessage) => {
+        this.loading = false;
+        this.simRunning = false;
+        this.simInitModalVisible = false;
+        this.$Modal.error({
+          title: 'Sim run error',
           content: errMessage,
         });
       });

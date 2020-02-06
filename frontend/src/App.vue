@@ -7,6 +7,7 @@
       <side-panel/>
       <spinner/>
       <circuit-loading-modal />
+      <global-modal />
     </div>
     <maintenance-page v-else/>
   </div>
@@ -23,6 +24,7 @@
   import Spinner from './components/spinner.vue';
   import CircuitLoadingModal from './components/circuit-loading-modal.vue';
   import MaintenancePage from './components/maintenance-page.vue';
+  import GlobalModal from './components/global-modal.vue';
 
   export default {
     name: 'app',
@@ -40,6 +42,7 @@
       'side-panel': SidePanel,
       spinner: Spinner,
       'circuit-loading-modal': CircuitLoadingModal,
+      'global-modal': GlobalModal,
       'maintenance-page': MaintenancePage,
     },
   };
@@ -136,5 +139,9 @@
 
   .cursor-pointer {
     cursor: pointer;
+  }
+
+  .v-align-mid {
+    vertical-align: middle;
   }
 </style>
