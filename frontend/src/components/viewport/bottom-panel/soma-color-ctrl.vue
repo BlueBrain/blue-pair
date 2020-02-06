@@ -51,7 +51,7 @@
           const propUniqueValues = cells.prop[propName].values;
           if (cells.prop[propName].values.length > 20) return uniqueValuesByProp;
 
-          return Object.assign(uniqueValuesByProp, { [propName]: propUniqueValues.sort() });
+          return Object.assign(uniqueValuesByProp, { [propName]: propUniqueValues.slice().sort() });
         }, {});
 
         this.props = Object.keys(this.uniqueValuesByProp);

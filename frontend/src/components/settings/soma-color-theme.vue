@@ -150,7 +150,7 @@
 
           if (cells.prop[propName].values.length > 20) return uniqueValuesByProp;
 
-          return Object.assign(uniqueValuesByProp, { [propName]: propUniqueValues.sort() });
+          return Object.assign(uniqueValuesByProp, { [propName]: propUniqueValues.slice().sort() });
         }, {});
 
         this.props = Object.keys(this.uniqueValuesByProp);
@@ -170,7 +170,7 @@
           theme[this.currentTheme].config,
         );
 
-        const colors = new DistinctColors(colorConfig);
+        const colors = distinctColors(colorConfig);
 
         const colorPalette = currentPropValues.reduce((palette, propVal, i) => {
           return Object.assign(palette, { [propVal.toString()]: colors[i].gl() });
@@ -191,4 +191,3 @@
     margin-bottom: 12px;
   }
 </style>
-

@@ -203,7 +203,7 @@
           const propUniqueValues = cells.prop[propName].values;
           if (propUniqueValues.length > 1000) return filterSet;
 
-          return Object.assign(filterSet, { [propName]: propUniqueValues.sort() });
+          return Object.assign(filterSet, { [propName]: propUniqueValues.slice().sort() });
         }, {});
 
         this.ctrl.props = Object.keys(this.filterSet);
