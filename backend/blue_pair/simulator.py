@@ -111,7 +111,7 @@ class Simulator(object):
         post_gid = synapse_description['postGid']
         syn_index = synapse_description['index']
         L.debug('adding pre_spiketrain to synapse (%s, %s)', post_gid, syn_index)
-        synapse = self.ssim.cells[post_gid].synapses[syn_index]
+        synapse = self.ssim.cells[post_gid].synapses[('', syn_index)]
         synapse.connection_parameters['Weight'] = syn_weight_scalar
         connection = self.bglibpy.Connection(synapse, pre_spiketrain=pre_spiketrain)
         self.net_connections.append(connection)
