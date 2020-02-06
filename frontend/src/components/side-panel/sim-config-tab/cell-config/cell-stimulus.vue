@@ -61,10 +61,10 @@
         <Row :gutter="16">
           <i-col span="8">
             <i-form
-              :label-width="40"
+              :label-width="80"
               @submit.native.prevent
             >
-              <FormItem label="delay:">
+              <FormItem label="delay [ms]">
                 <InputNumber
                   size="small"
                   v-model="stimulus.delay"
@@ -73,17 +73,16 @@
                   :step="10"
                   :disabled="!stimulus.sectionName"
                   @on-change="onChange"
-                >
-                </InputNumber>
+                />
               </FormItem>
             </i-form>
           </i-col>
           <i-col span="8">
             <i-form
-              :label-width="55"
+              :label-width="70"
               @submit.native.prevent
             >
-              <FormItem label="duration:">
+              <FormItem label="dur [ms]">
                 <InputNumber
                   size="small"
                   v-model="stimulus.duration"
@@ -92,18 +91,16 @@
                   :step="10"
                   :disabled="!stimulus.sectionName"
                   @on-change="onChange"
-                >
-                </InputNumber>
+                />
               </FormItem>
             </i-form>
           </i-col>
           <i-col span="8">
             <i-form
-              :label-width="30"
+              :label-width="70"
               @submit.native.prevent
             >
-              <FormItem label="amp:">
-                <!-- TODO: check max values for current -->
+              <FormItem label="amp [nA]">
                 <InputNumber
                   size="small"
                   v-model="stimulus.current"
@@ -112,7 +109,7 @@
                   :step="0.01"
                   :disabled="!stimulus.sectionName"
                   @on-change="onChange"
-                ></InputNumber>
+                />
               </FormItem>
             </i-form>
           </i-col>
@@ -122,12 +119,12 @@
       <!-- RAMP CURRENT CONFIG -->
       <div v-else-if="stimulus.type === 'ramp'">
         <Row :gutter="16">
-          <i-col span="6">
+          <i-col span="12">
             <i-form
-              :label-width="40"
+              :label-width="120"
               @submit.native.prevent
             >
-              <FormItem label="delay:">
+              <FormItem label="delay [ms]">
                 <InputNumber
                   size="small"
                   v-model="stimulus.delay"
@@ -135,17 +132,16 @@
                   :max="3000"
                   :step="10"
                   @on-change="onChange"
-                >
-                </InputNumber>
+                />
               </FormItem>
             </i-form>
           </i-col>
-          <i-col span="6">
+          <i-col span="12">
             <i-form
-              :label-width="55"
+              :label-width="120"
               @submit.native.prevent
             >
-              <FormItem label="duration:">
+              <FormItem label="duration [ms]">
                 <InputNumber
                   size="small"
                   v-model="stimulus.duration"
@@ -153,17 +149,18 @@
                   :max="3000"
                   :step="10"
                   @on-change="onChange"
-                >
-                </InputNumber>
+                />
               </FormItem>
             </i-form>
           </i-col>
-          <i-col span="6">
+        </Row>
+        <Row :gutter="16">
+          <i-col span="12">
             <i-form
-              :label-width="67"
+              :label-width="120"
               @submit.native.prevent
             >
-              <FormItem label="start amp:">
+              <FormItem label="start amp [nA]">
                 <InputNumber
                   size="small"
                   v-model="stimulus.current"
@@ -171,16 +168,16 @@
                   :max="50"
                   :step="0.01"
                   @on-change="onChange"
-                ></InputNumber>
+                />
               </FormItem>
             </i-form>
           </i-col>
-          <i-col span="6">
+          <i-col span="12">
             <i-form
-              :label-width="67"
+              :label-width="120"
               @submit.native.prevent
             >
-              <FormItem label="stop amp:">
+              <FormItem label="stop amp [nA]">
                 <InputNumber
                   size="small"
                   v-model="stimulus.stopCurrent"
@@ -188,7 +185,7 @@
                   :max="50"
                   :step="0.01"
                   @on-change="onChange"
-                ></InputNumber>
+                />
               </FormItem>
             </i-form>
           </i-col>
@@ -198,12 +195,12 @@
       <!-- PULSE INJECTION CONFIG -->
       <div v-else-if="stimulus.type === 'pulse'">
         <Row :gutter="16">
-          <i-col span="8">
+          <i-col span="12">
             <i-form
-              :label-width="60"
+              :label-width="120"
               @submit.native.prevent
             >
-              <FormItem label="delay:">
+              <FormItem label="delay [ms]">
                 <InputNumber
                   size="small"
                   v-model="stimulus.delay"
@@ -212,17 +209,16 @@
                   :step="10"
                   :disabled="!stimulus.sectionName"
                   @on-change="onChange"
-                >
-                </InputNumber>
+                />
               </FormItem>
             </i-form>
           </i-col>
-          <i-col span="8">
+          <i-col span="12">
             <i-form
-              :label-width="60"
+              :label-width="120"
               @submit.native.prevent
             >
-              <FormItem label="duration:">
+              <FormItem label="duration [ms]">
                 <InputNumber
                   size="small"
                   v-model="stimulus.duration"
@@ -231,18 +227,18 @@
                   :step="10"
                   :disabled="!stimulus.sectionName"
                   @on-change="onChange"
-                >
-                </InputNumber>
+                />
               </FormItem>
             </i-form>
           </i-col>
-          <i-col span="8">
+        </Row>
+        <Row :gutter="16">
+          <i-col span="12">
             <i-form
-              :label-width="60"
+              :label-width="120"
               @submit.native.prevent
             >
-              <FormItem label="amp:">
-                <!-- TODO: check max values for current -->
+              <FormItem label="amp [nA]">
                 <InputNumber
                   size="small"
                   v-model="stimulus.current"
@@ -251,18 +247,16 @@
                   :step="0.01"
                   :disabled="!stimulus.sectionName"
                   @on-change="onChange"
-                ></InputNumber>
+                />
               </FormItem>
             </i-form>
           </i-col>
-        </Row>
-        <Row :gutter="16">
-          <i-col span="8">
+          <i-col span="12">
             <i-form
-              :label-width="60"
+              :label-width="120"
               @submit.native.prevent
             >
-              <FormItem label="frequency:">
+              <FormItem label="frequency [Hz]">
                 <InputNumber
                   size="small"
                   v-model="stimulus.frequency"
@@ -271,17 +265,18 @@
                   :step="1"
                   :disabled="!stimulus.sectionName"
                   @on-change="onChange"
-                >
-                </InputNumber>
+                />
               </FormItem>
             </i-form>
           </i-col>
-          <i-col span="8">
+        </Row>
+        <Row :gutter="16">
+          <i-col span="12">
             <i-form
-              :label-width="60"
+              :label-width="120"
               @submit.native.prevent
             >
-              <FormItem label="width:">
+              <FormItem label="width [ms]">
                 <InputNumber
                   size="small"
                   v-model="stimulus.width"
@@ -290,8 +285,7 @@
                   :step="1"
                   :disabled="!stimulus.sectionName"
                   @on-change="onChange"
-                >
-                </InputNumber>
+                />
               </FormItem>
             </i-form>
           </i-col>
@@ -303,10 +297,10 @@
         <Row :gutter="16">
           <i-col span="8">
             <i-form
-              :label-width="55"
+              :label-width="100"
               @submit.native.prevent
             >
-              <FormItem label="duration:">
+              <FormItem label="duration [ms]">
                 <InputNumber
                   size="small"
                   v-model="stimulus.duration"
@@ -315,18 +309,16 @@
                   :step="10"
                   :disabled="!stimulus.sectionName"
                   @on-change="onChange"
-                >
-                </InputNumber>
+                />
               </FormItem>
             </i-form>
           </i-col>
           <i-col span="8">
             <i-form
-              :label-width="55"
+              :label-width="90"
               @submit.native.prevent
             >
-              <FormItem label="voltage:">
-                <!-- TODO: check max values for voltage -->
+              <FormItem label="voltage [mV]">
                 <InputNumber
                   size="small"
                   v-model="stimulus.voltage"
@@ -335,16 +327,16 @@
                   :step="0.01"
                   :disabled="!stimulus.sectionName"
                   @on-change="onChange"
-                ></InputNumber>
+                />
               </FormItem>
             </i-form>
           </i-col>
           <i-col span="8">
             <i-form
-              :label-width="40"
+              :label-width="80"
               @submit.native.prevent
             >
-              <FormItem label="rs:">
+              <FormItem label="rs [Ω]">
                 <InputNumber
                   size="small"
                   v-model="stimulus.seriesResistance"
@@ -353,14 +345,13 @@
                   :step="0.001"
                   :disabled="!stimulus.sectionName"
                   @on-change="onChange"
-                ></InputNumber>
+                />
               </FormItem>
             </i-form>
           </i-col>
         </Row>
       </div>
     </div>
-
   </div>
 </template>
 
@@ -421,8 +412,6 @@
   .stimulus-container-inner {
     position: relative;
     border: 1px solid #e9eaec;
-    // TODO: remove old color after acceptance
-    // background-color: #f7f7f7;
     background-color: #ffa50021;
     border-radius: 3px;
     padding: 8px;

@@ -11,12 +11,13 @@
           >
             <FormItem label="t_stop [ms]">
               <InputNumber
-                size="small"
                 v-model="config.tStop"
-                :min="100"
-                :max="3000"
-                :step="10"
+                size="small"
                 placeholder="Duration"
+                :min="1"
+                :max="10000"
+                :step="10"
+                :active-change="false"
                 @on-change="onConfigChange"
               />
             </FormItem>
@@ -30,12 +31,13 @@
           >
             <FormItem label="time step [ms]">
               <InputNumber
-                size="small"
-                :min="0.001"
-                :max="0.1"
-                :step="0.005"
                 v-model="config.timeStep"
+                size="small"
                 placeholder="Resolution"
+                :min="0.001"
+                :max="1"
+                :step="0.001"
+                :active-change="false"
                 @on-change="onConfigChange"
               />
             </FormItem>
@@ -44,17 +46,18 @@
         <i-col span="8">
           <Form
             label-position="left"
-            :label-width="105"
+            :label-width="120"
             @submit.native.prevent
           >
             <FormItem label="forward skip [ms]">
               <InputNumber
+                v-model="config.forwardSkip"
                 size="small"
+                placeholder="Forward skip"
                 :min="0"
                 :max="5000"
                 :step="10"
-                v-model="config.forwardSkip"
-                placeholder="Forward skip"
+                :active-change="false"
                 @on-change="onConfigChange"
               />
             </FormItem>
@@ -63,29 +66,26 @@
       </Row>
 
       <i-form
+        v-if="isBlueConfig"
         class="mt-12"
         label-position="left"
         :label-width="105"
         @submit.native.prevent
       >
-        <FormItem label="opts">
+        <FormItem label="Options">
           <CheckboxGroup>
             <Checkbox v-model="config.addMinis">
               add minis
             </Checkbox>
-            <Checkbox
-              v-model="config.addReplay"
-              :disabled="!isBlueConfig"
-            >
+            <Checkbox v-model="config.addReplay">
               add replay
             </Checkbox>
           </CheckboxGroup>
         </FormItem>
-        <FormItem label="net stimuli">
+        <FormItem label="Net stimuli">
           <Checkbox
             v-model="config.netStimuli.all"
             class="mr-24"
-            :disabled="!isBlueConfig"
             @on-change="onStimAllChange"
           >
             all
@@ -93,28 +93,24 @@
           <Checkbox
             class="ml-12"
             v-model="config.netStimuli.noise"
-            :disabled="!isBlueConfig"
             @on-change="onStimPartChange"
           >
             noise
           </Checkbox>
           <Checkbox
             v-model="config.netStimuli.hyperpolarizing"
-            :disabled="!isBlueConfig"
             @on-change="onStimPartChange"
           >
             hyperpolarizing
           </Checkbox>
           <Checkbox
             v-model="config.netStimuli.relativelinear"
-            :disabled="!isBlueConfig"
             @on-change="onStimPartChange"
           >
             relativelinear
           </Checkbox>
           <Checkbox
             v-model="config.netStimuli.pulse"
-            :disabled="!isBlueConfig"
             @on-change="onStimPartChange"
           >
             pulse
