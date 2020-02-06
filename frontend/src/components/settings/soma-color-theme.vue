@@ -51,7 +51,7 @@
 </template>
 
 <script>
-  import * as DistinctColors from 'distinct-colors';
+  import distinctColors from 'distinct-colors';
 
   import store from '@/store';
 
