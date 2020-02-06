@@ -8,7 +8,7 @@
           Service is down
         </h3>
         <p>
-          We are really sorry, but due to backend cluster issues beyound our control Pair Recording app is currently offline. <br>
+          Pair Recording app is currently under maintenance. <br>
           If you have any questions don't hesitate to contact us. <br>
         </p>
         <br>
