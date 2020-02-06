@@ -25,7 +25,7 @@
 </template>
 
 <script>
-  import * as DistinctColors from 'distinct-colors';
+  import distinctColors from 'distinct-colors';
 
   import store from '@/store';
 
@@ -76,7 +76,7 @@
           lightMax: 90,
         };
 
-        const colors = new DistinctColors(colorConfig);
+        const colors = distinctColors(colorConfig);
 
         const colorPalette = currentPropValues.reduce((palette, propVal, i) => {
           return Object.assign(palette, { [propVal.toString()]: colors[i].gl() });

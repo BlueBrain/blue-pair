@@ -162,8 +162,8 @@ class NeuronRenderer {
     };
 
     const geometry = new BufferGeometry();
-    geometry.addAttribute('position', this.neuronCloud.positionBufferAttr);
-    geometry.addAttribute('color', this.neuronCloud.colorBufferAttr);
+    geometry.setAttribute('position', this.neuronCloud.positionBufferAttr);
+    geometry.setAttribute('color', this.neuronCloud.colorBufferAttr);
 
     const material = new PointsMaterial({
       vertexColors: VertexColors,
@@ -197,8 +197,8 @@ class NeuronRenderer {
 
     const pickingColorBufferAttr = new BufferAttribute(pickingColorBuffer, 3);
     const pickingGeometry = new BufferGeometry();
-    pickingGeometry.addAttribute('position', this.neuronCloud.positionBufferAttr);
-    pickingGeometry.addAttribute('color', pickingColorBufferAttr);
+    pickingGeometry.setAttribute('position', this.neuronCloud.positionBufferAttr);
+    pickingGeometry.setAttribute('color', pickingColorBufferAttr);
 
     const pickingMaterial = new PointsMaterial({
       vertexColors: VertexColors,
@@ -249,8 +249,8 @@ class NeuronRenderer {
     };
 
     const geometry = new BufferGeometry();
-    geometry.addAttribute('position', this.synapseCloud.positionBufferAttr);
-    geometry.addAttribute('color', this.synapseCloud.colorBufferAttr);
+    geometry.setAttribute('position', this.synapseCloud.positionBufferAttr);
+    geometry.setAttribute('color', this.synapseCloud.colorBufferAttr);
 
     this.synapseCloud.points = new Points(geometry, this.synapseMaterial);
     this.synapseCloud.points.name = 'synapseCloud';
@@ -574,7 +574,7 @@ class NeuronRenderer {
       orientation.lookAt(vstart, vend, new Vector3(0, 1, 0));
       offsetRotation.makeRotationX(HALF_PI);
       orientation.multiply(offsetRotation);
-      geometry.applyMatrix(orientation);
+      geometry.applyMatrix4(orientation);
 
       const cylinder = new Mesh(geometry);
       cylinder.position.copy(position);

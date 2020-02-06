@@ -103,7 +103,7 @@ function createSecGeometryFromPoints(pts, simplificationRatio = 2) {
     orientation.lookAt(vstart, vend, new Vector3(0, 1, 0));
     offsetRotation.makeRotationX(HALF_PI);
     orientation.multiply(offsetRotation);
-    geometry.applyMatrix(orientation);
+    geometry.applyMatrix4(orientation);
 
     const cylinder = new Mesh(geometry);
     cylinder.position.copy(position);
