@@ -144,4 +144,12 @@
   .v-align-mid {
     vertical-align: middle;
   }
+
+  .dygraph-label-rotate-right {
+    transform: rotate(-90deg);
+  }
+
+  .dygraph-ylabel, .dygraph-xlabel {
+    text-align: center;
+  }
 </style>

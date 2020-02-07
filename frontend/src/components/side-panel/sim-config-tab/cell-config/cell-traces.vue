@@ -24,7 +24,10 @@
           :download="trace.voltage.download.filename"
           :href="trace.voltage.download.hrefData"
         >
-          <Icon type="md-cloud-download" size="24"></Icon>
+          <Icon
+            type="md-cloud-download"
+            size="24"
+          />
         </a>
       </div>
 
@@ -43,7 +46,10 @@
           :download="trace.current.download.filename"
           :href="trace.current.download.hrefData"
         >
-          <Icon type="android-download" size="24"></Icon>
+          <Icon
+            type="md-cloud-download"
+            size="24"
+          />
         </a>
       </div>
     </div>
@@ -103,6 +109,9 @@
           const defaultChartConfig = {
             highlightCallback(event, x, points, row, seriesName) { self.onHover(gid); },
             unhighlightCallback() { self.onHoverEnd(); },
+            ylabel: chartType === 'voltage'
+              ? 'voltage [mV]'
+              : 'current [nA]',
           };
 
           const chartConfig = Object.assign({

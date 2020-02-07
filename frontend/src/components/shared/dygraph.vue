@@ -65,7 +65,7 @@
         animatedZooms: true,
         xlabel: 'time [ms]',
         xLabelHeight: 14,
-        ylabel: 'voltage [mV]',
+        yLabelWidth: 14,
         axes: {
           x: { valueFormatter: v => v.toFixed(2) },
           y: { valueFormatter: v => v.toFixed(2) },
