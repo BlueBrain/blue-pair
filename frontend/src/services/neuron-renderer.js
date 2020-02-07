@@ -33,7 +33,7 @@ const BACKGROUND_COLOR = 0xfefdfb;
 // TODO: make it possible to switch bg color
 // const BACKGROUND_COLOR = 0x272821;
 const HOVER_BOX_COLOR = 0xffdf00;
-const EXC_SYN_GL_COLOR = new Color(0xfc1501).toArray();
+const EXC_SYN_GL_COLOR = new Color(0xe48457).toArray();
 const INH_SYN_GL_COLOR = new Color(0x0080ff).toArray();
 const HOVERED_NEURON_GL_COLOR = new Color(0xf26d21).toArray();
 const HOVERED_SYN_GL_COLOR = new Color(0xf26d21).toArray();
@@ -55,7 +55,7 @@ const COLOR_DIFF_RANGE = 1;
 const HALF_PI = Math.PI * 0.5;
 
 const neuronTexture = new TextureLoader().load('/neuron-texture.png');
-const synapseTexture = new TextureLoader().load('/neuron-texture.png');
+const synapseTexture = new TextureLoader().load('/ball.png');
 
 const defaultSecRenderFilter = t => store.state.simulation.view.axonsVisible || t !== 'axon';
 
@@ -137,9 +137,8 @@ class NeuronRenderer {
     this.synapseMaterial = new PointsMaterial({
       vertexColors: VertexColors,
       size: store.state.simulation.synapseSize,
-      opacity: 0.85,
       transparent: true,
-      alphaTest: 0.1,
+      alphaTest: 0.5,
       sizeAttenuation: true,
       map: synapseTexture,
     });

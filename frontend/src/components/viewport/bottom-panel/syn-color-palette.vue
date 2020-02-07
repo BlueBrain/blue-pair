@@ -28,7 +28,7 @@
     data() {
       return {
         colorPalette: {
-          EXC: '#fc1501',
+          EXC: '#e48457',
           INH: '#0080ff',
         },
       };
