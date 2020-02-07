@@ -30,7 +30,7 @@
       <Icon type="ios-close"></Icon>
     </div>
 
-    <Row :gutter="6" class="mt-6">
+    <Row :gutter="16" class="mt-6">
       <i-col span="12">
         <Tooltip
           class="tooltip-block"
@@ -82,12 +82,12 @@
       </i-col>
     </Row>
     <Row :gutter="16" class="mt-6">
-      <i-col span="8">
+      <i-col span="12">
         <i-form
-          :label-width="40"
+          :label-width="120"
           @submit.native.prevent
         >
-          <FormItem label="delay:">
+          <FormItem label="delay [ms]">
             <InputNumber
               size="small"
               v-model="synInput.delay"
@@ -100,12 +100,12 @@
           </FormItem>
         </i-form>
       </i-col>
-      <i-col span="8">
+      <i-col span="12">
         <i-form
-          :label-width="55"
+          :label-width="120"
           @submit.native.prevent
         >
-          <FormItem label="duration:">
+          <FormItem label="duration [ms]">
             <InputNumber
               size="small"
               v-model="synInput.duration"
@@ -118,12 +118,14 @@
           </FormItem>
         </i-form>
       </i-col>
-      <i-col span="8">
+    </Row>
+    <Row :gutter="16" class="mt-6">
+      <i-col span="12">
         <i-form
-          :label-width="65"
+          :label-width="120"
           @submit.native.prevent
         >
-          <FormItem label="frequency:">
+          <FormItem label="frequency [Hz]">
             <InputNumber
               v-model="synInput.spikeFrequency"
               :disabled="!synInput.gid"
@@ -137,14 +139,12 @@
           </FormItem>
         </i-form>
       </i-col>
-    </Row>
-    <Row :gutter="16" class="mt-6">
-      <i-col span="8">
+      <i-col span="12">
         <i-form
-          :label-width="90"
+          :label-width="120"
           @submit.native.prevent
         >
-          <FormItem label="weight scalar:">
+          <FormItem label="weight scalar">
             <InputNumber
               v-model="synInput.weightScalar"
               :disabled="!synInput.gid"
