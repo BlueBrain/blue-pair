@@ -9,7 +9,7 @@ import App from './App.vue';
 
 Vue.use(ViewUI, { locale });
 
-Vue.config.productionTip = true;
+Vue.config.productionTip = false;
 
 new Vue({
   render: h => h(App),
