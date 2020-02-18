@@ -25,6 +25,17 @@ const actions = {
   async init(store) {
     await store.$dispatch('resetInvalidStorageCache');
 
+    if (!config.singleCircuit) {
+      store.$dispatch('initCircuitConfig');
+      return;
+    }
+
+    // single circuit mode
+    const circuitConfig = config.circuits.find(c => c.name === config.singleCircuit);
+    store.$dispatch('setCircuitConfig', circuitConfig);
+  },
+
+  initCircuitConfig(store) {
     // TODO: split into multiple actions
     const path = window.location.pathname;
 

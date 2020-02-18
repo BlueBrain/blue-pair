@@ -4,6 +4,9 @@ VERSION?=$(shell cat ../VERSION)
 
 NODE_MODULES:=node_modules
 
+SINGLE_CIRCUIT?=""
+
+APP_NAME?=bp
 SERVER_HOST:=bp-svc.ocp.bbp.epfl.ch
 SERVER_PORT:=80
 
@@ -29,6 +32,7 @@ $(NODE_MODULES):
 
 run_dev: | $(NODE_MODULES)
 	VUE_APP_MAINTENANCE=$(MAINTENANCE) \
+	VUE_APP_SINGLE_CIRCUIT=${SINGLE_CIRCUIT} \
 	VUE_APP_VERSION=$(VERSION) \
 	npm run serve
 
@@ -36,28 +40,29 @@ build: | $(NODE_MODULES)
 	VUE_APP_SERVER_HOST=$(SERVER_HOST) \
 	VUE_APP_SERVER_PORT=$(SERVER_PORT) \
 	VUE_APP_MAINTENANCE=$(MAINTENANCE) \
+	VUE_APP_SINGLE_CIRCUIT="${SINGLE_CIRCUIT}" \
 	VUE_APP_VERSION=$(VERSION) \
 	npm run build --modern
 
 docker_build_version: build
-	docker build -t bp:$(VERSION) \
+	docker build -t $(APP_NAME):$(VERSION) \
 		--build-arg=http_proxy=http://bbpproxy.epfl.ch:80/ \
 		--build-arg=https_proxy=http://bbpproxy.epfl.ch:80/ \
 		.
 
 docker_build_latest: build
-	docker build -t bp:latest \
+	docker build -t $(APP_NAME):latest \
 		--build-arg=http_proxy=http://bbpproxy.epfl.ch:80/ \
 		--build-arg=https_proxy=http://bbpproxy.epfl.ch:80/ \
 		.
 
 docker_push_version: docker_build_version
-	docker tag bp:$(VERSION) docker-registry-default.ocp.bbp.epfl.ch/bbp-ou-nse/bp:$(VERSION)
-	docker push docker-registry-default.ocp.bbp.epfl.ch/bbp-ou-nse/bp:$(VERSION)
+	docker tag $(APP_NAME):$(VERSION) docker-registry-default.ocp.bbp.epfl.ch/bbp-ou-nse/$(APP_NAME):$(VERSION)
+	docker push docker-registry-default.ocp.bbp.epfl.ch/bbp-ou-nse/$(APP_NAME):$(VERSION)
 	@echo 'frontend version($(VERSION)) pushed to OpenShift registy'
 
 docker_push_latest: docker_build_latest
-	docker tag bp:latest docker-registry-default.ocp.bbp.epfl.ch/bbp-ou-nse/bp:latest
-	docker push docker-registry-default.ocp.bbp.epfl.ch/bbp-ou-nse/bp:latest
+	docker tag $(APP_NAME):latest docker-registry-default.ocp.bbp.epfl.ch/bbp-ou-nse/$(APP_NAME):latest
+	docker push docker-registry-default.ocp.bbp.epfl.ch/bbp-ou-nse/$(APP_NAME):latest
 	@echo 'frontend latest version pushed to OpenShift registry.'
 	@echo 'frontend release done'

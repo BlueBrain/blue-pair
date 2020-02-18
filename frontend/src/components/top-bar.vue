@@ -2,7 +2,7 @@
 <template>
   <div class="top-bar">
     <div class="title">
-      <circuit-select/>
+      <circuit-select v-if="circuitSelectVisible" />
       Pair recording<span v-if="circuitName">: {{ circuitName }}</span>
     </div>
     <div class="right-side">
@@ -14,6 +14,7 @@
 
 <script>
   import store from '@/store';
+  import config from '@/config';
 
   import CircuitSelect from './circuit-select.vue';
 
@@ -28,6 +29,7 @@
         status: {
           message: 'Ready',
         },
+        circuitSelectVisible: !config.singleCircuit,
       };
     },
     mounted() {

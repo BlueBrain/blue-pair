@@ -54,6 +54,7 @@ const circuits = [
 
 const defaultConfig = {
   maintenance: !!process.env.VUE_APP_MAINTENANCE,
+  singleCircuit: process.env.VUE_APP_SINGLE_CIRCUIT,
 };
 
 const devConfig = {
