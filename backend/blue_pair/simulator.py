@@ -244,12 +244,14 @@ class Simulator(object):
             if gid not in trace_diff['voltage']:
                 trace_diff['voltage'][gid] = {}
             voltage_vec = self.ssim.cells[gid].get_voltage_recording(sec, .5)
-            trace_diff['voltage'][gid][sec.name()] = np.array(voltage_vec)[positive_t_idxs][index:]
+            if voltage_vec:
+                trace_diff['voltage'][gid][sec.name()] = np.array(voltage_vec)[positive_t_idxs][index:]
 
         for gid, sec, vclamp, current_vec in self.i_rec_list:
             if gid not in trace_diff['current']:
                 trace_diff['current'][gid] = {}
-            trace_diff['current'][gid][sec.name()] = np.array(current_vec)[positive_t_idxs][index:]
+            if current_vec:
+                trace_diff['current'][gid][sec.name()] = np.array(current_vec)[positive_t_idxs][index:]
 
         self.current_trace_index = len(time_vec)
 
