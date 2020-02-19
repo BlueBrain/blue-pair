@@ -15,7 +15,7 @@
                 size="small"
                 placeholder="Duration"
                 :min="1"
-                :max="10000"
+                :max="30000"
                 :step="10"
                 :active-change="false"
                 @on-change="onConfigChange"
