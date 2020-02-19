@@ -79,7 +79,10 @@ run_dev:
 		-v $$(pwd)/blue_pair:/usr/local/lib/python3.7/site-packages/blue_pair \
 		-v $$(pwd)/config.json:/opt/blue-pair/config.json \
 		-p 8888:8000 \
-		bp-svc
+		-p 3000:3000 \
+		--entrypoint python \
+		bp-svc \
+		-m ptvsd --host 0.0.0.0 --port 3000 -m blue_pair.main
 
 docker_build_version: python_build | $(NEURON_SRC_DIR) $(SIM_MODELS_DIR)
 	docker build -t bp-svc:$(VERSION) \

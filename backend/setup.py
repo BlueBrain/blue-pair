@@ -21,7 +21,8 @@ setup(
         'pandas',
         'bglibpy',
         'bluepy',
-        'neurom'
+        'neurom',
+        'ptvsd>=5.0.0a12'
     ],
     tests_require=['pytest', 'pytest-cov'],
     packages=find_packages(exclude=[]),
