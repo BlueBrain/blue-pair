@@ -40,11 +40,15 @@
       };
     },
     mounted() {
+      this.init();
+
       store.$on('initNeuronColor', this.init);
     },
     methods: {
       init() {
         const { cells } = store.state.circuit;
+        if (!cells.meta) return;
+
         const neuronProps = cells.meta.props;
 
         this.uniqueValuesByProp = neuronProps.reduce((uniqueValuesByProp, propName) => {
@@ -55,7 +59,9 @@
         }, {});
 
         this.props = Object.keys(this.uniqueValuesByProp);
-        this.currentProp = this.props.includes('layer') ? 'layer' : this.props[0];
+
+        this.currentProp = store.state.circuit.color.neuronProp
+          || (this.props.includes('layer') ? 'layer' : this.props[0]);
 
         this.generatePalette();
       },

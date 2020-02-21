@@ -43,19 +43,22 @@
       };
     },
     mounted() {
+      this.updateColorPalette();
+
       store.$on('resetPalette', () => {
         this.colorPalette = {};
       });
-      store.$on('updateColorPalette', () => {
+      store.$on('updateColorPalette', () => this.updateColorPalette());
+    },
+    methods: {
+      updateColorPalette() {
         const glColorPalette = store.state.circuit.color.palette;
         const colorKeys = Object.keys(glColorPalette).sort();
         this.colorPalette = colorKeys.reduce((palette, colorKey) => {
           const color = chroma.gl(...glColorPalette[colorKey]).css();
           return Object.assign(palette, { [colorKey]: color });
         }, {});
-      });
-    },
-    methods: {
+      },
       onMouseOver(paletteKey) {
         store.$dispatch('paletteKeyHover', paletteKey);
       },

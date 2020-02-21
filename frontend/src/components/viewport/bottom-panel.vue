@@ -4,33 +4,30 @@
 
     <transition name="fade">
       <div class="circuit-panel" v-if="mode === 'cellSelection'">
-        <color-palette/>
+        <color-palette />
         <div class="soma-size-ctrl">
-          <soma-size-ctrl/>
+          <soma-size-ctrl />
         </div>
       </div>
-    </transition>
-
-    <transition name="fade">
-      <div class="sim-panel" v-if="mode === 'simulationConfig'">
+      <div class="sim-panel" v-else-if="mode === 'simulationConfig'">
         <syn-color-palette/>
         <div class="axon-visibility-ctrl">
-          <axon-visibility-ctrl/>
+          <axon-visibility-ctrl />
         </div>
         <div class="section-alignment-ctrl">
           <section-alignment-ctrl/>
         </div>
         <div class="synapse-size-ctrl">
-          <synapse-size-ctrl/>
+          <synapse-size-ctrl />
         </div>
       </div>
     </transition>
 
     <div class="screenshot-ctrl">
-      <screenshot-ctrl/>
+      <screenshot-ctrl />
     </div>
 
-    <hover-object-info class="hover-object-info-container"/>
+    <hover-object-info class="hover-object-info-container" />
 
   </div>
 </template>
