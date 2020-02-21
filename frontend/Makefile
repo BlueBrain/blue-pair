@@ -4,7 +4,7 @@ VERSION?=$(shell cat ../VERSION)
 
 NODE_MODULES:=node_modules
 
-SINGLE_CIRCUIT?=""
+SINGLE_CIRCUIT?=
 
 APP_NAME?=bp
 SERVER_HOST:=bp-svc.ocp.bbp.epfl.ch
