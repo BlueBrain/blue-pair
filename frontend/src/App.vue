@@ -1,7 +1,7 @@
 
 <template>
   <div class="app-container">
-    <div v-if="!maintenance">
+    <div v-if="mode === 'operational'">
       <top-bar/>
       <viewport-component/>
       <side-panel/>
@@ -9,13 +9,12 @@
       <circuit-loading-modal />
       <global-modal />
     </div>
-    <maintenance-page v-else/>
+    <maintenance-page v-else-if="mode === 'maintenance'"/>
   </div>
 </template>
 
 
 <script>
-  import config from '@/config';
   import store from '@/store';
 
   import TopBar from './components/top-bar.vue';
@@ -30,10 +29,13 @@
     name: 'app',
     data() {
       return {
-        maintenance: config.maintenance,
+        mode: false,
       };
     },
-    mounted() {
+    async mounted() {
+      this.mode = await store.$dispatch('getServerStatus');
+      if (this.mode !== 'operational') return;
+
       store.$dispatch('init');
     },
     components: {

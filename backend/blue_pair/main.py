@@ -27,6 +27,8 @@ L.debug('creating storage instance')
 STORAGE = Storage()
 L.debug('storage instance has been created')
 
+MAINTENANCE = os.getenv('MAINTENANCE', False)
+
 SIM_MANAGER = SimManager()
 
 def on_terminate(signal, frame):
@@ -63,10 +65,16 @@ class WSHandler(tornado.websocket.WebSocketHandler):
         cmd = msg['cmd']
         cmdid = msg['cmdid']
         context = msg['context']
-        circuit_config = context['circuitConfig']
+        circuit_config = context.get('circuitConfig', {})
 
         if 'circuitConfig' in context:
             circuit_path = context['circuitConfig']['path']
+
+        if cmd == 'get_server_status':
+            self.send_message('server_status', {
+                'status': 'maintenance' if MAINTENANCE else 'operational',
+                'cmdid': cmdid
+            })
 
         if cmd == 'get_circuit_metadata':
             # TODO: move logic to storage module

@@ -98,6 +98,12 @@ const actions = {
     }
   },
 
+  async getServerStatus() {
+    const server = await socket.request('get_server_status');
+
+    return server.status;
+  },
+
   setCircuitConfig(store, circuitConfig) {
     store.state.circuitConfig = circuitConfig;
     socket.setMessageContext({ circuitConfig });
