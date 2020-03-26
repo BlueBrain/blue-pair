@@ -35,7 +35,7 @@ const actions = {
     store.$dispatch('setCircuitConfig', circuitConfig);
   },
 
-  initCircuitConfig(store) {
+  async initCircuitConfig(store) {
     // TODO: split into multiple actions
     const path = window.location.pathname;
 
@@ -55,6 +55,14 @@ const actions = {
       return;
     }
 
+    // if no simModel is present in query try to use previously specified by user
+    // for current circuit/simulation path
+    if (customParams.path && !customParams.simModel) {
+      const preferredSimModelObj = (await storage.getItem('preferredSimModels')) || {};
+      const preferredSimModel = preferredSimModelObj[customParams.path];
+      customParams.simModel = preferredSimModel;
+    }
+
     const customConfig = customParams.name
       && customParams.path
       && customParams.simModel;
@@ -72,7 +80,10 @@ const actions = {
       : internalCircuitConfig;
 
     if (!circuitConfig) {
-      store.$emit('showCircuitSelector', { closable: false });
+      store.$emit('showCircuitSelector', {
+        closable: false,
+        circuitCustomConfig: queryBuiltCircuicConfig,
+      });
       return;
     }
 

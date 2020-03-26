@@ -58,6 +58,7 @@
       <i-form
         :label-width="120"
         class="mt-12"
+        v-if="selectedCircuitPath || customConfig"
       >
         <FormItem label="Name *">
           <i-input
@@ -124,6 +125,7 @@
 <script>
   import config from '@/config';
   import store from '@/store';
+  import storage from '@/services/storage';
   import constants from '@/constants';
 
   import modelConfig from '@/../../backend/config.json';
@@ -158,7 +160,12 @@
       };
     },
     mounted() {
-      store.$on('showCircuitSelector', ({ closable = false }) => {
+      store.$on('showCircuitSelector', ({ closable = false, circuitCustomConfig }) => {
+        if (circuitCustomConfig) {
+          this.circuitConfig = circuitCustomConfig;
+          this.customConfig = true;
+        }
+
         this.circuitSelect = { closable, visible: true };
       });
       store.$on('setSelectedCircuitConfig', (circuitConfig) => {
@@ -183,8 +190,15 @@
       onCircuitSelect(circuitPath) {
         this.circuitConfig = Object.assign({}, allCircuits.find(c => c.path === circuitPath));
       },
+      async savePreferredSimModel() {
+        const preferredSimModelObj = (await storage.getItem('preferredSimModels')) || {};
+        preferredSimModelObj[this.circuitConfig.path] = this.circuitConfig.simModel;
+        storage.setItem('preferredSimModels', preferredSimModelObj);
+      },
       onLoadCircuitBtnClick() {
         if (this.customConfig) {
+          this.savePreferredSimModel();
+
           const type = this.circuitConfig.path.includes('BlueConfig')
             ? Entity.SIMULATION
             : Entity.CIRCUIT;
