@@ -43,6 +43,14 @@ const circuits = [
     description: '',
   },
   {
+    name: 'Rat CA1 (20180309)',
+    type: Entity.CIRCUIT,
+    urlName: 'rat-ca1',
+    path: '/gpfs/bbp.cscs.ch/project/proj42/circuits/rat.CA1/20180309/CircuitConfig',
+    simModel: 'hippocampus',
+    description: '',
+  },
+  {
     name: 'Rat CA1 (20181114)',
     type: Entity.CIRCUIT,
     urlName: 'rat-ca1',
