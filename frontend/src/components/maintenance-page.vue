@@ -4,7 +4,7 @@
     <div class="centered">
       <Card>
         <h3 slot="title">
-          <Icon class="mr-6" type="information-circled"></Icon>
+          <Icon class="mr-6" type="ios-information-circle" />
           Service is down
         </h3>
         <p>
