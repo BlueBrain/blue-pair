@@ -58,7 +58,6 @@ class WSHandler(tornado.websocket.WebSocketHandler):
         L.debug('websocket client has been connected')
         return True
 
-    @tornado.web.asynchronous
     def on_message(self, msg):
         msg = json.loads(msg)
         L.debug('got ws message: %s', msg)

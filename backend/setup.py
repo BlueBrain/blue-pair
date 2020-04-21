@@ -14,7 +14,7 @@ setup(
 
     install_requires=[
         'futures',
-        'tornado<6',
+        'tornado',
         'redis',
         'hiredis',
         'numpy',
