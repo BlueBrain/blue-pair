@@ -22,7 +22,7 @@ setup(
         'bglibpy',
         'bluepy',
         'neurom',
-        'ptvsd>=5.0.0a12'
+        'debugpy'
     ],
     tests_require=['pytest', 'pytest-cov'],
     packages=find_packages(exclude=[]),

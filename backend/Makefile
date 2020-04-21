@@ -82,7 +82,7 @@ run_dev:
 		-p 3000:3000 \
 		--entrypoint python \
 		bp-svc \
-		-m ptvsd --host 0.0.0.0 --port 3000 -m blue_pair.main
+		-m debugpy --listen 0.0.0.0:3000 -m blue_pair.main
 
 docker_build_version: python_build | $(NEURON_SRC_DIR) $(SIM_MODELS_DIR)
 	docker build -t bp-svc:$(VERSION) \
