@@ -253,7 +253,7 @@ class Simulator(object):
             if current_vec:
                 trace_diff['current'][gid][sec.name()] = np.array(current_vec)[positive_t_idxs][index:]
 
-        self.current_trace_index = len(time_vec)
+        self.current_trace_index = np.count_nonzero(positive_t_idxs)
 
         return trace_diff
 
