@@ -1,4 +1,4 @@
-.PHONY: docker_build_version docker_build_latest docker_push_version docker_push_latest help
+.PHONY: run_dev run_dev_debug docker_build_version docker_build_latest docker_push_version docker_push_latest help
 
 VERSION?=$(shell cat ../VERSION)
 
@@ -18,6 +18,7 @@ Makefile usage
     python_build                  Build and package python.
     run_dev                       Run development instance of the backend, requires:
                                    docker engine and /gpfs mounted volume.
+    run_dev_debug                 Same with above with debugger listening on port 3000.
     docker_build_version          Build backend local docker image with the version tag.
     docker_build_latest           Build backend local docker image with the latest tag.
     docker_push_version           Tag docker image with version and push to OpenShift registry.
@@ -70,6 +71,20 @@ python_build: | $(VENV_DIR)
 	$(VENV_DIR)/bin/python setup.py sdist
 
 run_dev:
+	docker run \
+		--rm \
+		--user 1000 \
+		-it \
+		-v /gpfs:/gpfs:ro \
+		-e DEBUG=True \
+		-v $$(pwd)/blue_pair:/usr/local/lib/python3.7/site-packages/blue_pair \
+		-v $$(pwd)/config.json:/opt/blue-pair/config.json \
+		-p 8888:8000 \
+		--entrypoint python \
+		bp-svc \
+		-m blue_pair.main
+
+run_dev_debug:
 	docker run \
 		--rm \
 		--user 1000 \
