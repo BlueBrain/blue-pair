@@ -2,6 +2,14 @@
 <template>
   <div class="bottom-panel-container">
 
+    <div class="relative">
+      <hover-object-info class="hover-object-info-container" />
+    </div>
+
+    <div class="screenshot-ctrl">
+      <screenshot-ctrl />
+    </div>
+
     <transition name="fade">
       <div class="circuit-panel" v-if="mode === 'cellSelection'">
         <color-palette />
@@ -22,12 +30,6 @@
         </div>
       </div>
     </transition>
-
-    <div class="screenshot-ctrl">
-      <screenshot-ctrl />
-    </div>
-
-    <hover-object-info class="hover-object-info-container" />
 
   </div>
 </template>
@@ -99,7 +101,7 @@
     .hover-object-info-container {
       position: absolute;
       left: 12px;
-      top: -224px;
+      bottom: 12px;
     }
 
     .axon-visibility-ctrl {

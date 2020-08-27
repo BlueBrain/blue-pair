@@ -139,6 +139,10 @@
     float: right;
   }
 
+  .relative {
+    position: relative;
+  }
+
   .cursor-pointer {
     cursor: pointer;
   }

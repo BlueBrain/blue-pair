@@ -13,19 +13,24 @@
         <h5 v-if="item.subHeader">
           {{ item.subHeader }}
         </h5>
+
         <div v-if="item.type === 'text'">
           <p>{{ item.data }}</p>
         </div>
+
         <div v-else-if="item.type === 'table'">
-          <table>
-            <tr
-              v-for="(val, key) in item.data"
-              :key="key"
-            >
-              <td>{{ key }}</td>
-              <td>{{ val }}</td>
-            </tr>
-          </table>
+          <div class="object-info-table">
+            <div class="object-info-row">
+              <div v-for="(val, key) in item.data" :key="key">
+                {{ key }}
+              </div>
+            </div>
+            <div class="object-info-row">
+              <div v-for="(val, key) in item.data" :key="key" >
+                {{ val }}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -56,17 +61,25 @@
 
 
 <style lang="scss" scoped>
+  h4 {
+    margin-bottom: 12px;
+  }
+
   .hover-object-info-container {
     padding: 6px;
     background-color: white;
     border: 1px solid #dddee1;
     border-radius: 4px;
-    height: 212px;
-    width: 240px;
+    min-width: 240px;
   }
 
-  table {
-    width: 100%;
+  .object-info-row {
+    display: inline-block;
+    margin-right: 24px;
+    max-width: 200px;
+    overflow-x: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
   }
 
   .opacity-transition {
