@@ -83,13 +83,13 @@
     .soma-size-ctrl, .synapse-size-ctrl {
       position: absolute;
       right: 12px;
-      top: -224px;
+      top: -236px;
     }
 
     .section-alignment-ctrl {
       position: absolute;
       right: 12px;
-      top: -260px;
+      top: -276px;
     }
 
     .screenshot-ctrl {

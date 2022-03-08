@@ -77,7 +77,7 @@ run_dev:
 		-it \
 		-v /gpfs:/gpfs:ro \
 		-e DEBUG=True \
-		-v $$(pwd)/blue_pair:/usr/local/lib/python3.7/site-packages/blue_pair \
+		-v $$(pwd)/blue_pair:/usr/local/lib/python3.8/site-packages/blue_pair \
 		-v $$(pwd)/config.json:/opt/blue-pair/config.json \
 		-p 8888:8000 \
 		--entrypoint python \
@@ -91,13 +91,13 @@ run_dev_debug:
 		-it \
 		-v /gpfs:/gpfs:ro \
 		-e DEBUG=True \
-		-v $$(pwd)/blue_pair:/usr/local/lib/python3.7/site-packages/blue_pair \
+		-v $$(pwd)/blue_pair:/usr/local/lib/python3.8/site-packages/blue_pair \
 		-v $$(pwd)/config.json:/opt/blue-pair/config.json \
 		-p 8888:8000 \
-		-p 3000:3000 \
+		-p 5678:5678 \
 		--entrypoint python \
 		bp-svc \
-		-m debugpy --listen 0.0.0.0:3000 -m blue_pair.main
+		-m debugpy --listen 0.0.0.0:5678 --wait-for-client -m blue_pair.main
 
 docker_build_version: python_build | $(NEURON_SRC_DIR) $(SIM_MODELS_DIR)
 	docker build -t bp-svc:$(VERSION) \

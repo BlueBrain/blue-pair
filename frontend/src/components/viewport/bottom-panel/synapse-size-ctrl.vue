@@ -2,7 +2,8 @@
 <template>
   <div class="synapse-size-ctrl-container">
     <vue-slider
-      :direction="'vertical'"
+      direction="btt"
+      tooltip="hover"
       :height="200"
       :width="3"
       :dot-size="12"
@@ -11,8 +12,7 @@
       :max="20"
       :interval="1"
       :value="size"
-      tooltip="hover"
-      @callback="setSynapseSize"
+      @change="setSynapseSize"
     ></vue-slider>
   </div>
 </template>
@@ -42,7 +42,7 @@
 
 <style lang="scss" scoped>
   .synapse-size-ctrl-container {
-    padding: 6px;
+    padding: 12px 6px;
     background-color: white;
     border: 1px solid #dddee1;
     border-radius: 4px;

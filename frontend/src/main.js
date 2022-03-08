@@ -1,5 +1,6 @@
 
 import 'view-design/dist/styles/iview.css';
+import 'vue-slider-component/theme/default.css';
 
 import Vue from 'vue';
 import ViewUI from 'view-design';

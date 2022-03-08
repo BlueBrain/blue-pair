@@ -1,34 +1,17 @@
-
-FROM python:3.7-slim-stretch as builder
-
-RUN pip install --upgrade pip setuptools virtualenv
-
-COPY tmp/neuron /build/neuron
-COPY tmp/sim-models /build/sim-models
+FROM python:3.8-slim-bullseye as builder
 
 # Install system dependencies
 RUN apt-get update && apt-get install -yq \
     build-essential \
     libreadline-dev \
-    jq \
-    libz-dev
+    libz-dev \
+    jq
 
-# Install Neuron
-WORKDIR /build/neuron
-RUN ./configure \
-  --without-x \
-  --disable-rx3d \
-  --with-nrnpython=/usr/local/bin/python \
-  && make -j4 \
-  && make install \
-  && cd /build/neuron/src/nrnpython \
-  && python setup.py install \
-  && rm -rf /build/neuron/*
+RUN pip install pip neuron --upgrade
 
-ENV PATH="/usr/local/nrn/x86_64/bin:${PATH}"
-ENV PYTHONPATH="/usr/local/nrn/lib/python"
-
+COPY tmp/sim-models /build/sim-models
 COPY config.json /build/
+
 RUN repos=$(cat /build/config.json | jq -c -r '.simModel | map(.repo) | unique | .[]') && \
 	for repo in $repos; do \
     mod_dirs=$(cat /build/config.json | jq -c -r ".simModel | .[] | select(.repo==\"$repo\") | .modPath"); \
@@ -38,7 +21,7 @@ RUN repos=$(cat /build/config.json | jq -c -r '.simModel | map(.repo) | unique |
 	done
 
 
-FROM python:3.7-slim-stretch
+FROM python:3.8-slim-bullseye
 LABEL maintainer="BlueBrain NSE(Neuroscientific Software Engineering)"
 WORKDIR /opt/blue-pair
 
@@ -51,7 +34,6 @@ ENV PATH="/usr/local/nrn/x86_64/bin:${PATH}"
 
 COPY dist/* ./dist/
 COPY config.json .
-COPY --from=builder /usr/local/nrn /usr/local/nrn
 COPY --from=builder /build/sim-models sim-models
 
 COPY entrypoint.sh .

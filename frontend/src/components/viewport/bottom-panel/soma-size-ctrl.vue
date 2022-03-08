@@ -2,7 +2,8 @@
 <template>
   <div class="soma-size-ctrl-container">
     <vue-slider
-      :direction="'vertical'"
+      direction="btt"
+      tooltip="hover"
       :height="200"
       :width="3"
       :dot-size="12"
@@ -10,8 +11,7 @@
       :min="5"
       :max="30"
       :value="size"
-      tooltip="hover"
-      @callback="setSomaSize"
+      @change="setSomaSize"
     ></vue-slider>
   </div>
 </template>
@@ -40,7 +40,7 @@
 
 <style lang="scss" scoped>
   .soma-size-ctrl-container {
-    padding: 6px;
+    padding: 12px 6px;
     background-color: white;
     border: 1px solid #dddee1;
     border-radius: 4px;

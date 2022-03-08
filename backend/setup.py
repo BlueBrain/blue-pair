@@ -17,13 +17,11 @@ setup(
         'tornado>=6.0.4',
         'redis>=3.5.3',
         'hiredis>=1.1.0',
-        'numpy>=1.19.1',
-        'pandas>=1.1.1',
-        'bglibpy>=4.3.19',
-        'bluepy>=0.14.14',
-        'bluepysnap>=0.6.1',
-        'neurom>=1.5.2',
-        'debugpy>=1.0.0rc2'
+        'numpy>=1.19.2',
+        'bglibpy>=4.4.26',
+        'bluepy>=2.4.3',
+        'debugpy>=1.5.1',
+        'neuron>=8.0.0'
     ],
     tests_require=['pytest', 'pytest-cov'],
     packages=find_packages(exclude=[]),
