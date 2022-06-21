@@ -32,7 +32,7 @@
 
 <style scoped lang="scss">
   .container {
-    background: url('/maintenance_bg.jpg');
+    background: url('../../public/maintenance_bg.jpg');
     background-repeat: no-repeat;
     background-size: cover;
     height: 100%;

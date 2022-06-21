@@ -8,12 +8,12 @@
       :width="3"
       :dot-size="12"
       :real-time="true"
-      :min="2"
-      :max="20"
+      :min="10"
+      :max="30"
       :interval="1"
       :value="size"
       @change="setSynapseSize"
-    ></vue-slider>
+    />
   </div>
 </template>
 

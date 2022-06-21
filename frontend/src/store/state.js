@@ -2,6 +2,8 @@
 // TODO: write documentation
 
 const state = {
+  view: 'circuit',
+  camera: null,
   circuitConfig: {
     name: null,
     path: null,
@@ -27,7 +29,7 @@ const state = {
   },
   simulation: {
     running: false,
-    synapseSize: 5,
+    synapseSize: 18,
     synapsePropIndex: {},
     synapseProps: [],
     synByGid: {},

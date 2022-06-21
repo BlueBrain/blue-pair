@@ -1,15 +1,39 @@
 
 import throttle from 'lodash/throttle';
 import get from 'lodash/get';
+import noop from 'lodash/noop';
 import difference from 'lodash/difference';
 import pick from 'lodash/pick';
 
 import {
-  Color, TextureLoader, WebGLRenderer, Scene, Fog, AmbientLight, PointLight, Vector2,
-  Raycaster, PerspectiveCamera, Object3D, BufferAttribute, BufferGeometry,
-  PointsMaterial, DoubleSide, VertexColors, Geometry, Points, Vector3, MeshLambertMaterial,
-  SphereBufferGeometry, CylinderGeometry, Mesh, LineSegments, LineBasicMaterial, EdgesGeometry,
-  Matrix4, WebGLRenderTarget,
+  AmbientLight,
+  BufferAttribute,
+  BufferGeometry,
+  Color,
+  CylinderGeometry,
+  DoubleSide,
+  EdgesGeometry,
+  Fog,
+  Geometry,
+  LineBasicMaterial,
+  LineSegments,
+  Matrix4,
+  Mesh,
+  MeshLambertMaterial,
+  Object3D,
+  PerspectiveCamera,
+  PointLight,
+  Points,
+  PointsMaterial,
+  Raycaster,
+  Scene,
+  SphereBufferGeometry,
+  TextureLoader,
+  Vector2,
+  Vector3,
+  VertexColors,
+  WebGLRenderer,
+  WebGLRenderTarget,
 } from 'three';
 
 import { saveAs } from 'file-saver';
@@ -20,7 +44,6 @@ import TrackballControls from '@/services/trackball-controls';
 // TODO: refactor to remove store operations
 // and move them to vue viewport component
 import store from '@/store';
-import eachAsync from '@/tools/each-async';
 import utils from '@/tools/neuron-renderer-utils';
 
 
@@ -41,7 +64,7 @@ const HOVERED_SYN_GL_COLOR = new Color(0xf26d21).toArray();
 const SQUARE_DOT_SCALE = 1.3;
 
 // TODO: calculate in runtime
-const HEADER_HEIGHT = 36;
+const CANVAS_OFFSET_Y = 36;
 
 const ALL_SEC_TYPES = [
   'soma',
@@ -50,6 +73,14 @@ const ALL_SEC_TYPES = [
   'dend',
   'myelin',
 ];
+
+const SEC_TYPE_RENDER_PRIORITY = {
+  soma: 0,
+  apic: 1,
+  dend: 1,
+  myelin: 2,
+  axon: 2,
+};
 
 const COLOR_DIFF_RANGE = 1;
 const HALF_PI = Math.PI * 0.5;
@@ -69,6 +100,10 @@ class NeuronRenderer {
     });
 
     this.ctrl = new utils.RendererCtrl();
+
+    this.canvasOffsetY = Number.isInteger(config.canvasOffsetY)
+      ? config.canvasOffsetY
+      : CANVAS_OFFSET_Y;
 
     const { clientWidth, clientHeight } = canvas.parentElement;
 
@@ -116,6 +151,12 @@ class NeuronRenderer {
     const segInjTexture = new TextureLoader().load('/seg-inj-texture.png');
     const segRecTexture = new TextureLoader().load('/seg-rec-texture.png');
 
+    this.camState = {
+      up: new Array(3),
+      target: new Array(3),
+      position: new Array(9),
+    };
+
     this.recMarkerMaterial = new MeshLambertMaterial({
       color: 0x00bfff,
       opacity: 0.6,
@@ -143,9 +184,10 @@ class NeuronRenderer {
       map: synapseTexture,
     });
 
-    this.onHoverExternalHandler = config.onHover;
-    this.onHoverEndExternalHandler = config.onHoverEnd;
-    this.onClickExternalHandler = config.onClick;
+    this.onHoverExternalHandler = config.onHover || noop;
+    this.onHoverEndExternalHandler = config.onHoverEnd || noop;
+    this.onClickExternalHandler = config.onClick || noop;
+    this.onChange = config.onChange || noop;
 
     this.initEventHandlers();
     this.startRenderLoop();
@@ -182,6 +224,7 @@ class NeuronRenderer {
 
     this.neuronCloud.points.name = 'neuronCloud';
     this.neuronCloud.points.frustumCulled = false;
+    this.neuronCloud.points.visible = false;
     this.scene.add(this.neuronCloud.points);
 
     // picking cloud setup
@@ -274,7 +317,7 @@ class NeuronRenderer {
     this.ctrl.renderOnce();
   }
 
-  alignCamera() {
+  alignCameraWithNeuronCloud() {
     this.neuronCloud.points.geometry.computeBoundingSphere();
     const { center, radius } = this.neuronCloud.points.geometry.boundingSphere;
     this.camera.position.x = center.x;
@@ -289,6 +332,14 @@ class NeuronRenderer {
 
   resetCameraUp() {
     this.camera.up.set(0, 1, 0);
+    this.ctrl.renderOnce();
+  }
+
+  restoreCameraState(cameraState) {
+    this.camera.up.set(...cameraState.up);
+    this.controls.object.position.set(...cameraState.position);
+    this.controls.target.set(...cameraState.target);
+    this.controls.update();
     this.ctrl.renderOnce();
   }
 
@@ -325,6 +376,44 @@ class NeuronRenderer {
       .eventCallback('onComplete', animateCamera);
 
       this.ctrl.renderFor(500);
+  }
+
+  centerCellMorphs(gids) {
+    const storeMorph = store.state.simulation.morphology;
+
+    const somaPositions = gids
+      .map(gid => new Vector3(...storeMorph[gid].sections.find(section => section.type === 'soma').points[0]));
+
+    const orientationMatrices = gids.map(gid => storeMorph[gid].orientation);
+
+    const quats = orientationMatrices.map(orientation => utils.quatFromArray3x3(orientation));
+
+    const orientationVecs = quats.map(quat => new Vector3(0, 1, 0).applyQuaternion(quat));
+
+    const prePostVec = new Vector3().subVectors(somaPositions[0], somaPositions[1]);
+
+    const orientationMeanVec = new Vector3()
+      .addVectors(...orientationVecs)
+      .divideScalar(orientationVecs.length)
+      .normalize();
+
+    const prePostMeanPos = new Vector3()
+      .addVectors(somaPositions[0], somaPositions[1])
+      .divideScalar(2);
+
+    const camVec = new Vector3().crossVectors(orientationMeanVec, prePostVec);
+
+    const distance = prePostVec.length() / Math.tan(Math.PI * this.camera.fov / 360) * 1.2;
+    camVec.setLength(distance);
+
+    const controlsTargetVec = prePostMeanPos.clone();
+    const cameraPositionVec = prePostMeanPos.clone().add(camVec);
+
+    this.camera.position.copy(cameraPositionVec);
+    this.controls.target.copy(controlsTargetVec);
+    this.camera.up.copy(orientationMeanVec);
+
+    this.ctrl.renderOnce();
   }
 
   updateSynapses() {
@@ -384,7 +473,7 @@ class NeuronRenderer {
     this.ctrl.renderOnce();
   }
 
-  showMorphology(secTypes = ALL_SEC_TYPES.filter(defaultSecRenderFilter)) {
+  async showMorphology(secTypes = ALL_SEC_TYPES.filter(defaultSecRenderFilter)) {
     const gids = store.state.circuit.simAddedNeurons.map(n => n.gid);
 
     const { morphology } = store.state.simulation;
@@ -410,38 +499,47 @@ class NeuronRenderer {
 
       const neuronIndex = gid - 1;
       const neuron = store.$get('neuron', neuronIndex);
-      const { sections } = morphology[gid];
+      const { sections: originalSections } = morphology[gid];
+
+      // Rendering soma and dendritic tree first as this will be in the viewport. Only a small part of the axon
+      // will be visible at this point.
+      const sections = originalSections
+        .sort((s1, s2) => SEC_TYPE_RENDER_PRIORITY[s1.type] - SEC_TYPE_RENDER_PRIORITY[s2.type]);
 
       const colorDiff = (((2 * COLOR_DIFF_RANGE * cellIndex) / gids.length)) - COLOR_DIFF_RANGE;
 
       const materialMap = utils.generateSecMaterialMap(colorDiff);
 
-      const addSecOperation = eachAsync(sections, (section) => {
-        const pts = section.points;
+      const addSecOperation = sections
+        .filter(section => secTypesToAdd.includes(section.type))
+        .map(async (section) => {
+          const pts = section.points;
+          const material = materialMap[section.type].clone();
 
-        const secMesh = section.type === 'soma' ?
-          utils.createSomaMeshFromPoints(pts, materialMap[section.type].clone()) :
-          utils.createSecMeshFromPoints(pts, materialMap[section.type].clone());
+          const secMesh = section.type === 'soma' ?
+            utils.createSomaMeshFromPoints(pts, material) :
+            await utils.createSecMeshFromPoints(pts, material);
 
-        secMesh.name = 'morphSection';
-        secMesh.userData = {
-          neuron,
-          type: section.type,
-          id: section.id,
-          name: section.name,
-        };
+          secMesh.name = 'morphSection';
+          secMesh.userData = {
+            neuron,
+            type: section.type,
+            id: section.id,
+            name: section.name,
+          };
 
-        cellObj3d.add(secMesh);
-      }, sec => secTypesToAdd.includes(sec.type));
+          cellObj3d.add(secMesh);
+          this.ctrl.renderOnce();
+        });
 
-      addSecOperations.push(addSecOperation);
+      addSecOperations.push(Promise.all(addSecOperation));
     });
 
-    const stopRender = this.ctrl.renderUntilStopped();
+    // const stopRender = this.ctrl.renderUntilStopped();
 
     Promise.all(addSecOperations).then(() => {
       store.$dispatch('morphRenderFinished');
-      stopRender();
+      // stopRender();
     });
 
     this.cellMorphologyObj.visible = true;
@@ -601,7 +699,7 @@ class NeuronRenderer {
     // TODO: refactor
     const cfg = secMarkerConfig;
     const secMarkerObj3d = this.secMarkerObj.children
-      .find(obj3d => obj3d.userData.sectionName === cfg.sectionName && obj3d.userData.type === cfg.type);
+      .find(obj3d => obj3d.userData.sectionName === cfg.sectionName && obj3d.userData.gid === cfg.gid);
 
     this.secMarkerObj.remove(secMarkerObj3d);
     utils.disposeMesh(secMarkerObj3d.children[0]);
@@ -617,8 +715,6 @@ class NeuronRenderer {
     });
 
     secMarkerConfigsToRemove.forEach(secMarkerConfig => this.removeSecMarker(secMarkerConfig));
-
-    this.ctrl.renderOnce();
   }
 
   hideSectionMarkers() {
@@ -685,7 +781,15 @@ class NeuronRenderer {
     this.renderer.domElement.addEventListener('mouseup', this.onMouseUp.bind(this), false);
     this.renderer.domElement.addEventListener('wheel', this.onMouseWheel.bind(this), false);
     this.renderer.domElement.addEventListener('mousemove', throttle(this.onMouseMove.bind(this), 100), false);
-    this.controls.addEventListener('change', this.ctrl.renderOnce.bind(this));
+    this.controls.addEventListener('change', () => {
+      this.ctrl.renderOnce();
+
+      this.camera.up.toArray(this.camState.up);
+      this.camera.position.toArray(this.camState.position);
+      this.controls.target.toArray(this.camState.target);
+
+      this.onChange(this.camState);
+    });
     window.addEventListener('resize', this.onResize.bind(this), false);
   }
 
@@ -1000,15 +1104,15 @@ class NeuronRenderer {
 
   getMeshByNativeCoordinates(x, y) {
     this.mouseGl.x = (x / this.renderer.domElement.clientWidth) * 2 - 1;
-    this.mouseGl.y = -((y - HEADER_HEIGHT) / this.renderer.domElement.clientHeight) * 2 + 1;
+    this.mouseGl.y = -((y - this.canvasOffsetY) / this.renderer.domElement.clientHeight) * 2 + 1;
 
-    if (this.neuronCloud.points.visible) {
+    if (this.neuronCloud && this.neuronCloud.points.visible) {
       // doing gpu picking for neuron cloud, otherwise - raycast
       this.camera.setViewOffset(
         this.renderer.domElement.width,
         this.renderer.domElement.height,
         x * window.devicePixelRatio,
-        (y - HEADER_HEIGHT) * window.devicePixelRatio,
+        (y - this.canvasOffsetY) * window.devicePixelRatio,
         1,
         1,
       );
@@ -1030,7 +1134,7 @@ class NeuronRenderer {
     }
 
     this.raycaster.setFromCamera(this.mouseGl, this.camera);
-    const intersections = this.raycaster.intersectObjects(this.scene.children, true);
+    const intersections = this.raycaster.intersectObject(this.cellMorphologyObj, true);
 
     return intersections
       .find(mesh => !mesh.object.userData.skipHoverDetection && mesh.object.material.visible);

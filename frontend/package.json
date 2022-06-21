@@ -1,6 +1,6 @@
 {
   "name": "blue-pair",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Pair recording application",
   "license": "BSD-3-Clause",
   "author": "NSE(Neuroscientific Software Engineering) <bbp-ou-nse@groupes.epfl.ch> (http://bluebrain.epfl.ch)",
@@ -14,8 +14,8 @@
     "issuesurl": "NA"
   },
   "scripts": {
-    "serve": "vue-cli-service serve --open",
-    "build": "vue-cli-service build --modern",
+    "dev": "vue-cli-service serve --open",
+    "build": "vue-cli-service build",
     "lint": "vue-cli-service lint"
   },
   "dependencies": {
@@ -27,29 +27,29 @@
     "gsap": "^3.9.1",
     "localforage": "^1.10.0",
     "lodash": "^4.17.21",
-    "qs": "^6.10.3",
+    "qs": "^6.10.5",
     "three": "^0.124.0",
     "view-design": "^4.7.0",
     "vue": "^2.6.14",
     "vue-slider-component": "^3.2.15"
   },
   "devDependencies": {
-    "@vue/cli-plugin-babel": "^4.5.15",
-    "@vue/cli-plugin-eslint": "^4.5.15",
-    "@vue/cli-service": "^4.5.15",
-    "@vue/eslint-config-airbnb": "^6.0.0",
-    "babel-eslint": "^10.1.0",
-    "eslint": "^8.7.0",
-    "eslint-plugin-vue": "^8.4.0",
-    "node-sass": "^6.0.1",
-    "sass-loader": "^10.2.1",
+    "@babel/core": "^7.12.16",
+    "@babel/eslint-parser": "^7.12.16",
+    "@vue/cli-plugin-babel": "~5.0.0",
+    "@vue/cli-plugin-eslint": "~5.0.0",
+    "@vue/cli-service": "~5.0.0",
+    "eslint": "^7.32.0",
+    "eslint-plugin-vue": "^8.0.3",
+    "sass": "^1.49.8",
+    "sass-loader": "^12.6.0",
     "vue-template-compiler": "^2.6.14"
   },
   "eslintConfig": {
     "root": true,
     "extends": [
       "plugin:vue/essential",
-      "@vue/airbnb"
+      "eslint:recommended"
     ],
     "rules": {
       "indent": "off",
@@ -62,7 +62,7 @@
       ]
     },
     "parserOptions": {
-      "parser": "babel-eslint"
+      "parser": "@babel/eslint-parser"
     }
   },
   "browserslist": [

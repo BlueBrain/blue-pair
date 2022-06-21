@@ -40,7 +40,7 @@ build: | $(NODE_MODULES)
 	VUE_APP_SERVER_PORT=$(SERVER_PORT) \
 	VUE_APP_SINGLE_CIRCUIT="${SINGLE_CIRCUIT}" \
 	VUE_APP_VERSION=$(VERSION) \
-	npm run build --modern
+	npm run build
 
 docker_build_version: build
 	docker build -t $(APP_NAME):$(VERSION) \

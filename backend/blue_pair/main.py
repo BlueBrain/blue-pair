@@ -58,6 +58,12 @@ class WSHandler(tornado.websocket.WebSocketHandler):
         L.debug('websocket client has been connected')
         return True
 
+    def get_compression_options(self):
+        return {}
+
+    def open(self):
+        self.set_nodelay(True)
+
     def on_message(self, msg):
         msg = json.loads(msg)
         L.debug('got ws message: %s', msg)

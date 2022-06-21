@@ -4,6 +4,7 @@ import remove from 'lodash/remove';
 import pickBy from 'lodash/pickBy';
 import pick from 'lodash/pick';
 import groupBy from 'lodash/groupBy';
+import get from 'lodash/get';
 
 import qs from 'qs';
 
@@ -15,79 +16,189 @@ import storage from '@/services/storage';
 import config from '@/config';
 import constants from '@/constants';
 
+
 // TODO: prefix events with target component's names
+
 
 const recAndInjCompareKeys = ['sectionName', 'gid'];
 const APP_VERSION = process.env.VUE_APP_VERSION;
 const { Entity } = constants;
 
 const actions = {
-  async init(store) {
+  async preInit(store) {
     await store.$dispatch('resetInvalidStorageCache');
-
-    if (!config.singleCircuit) {
-      store.$dispatch('initCircuitConfig');
-      return;
-    }
-
-    // single circuit mode
-    const circuitConfig = config.circuits.find(c => c.name === config.singleCircuit);
-    store.$dispatch('setCircuitConfig', circuitConfig);
   },
 
-  async initCircuitConfig(store) {
-    // TODO: split into multiple actions
-    const path = window.location.pathname;
-
-    const routeR = new RegExp(`/(${Entity.SIMULATION}s|${Entity.CIRCUIT}s)/([a-z0-9-_]*)/?`);
-    const customParams = qs.parse(window.location.search.slice(1));
-
-    if (!path.match(routeR)) {
-      store.$emit('showCircuitSelector', { closable: false });
-      return;
-    }
-
-    const [, collection, circuitName] = routeR.exec(path);
-
-    const type = collection.slice(0, -1);
-    if (![Entity.CIRCUIT, Entity.SIMULATION].includes(type)) {
-      store.$emit('showCircuitSelector', { closable: false });
-      return;
-    }
-
-    // if no simModel is present in query try to use previously specified by user
-    // for current circuit/simulation path
-    if (customParams.path && !customParams.simModel) {
-      const preferredSimModelObj = (await storage.getItem('preferredSimModels')) || {};
-      const preferredSimModel = preferredSimModelObj[customParams.path];
-      customParams.simModel = preferredSimModel;
-    }
-
-    const customConfig = customParams.name
-      && customParams.path
-      && customParams.simModel;
-
-    const internalCircuitConfig = config.circuits
-      .find(c => c.urlName === circuitName && c.type === type);
-
-    const queryBuiltCircuicConfig = Object.assign(
-      { type, urlName: encodeURIComponent(customParams.name), custom: true },
-      pick(customParams, ['name', 'path', 'simModel']),
-    );
-
-    const circuitConfig = customConfig
-      ? queryBuiltCircuicConfig
-      : internalCircuitConfig;
-
+  async init(store) {
+    const circuitConfig = store.$dispatch('initCircuitConfig');
     if (!circuitConfig) {
-      store.$emit('showCircuitSelector', {
-        closable: false,
-        circuitCustomConfig: queryBuiltCircuicConfig,
-      });
       return;
     }
 
+    store.$dispatch('preInitState');
+
+    await store.$dispatch('loadData');
+
+    store.$dispatch('initState');
+    store.$dispatch('initComponents');
+    store.$dispatch('initView');
+  },
+
+  preInitState(store) {
+    const query = qs.parse(location.search, { ignoreQueryPrefix: true });
+    const gids = get(query, 'circuit.gids', []).map(gidStr => parseInt(gidStr, 10));
+
+    store.state.circuit.simAddedNeurons = gids.map(gid => ({ gid }));
+
+    if (query.view === 'simConfig') {
+      store.$emit('setSimulationConfigTabActive');
+      store.state.view = 'simConfig';
+    }
+  },
+
+  async loadData(store) {
+    await store.$dispatch('loadCircuit');
+
+    store.$dispatch('showGlobalSpinner');
+    await store.$dispatch('loadMorphologies');
+    store.$dispatch('hideGlobalSpinner');
+  },
+
+  initState(store) {
+    // For app query params definition see ./types.ts
+    const query = qs.parse(location.search, { ignoreQueryPrefix: true });
+
+    const gids = store.state.circuit.simAddedNeurons.map(neuron => neuron.gid);
+
+    store.$dispatch('setSimAddedNeurons', gids);
+
+    if (query.view === 'simConfig') {
+      store.$emit('setSimulationConfigTabActive');
+      store.state.view = 'simConfig';
+
+      store.$emit('setBottomPanelMode', 'simulationConfig');
+    }
+  },
+
+  initComponents(store) {
+    const { simAddedNeurons } = store.state.circuit;
+
+    if (store.state.view === 'simConfig') {
+      store.$emit('updateSimCellConfig', cloneDeep(simAddedNeurons));
+    }
+  },
+
+  initView(store) {
+    const query = qs.parse(location.search, { ignoreQueryPrefix: true });
+    const gids = store.state.circuit.simAddedNeurons.map(neuron => neuron.gid);
+
+    if (query.camera) {
+      store.$emit('restoreCameraState', {
+        up: query.camera.up.map(numStr => parseFloat(numStr)),
+        position: query.camera.position.map(numStr => parseFloat(numStr)),
+        target: query.camera.target.map(numStr => parseFloat(numStr)),
+      });
+    }
+
+    if (store.state.view === 'simConfig') {
+      if (!query.camera) {
+        store.$emit('centerCellMorphs', gids);
+      }
+
+      store.$emit('showCellMorphology');
+      store.$emit('showSectionMarkers');
+
+      store.$dispatch('initSynapses');
+    } else {
+      if (!query.camera) {
+        store.$emit('alignCameraWithNeuronCloud');
+      }
+
+      store.$emit('showCircuit');
+    }
+  },
+
+  initCircuitConfig(store) {
+    if (config.singleCircuit) {
+      const conf = config.circuits.find(c => c.name === config.singleCircuit);
+      store.$dispatch('setCircuitConfig', conf);
+
+      return conf;
+    }
+
+    const { pathname } = window.location;
+
+    const routeR = new RegExp(`^/(${Entity.SIMULATION}s|${Entity.CIRCUIT}s)/([a-z0-9-_]*)/?$`);
+    const query = qs.parse(location.search, { ignoreQueryPrefix: true });
+
+    if (!pathname.match(routeR)) {
+      store.$emit('showCircuitSelector', { closable: false });
+
+      return null;
+    }
+
+    const [, collection, circuitName] = routeR.exec(pathname);
+    const type = collection.slice(0, -1);
+
+    if (circuitName) {
+      const conf = config.circuits.find(c => c.urlName === circuitName && c.type === type);
+      store.$dispatch('setCircuitConfig', conf);
+
+      return conf;
+    }
+
+    const queryCircuit = query.circuit || {};
+    if (!queryCircuit.name || !queryCircuit.path || !queryCircuit.simModel) {
+      store.$emit('showCircuitSelector', { closable: false });
+
+      return null;
+    }
+
+    const conf = {
+      type,
+      urlName: encodeURIComponent(query.circuit.name),
+      custom: true,
+      ...pick(query.circuit, ['name', 'path', 'simModel']),
+    };
+
+    store.$dispatch('setCircuitConfig', conf);
+
+    return conf;
+  },
+
+  async onCircuitChange(store, circuitConfig) {
     store.$dispatch('setCircuitConfig', circuitConfig);
+    store.$dispatch('circuitTabSelected');
+    await store.$dispatch('loadCircuit');
+    store.$emit('alignCameraWithNeuronCloud');
+    store.$emit('showCircuit');
+  },
+
+  on3dViewChange(store, state) {
+    store.state.camera = state;
+    store.$dispatch('saveStateToQuery');
+  },
+
+  async setSimAddedNeurons(store, gids) {
+    store.state.circuit.simAddedNeurons = gids.map(gid => store.$get('neuron', gid - 1));
+
+    store.$emit('initNeuronSelector');
+    store.$emit('updateConnectionFilters');
+  },
+
+  saveStateToQuery(store) {
+    const query = {
+      view: store.state.view,
+      circuit: {
+        gids: store.state.circuit.simAddedNeurons.map(neuron => neuron.gid),
+      },
+      simConfig: {},
+      camera: store.state.camera,
+    };
+
+    const queryStr = qs.stringify(query);
+
+    window.history.pushState(null, null, `?${queryStr}`);
   },
 
   async resetInvalidStorageCache() {
@@ -113,18 +224,22 @@ const actions = {
     store.$dispatch('setCircuitRoute', circuitConfig);
     store.$emit('setCircuitName', circuitConfig.name);
     store.$emit('initExampleNeuronSets', circuitConfig.examples);
-
-    // FIXME: make sure the whole block makes sense
-    store.$dispatch('loadCircuit');
   },
 
   setCircuitRoute(store, circuitConfig) {
     const path = `/${circuitConfig.type}s/${circuitConfig.custom ? '' : circuitConfig.urlName}`;
-    const query = circuitConfig.custom
-      ? qs.stringify(pick(circuitConfig, ['name', 'path', 'simModel']))
-      : null;
+    const currentQuery = qs.parse(location.search, { ignoreQueryPrefix: true });
 
-    window.history.pushState(null, null, `${path}${query ? `?${query}` : ''}`);
+    const updatedQuery = circuitConfig.custom
+      ? {
+        ...currentQuery,
+        circuit: pick(circuitConfig, ['name', 'path', 'simModel']),
+      }
+      : currentQuery;
+
+    const queryStr = qs.stringify(updatedQuery);
+
+    window.history.pushState(null, null, `${path}${queryStr ? `?${queryStr}` : ''}`);
   },
 
   reset(store) {
@@ -367,7 +482,8 @@ const actions = {
     store.$emit('initNeuronColor');
     store.$emit('updateColorPalette');
     store.$emit('initNeuronPropFilter');
-    store.$emit('circuitLoaded');
+    store.$emit('initNeuronCloud');
+    store.$emit('initNeuronSelector');
   },
 
   showGlobalSpinner(store, msg) {
@@ -480,12 +596,20 @@ const actions = {
     store.$emit('addNeuronToSim', neuron);
   },
 
+  // ? is this used?
+  addNeuronToSim(store, neuron) {
+    store.$emit('neuronAddedToSim', neuron);
+    store.$dispatch('saveStateToQuery');
+  },
+
   neuronAddedToSim(store, neuron) {
     store.$emit('neuronAddedToSim', neuron);
+    store.$dispatch('saveStateToQuery');
   },
 
   neuronRemovedFromSim(store, neuron) {
     store.$emit('neuronRemovedFromSim', neuron);
+    store.$dispatch('saveStateToQuery');
   },
 
   loadNeuronSetClicked(store, options) {
@@ -515,6 +639,7 @@ const actions = {
   },
 
   morphRenderFinished(store) {
+    store.$emit('morphRenderFinished');
     store.$emit('setShowAxonBtnActive');
   },
 
@@ -543,7 +668,7 @@ const actions = {
     if (simulation.waitingSecSelectionForAlignment && section.type === 'soma') {
       simulation.waitingSecSelectionForAlignment = false;
       store.$emit('setSelectionMode', false);
-      store.$emit('centerCellMorph', section);
+      store.$emit('centerCellMorph', section.neuron.gid);
       store.$emit('resetSectionAlignmentCtrl');
       return;
     }
@@ -661,11 +786,14 @@ const actions = {
   },
 
   circuitTabSelected(store) {
+    store.state.view = 'circuit';
     store.$emit('resetSimConfigBtn');
     store.$emit('showCircuit');
     store.$emit('resetCameraUp');
     store.$emit('removeCellMorphology');
     store.$emit('setBottomPanelMode', 'cellSelection');
+
+    store.$dispatch('saveStateToQuery');
 
     const { simulation } = store.state;
     if (simulation.running) store.$dispatch('cancelSim');
@@ -799,22 +927,20 @@ const actions = {
     store.$emit('updateSynapses');
   },
 
-  async proceedToSimConfigBtnClicked(store) {
-    const { simulation: sim } = store.state;
-
-    store.$emit('updateSimCellConfig', store.state.circuit.simAddedNeurons);
+  async loadMorphologies(store) {
     const gids = store.state.circuit.simAddedNeurons.map(n => n.gid);
 
     await Promise.all(gids.map(async (gid) => {
       if (store.state.simulation.morphology[gid]) return;
 
+      // ! morph key should include circuit name/path to avoid collisions
       const cellMorph = await storage.getItem(`morph:${gid}`);
       if (cellMorph) store.state.simulation.morphology[gid] = cellMorph;
     }));
 
-    const cachedGids = Object.keys(store.state.simulation.morphology).map(gid => parseInt(gid, 10));
+    const alreadyLoadedGids = Object.keys(store.state.simulation.morphology).map(gid => parseInt(gid, 10));
 
-    const gidsToLoad = gids.filter(gid => !cachedGids.includes(gid));
+    const gidsToLoad = gids.filter(gid => !alreadyLoadedGids.includes(gid));
     if (gidsToLoad.length) {
       const morph = await socket.request('get_cell_morphology', gidsToLoad);
       Object.entries(morph.cells).forEach(([, cellMorph]) => {
@@ -830,6 +956,15 @@ const actions = {
       Object.assign(store.state.simulation.morphology, morph.cells);
       gidsToLoad.forEach(gid => storage.setItem(`morph:${gid}`, morph.cells[gid]));
     }
+  },
+
+  async proceedToSimConfigBtnClicked(store) {
+    const { simulation: sim } = store.state;
+
+    store.$emit('updateSimCellConfig', store.state.circuit.simAddedNeurons);
+    const gids = store.state.circuit.simAddedNeurons.map(n => n.gid);
+
+    await store.$dispatch('loadMorphologies');
 
     // update cell-config: remove stimuli, recordings, synaptic inputs
     // for the cells which are have been removed from simulation
@@ -843,6 +978,9 @@ const actions = {
     store.$emit('removeSectionMarkers', sectionMarkerConfig => !gids.find(gid => sectionMarkerConfig.gid === gid));
 
     store.$emit('removeCellMorphologies', cellMorph => !gids.find(gid => gid === cellMorph.gid));
+
+    store.state.view = 'simConfig';
+    store.$dispatch('saveStateToQuery');
 
     const simNeurons = cloneDeep(store.state.circuit.simAddedNeurons);
     store.$emit('updateSimCellConfig', simNeurons);

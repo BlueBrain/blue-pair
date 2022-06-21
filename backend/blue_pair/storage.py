@@ -19,6 +19,7 @@ L.debug('cache client has been created')
 SEC_SHORT_TYPE_DICT = {
     'soma': 'soma',
     'SOMA_SIMPLE_CONTOUR': 'soma',
+    'SOMA_SINGLE_POINT': 'soma',
     'basal_dendrite': 'dend',
     'apical_dendrite': 'apic',
     'axon': 'axon'

@@ -16,6 +16,7 @@
   import NeuronRenderer from '@/services/neuron-renderer';
   import BottomPanel from './viewport/bottom-panel.vue';
   import MorphSectionPoptip from './viewport/morph-section-poptip.vue';
+  import debounce from 'lodash/debounce';
 
   export default {
     name: 'viewport-component',
@@ -35,9 +36,10 @@
         onHover: this.onHover.bind(this),
         onHoverEnd: this.onHoverEnd.bind(this),
         onClick: this.onClick.bind(this),
+        onChange: this.onChange.bind(this),
       });
       // TODO: refactor
-      store.$on('circuitLoaded', this.initRenderer.bind(this));
+      store.$on('initNeuronCloud', this.initNeuronCloud.bind(this));
       store.$on('setSomaSize', size => this.renderer.setNeuronCloudPointSize(size));
       store.$on('setSynapseSize', size => this.renderer.setMorphSynapseSize(size));
       store.$on('redrawCircuit', this.redrawNeurons.bind(this));
@@ -56,12 +58,17 @@
 
       store.$on('setSelectionMode', (selectionMode) => { this.selectionMode = selectionMode; });
 
-      store.$on('centerCellMorph', section => this.renderer.centerCellMorph(section.neuron.gid));
+      store.$on('centerCellMorph', gid => this.renderer.centerCellMorph(gid));
+      store.$on('centerCellMorphs', gids => this.renderer.centerCellMorphs(gids));
+
+      store.$on('alignCameraWithNeuronCloud', () => this.alignCameraWithNeuronCloud());
 
       store.$on('hideCircuit', () => this.renderer.hideNeuronCloud());
       store.$on('showCircuit', () => this.renderer.showNeuronCloud());
 
       store.$on('resetCameraUp', () => this.renderer.resetCameraUp());
+
+      store.$on('restoreCameraState', (cameraState) => this.renderer.restoreCameraState(cameraState));
 
       store.$on('showAxons', () => this.renderer.showAxons());
       store.$on('hideAxons', () => this.renderer.hideAxons());
@@ -134,11 +141,16 @@
         }
         }
       },
-      initRenderer() {
+      onChange: debounce((state) => {
+        store.$dispatch('on3dViewChange', state);
+      }, 300),
+      initNeuronCloud() {
         const neuronSetSize = store.state.circuit.cells.meta.count;
         this.renderer.initNeuronCloud(neuronSetSize);
         this.redrawNeurons();
-        this.renderer.alignCamera();
+      },
+      alignCameraWithNeuronCloud() {
+        this.renderer.alignCameraWithNeuronCloud();
       },
       redrawNeurons() {
         const {

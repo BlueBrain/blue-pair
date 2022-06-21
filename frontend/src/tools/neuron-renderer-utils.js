@@ -1,4 +1,3 @@
-
 import {
   Mesh,
   Vector3,
@@ -11,10 +10,17 @@ import {
   Color,
   DoubleSide,
   Quaternion,
+  Float32BufferAttribute,
 } from 'three';
 
 import last from 'lodash/last';
 import * as chroma from 'chroma-js';
+
+import { Pool } from '../services/threads';
+
+
+const geometryWorkerFactory = () => new Worker(new URL('../workers/neuron-geometry.js', import.meta.url), { name: 'geometry-worker'});
+const geometryWorkerPool = new Pool(geometryWorkerFactory, 2);
 
 const HALF_PI = Math.PI * 0.5;
 
@@ -119,8 +125,17 @@ function createSecGeometryFromPoints(pts, simplificationRatio = 2) {
   return secBufferGeometry;
 }
 
-function createSecMeshFromPoints(pts, material, simplificationRatio) {
-  const geometry = createSecGeometryFromPoints(pts, simplificationRatio);
+async function createSecMeshFromPoints(pts, material, simplificationRatio) {
+  const [vertices, normals] = await geometryWorkerPool.queue(thread => thread.createSecGeometryFromPoints(pts, simplificationRatio));
+
+  const normalsBuffer = new Float32BufferAttribute(normals, 3);
+  const vertexBuffer = new Float32BufferAttribute(vertices, 3);
+
+  const geometry = new BufferGeometry();
+
+  geometry.setAttribute('position', vertexBuffer);
+  geometry.setAttribute('normal', normalsBuffer);
+
   return new Mesh(geometry, material);
 }
 
@@ -207,6 +222,7 @@ function quatFromArray3x3(array3x3) {
 }
 
 export default {
+  createSecGeometryFromPoints,
   createSecMeshFromPoints,
   disposeMesh,
   createSomaMeshFromPoints,

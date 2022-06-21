@@ -13,15 +13,14 @@ setup(
     author_email='bbp-ou-nse@groupes.epfl.ch',
 
     install_requires=[
-        'futures>=3.1.1',
-        'tornado>=6.0.4',
-        'redis>=3.5.3',
-        'hiredis>=1.1.0',
-        'numpy>=1.19.2',
-        'bglibpy>=4.4.26',
-        'bluepy>=2.4.3',
-        'debugpy>=1.5.1',
-        'neuron>=8.0.0'
+        'tornado==6.1',
+        'redis==4.1.2',
+        'hiredis==2.0.0',
+        'numpy==1.22.1',
+        'bglibpy==4.5.30.1',
+        'bluepy==2.4.3',
+        'debugpy==1.5.1',
+        'neuron==8.0.1'
     ],
     tests_require=['pytest', 'pytest-cov'],
     packages=find_packages(exclude=[]),

@@ -2,9 +2,7 @@
 
 VERSION?=$(shell cat ../VERSION)
 
-NEURON_SRC_URL:=https://neuron.yale.edu/ftp/neuron/versions/v7.6/7.6.7/nrn-7.6.7.tar.gz
 VENV_DIR:=venv
-NEURON_SRC_DIR:=tmp/neuron
 SIM_MODELS_DIR:=tmp/sim-models
 SIM_MODELS_REPO_BASE:=ssh://bbpcode.epfl.ch/sim/models
 NEURODAMUS_CORE_REPO:=ssh://bbpcode.epfl.ch/sim/neurodamus-core
@@ -32,13 +30,6 @@ help:
 
 $(VENV_DIR):
 	python3 -m venv venv
-
-$(NEURON_SRC_DIR):
-	http_proxy=http://bbpproxy.epfl.ch:80 \
-			wget -O tmp/nrn.tar.gz $(NEURON_SRC_URL)
-	mkdir -p $@
-	tar -xf tmp/nrn.tar.gz --strip-components=1 -C $@
-	rm tmp/nrn.tar.gz
 
 $(NEURODAMUS_CORE_DIR):
 	git clone $(NEURODAMUS_CORE_REPO) $@
@@ -99,14 +90,14 @@ run_dev_debug:
 		bp-svc \
 		-m debugpy --listen 0.0.0.0:5678 --wait-for-client -m blue_pair.main
 
-docker_build_version: python_build | $(NEURON_SRC_DIR) $(SIM_MODELS_DIR)
+docker_build_version: python_build | $(SIM_MODELS_DIR)
 	docker build -t bp-svc:$(VERSION) \
 		--build-arg=redis_host=$(REDIS_HOST) \
 		--build-arg=http_proxy=http://bbpproxy.epfl.ch:80/ \
 		--build-arg=https_proxy=http://bbpproxy.epfl.ch:80/ \
 		.
 
-docker_build_latest: python_build | $(NEURON_SRC_DIR) $(SIM_MODELS_DIR)
+docker_build_latest: python_build | $(SIM_MODELS_DIR)
 	docker build -t bp-svc:latest \
 		--build-arg=redis_host=$(REDIS_HOST) \
 		--build-arg=http_proxy=http://bbpproxy.epfl.ch:80/ \

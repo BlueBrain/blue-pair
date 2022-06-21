@@ -190,15 +190,8 @@
       onCircuitSelect(circuitPath) {
         this.circuitConfig = Object.assign({}, allCircuits.find(c => c.path === circuitPath));
       },
-      async savePreferredSimModel() {
-        const preferredSimModelObj = (await storage.getItem('preferredSimModels')) || {};
-        preferredSimModelObj[this.circuitConfig.path] = this.circuitConfig.simModel;
-        storage.setItem('preferredSimModels', preferredSimModelObj);
-      },
       onLoadCircuitBtnClick() {
         if (this.customConfig) {
-          this.savePreferredSimModel();
-
           const type = this.circuitConfig.path.includes('BlueConfig')
             ? Entity.SIMULATION
             : Entity.CIRCUIT;
@@ -209,7 +202,7 @@
           );
         }
 
-        store.$dispatch('setCircuitConfig', this.circuitConfig);
+        store.$dispatch('onCircuitChange', this.circuitConfig);
         this.circuitSelect = { visible: false, closable: true };
       },
     },

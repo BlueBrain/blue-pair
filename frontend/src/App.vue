@@ -36,6 +36,8 @@
       this.mode = await store.$dispatch('getServerStatus');
       if (this.mode !== 'operational') return;
 
+      await store.$dispatch('preInit');
+
       store.$dispatch('init');
     },
     components: {

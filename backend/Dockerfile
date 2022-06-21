@@ -7,7 +7,7 @@ RUN apt-get update && apt-get install -yq \
     libz-dev \
     jq
 
-RUN pip install pip neuron --upgrade
+RUN pip install pip neuron==8.0.1 --upgrade
 
 COPY tmp/sim-models /build/sim-models
 COPY config.json /build/
