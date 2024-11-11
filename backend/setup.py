@@ -9,8 +9,7 @@ setup(
     description='bluePair(Pair recording app)',
     version=VERSION,
     url='https://blue-pair/',
-    author='NSE(Neuroscientific Software Engineering)',
-    author_email='bbp-ou-nse@groupes.epfl.ch',
+    author='Blue Brain Project, EPFL',
 
     install_requires=[
         'tornado==6.1',
